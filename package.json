@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "node-version": "node -v",
+    "dev": "C:/nvm4w/nodejs/npx.cmd vite",
+    "build": "tsc -b && C:/nvm4w/nodejs/npx.cmd vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "C:/nvm4w/nodejs/npx.cmd vite preview"
   },
   "dependencies": {
     "react": "^19.1.1",
