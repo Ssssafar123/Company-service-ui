@@ -17,6 +17,7 @@ function ThemeTest() {
       </Card>
      <Card>
       <Text size="4" color="tomato" >Hey kaise ho ? </Text>
+      
      </Card>
     </Flex>
   );

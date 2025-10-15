@@ -1,6 +1,7 @@
 import { Flex } from "@radix-ui/themes";
 import DynamicAlertDialog from "../components/dynamicComponents/Card";
 import { useNavigate } from "react-router-dom";
+import DynamicForm from "../components/dynamicComponents/Form";
 export default function MyApp() {
   const navigate = useNavigate()
   return (
@@ -51,6 +52,8 @@ export default function MyApp() {
         onAction={() => alert("Project archived!")}
         color="blue"
       />
+     
     </Flex>
+    
   );
 }
