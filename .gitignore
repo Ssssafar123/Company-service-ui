@@ -23,8 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 
-Test.css
-Test.tsx
-Test2.tsx
-Card.tsx
-Text.tsx
