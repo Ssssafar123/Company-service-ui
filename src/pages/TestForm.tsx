@@ -1,5 +1,14 @@
 import React from "react";
 import DynamicForm from "../components/dynamicComponents/Form";
+import SimpleTabs from "../components/dynamicComponents/Tabs";
+import { Text } from "@radix-ui/themes";
+const tabs = [
+  { value: "home", label: "Home", path: "/" },
+  { value: "form", label: "form", path: "/test-form" },
+  { value: "settings", label: "Settings", path: "/settings" },
+  { value: "multi", label: "multi", path: "/test2" },
+];
+
 
 const profileFields = [
   {
@@ -42,15 +51,19 @@ const profileFields = [
     name: "darkMode",
     label: "Enable Dark Mode",
     type: "switch" as const
-  }
+  },
 ];
 
 export default function ProfileForm() {
   return (
+    <>
+    <SimpleTabs tabs={tabs} />
     <DynamicForm
       fields={profileFields}
       buttonText="Save Profile"
       onSubmit={(values) => alert(JSON.stringify(values, null, 2))}
-    />
+      />
+      </>
+    
   );
 }
