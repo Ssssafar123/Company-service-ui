@@ -11,7 +11,7 @@ const columns = [
   { key: 'group', label: 'Group', width: '130px' },
   { key: 'email', label: 'Email', width: '260px' },
   { key: 'admissionYear', label: 'Admission Year', width: '140px' },
-  { key: 'gpa', label: 'GPA', width: '80px' }
+  // { key: 'gpa', label: 'GPA', width: '80px' }
 ]
 
 const rows = [

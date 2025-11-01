@@ -2,11 +2,13 @@ import React from "react";
 import DynamicForm from "../components/dynamicComponents/Form";
 import SimpleTabs from "../components/dynamicComponents/Tabs";
 import { Text } from "@radix-ui/themes";
+import Navbar from "../components/Navbar/Navbar";
 const tabs = [
   { value: "home", label: "Home", path: "/" },
   { value: "form", label: "form", path: "/test-form" },
   { value: "settings", label: "Settings", path: "/settings" },
   { value: "multi", label: "multi", path: "/test2" },
+  { value: "safar", label: "safar", path: "/table" },
 ];
 
 
@@ -16,6 +18,30 @@ const profileFields = [
     label: "Full Name",
     type: "text" as const,
     placeholder: "Enter your full name"
+  },
+  {
+    name: "contact",
+    label: "Contact Number",
+    type: "text" as const,
+    placeholder: "Enter your phone number"
+  },
+  {
+    name: "contact",
+    label: "Contact Number",
+    type: "text" as const,
+    placeholder: "Enter your phone number"
+  },
+  {
+    name: "contact",
+    label: "Contact Number",
+    type: "text" as const,
+    placeholder: "Enter your phone number"
+  },
+  {
+    name: "contact",
+    label: "Contact Number",
+    type: "text" as const,
+    placeholder: "Enter your phone number"
   },
   {
     name: "contact",
@@ -57,7 +83,8 @@ const profileFields = [
 export default function ProfileForm() {
   return (
     <>
-    <SimpleTabs tabs={tabs} />
+    <Navbar/>
+    {/* <SimpleTabs tabs={tabs} /> */}
     <DynamicForm
       fields={profileFields}
       buttonText="Save Profile"
