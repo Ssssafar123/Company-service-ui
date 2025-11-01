@@ -28,19 +28,8 @@ export default function MyApp() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Navbar />
       <div style={{ display: "flex", flex: 1 }}>
-        <Sidebar
-          user={user}
-          menuItems={menuItems}
-          onNavigate={(path) => navigate(path)}
-          collapsed={collapsed}
-        />
-
-        <main style={{ flex: 1, padding: 20 }}>
-          <button  onClick={() => setCollapsed((s) => !s)} style={{ marginBottom: 12, cursor: "pointer" }}>
-            ☰
-          </button>
+        
 
           <Flex direction="column" gap="4">
             <DynamicAlertDialog
@@ -89,7 +78,6 @@ export default function MyApp() {
               color="blue"
             />
           </Flex>
-        </main>
       </div>
     </div>
   );

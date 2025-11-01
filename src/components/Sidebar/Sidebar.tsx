@@ -33,6 +33,7 @@ type SidebarProps = {
   menuItems: MenuItem[];
   onNavigate?: (path: string) => void;
   collapsed?: boolean;
+  onToggle?: () => void; // Add this
 };
 
 // Beautiful SVG Icons
@@ -85,7 +86,7 @@ const hasPermission = (user: User, item: MenuItem) => {
   return user.permissions.includes(item.permission);
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapsed = false }) => {
+const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapsed = false, onToggle }) => {
   const [activeItem, setActiveItem] = useState<string>("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
@@ -213,51 +214,74 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
         overflow: "hidden",
       }}
     >
-      {/* User Profile Section */}
-      <Box style={{ padding: "0 20px 20px 20px" }}>
-        <Flex align="center" gap="3">
-          <Avatar
-            size="3"
-            src={user.avatar}
-            fallback={user.name.charAt(0).toUpperCase()}
-            style={{ 
-              borderRadius: "10px",
-              border: "2px solid var(--accent-6)"
-            }}
-          />
-          {!collapsed && (
-            <Box style={{ flex: 1, minWidth: 0 }}>
-              <Text size="2" weight="bold" style={{ color: "var(--accent-12)" }} truncate>
-                {user.name}
-              </Text>
-              <Text size="1" style={{ color: "var(--accent-11)" }} truncate>
-                {user.email}
-              </Text>
-            </Box>
-          )}
-        </Flex>
+      {/* Toggle Button */}
+      {onToggle && (
+        <button
+          onClick={onToggle}
+          style={{
+            position: "absolute",
+            top: 12,
+            right: collapsed ? 12 : -12,
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            border: "1px solid rgba(255,255,255,0.2)",
+            background: "#1e293b",
+            color: "white",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            zIndex: 10,
+          }}
+        >
+          {collapsed ? "→" : "←"}
+        </button>
+      )}
 
-        {/* Permissions Badges */}
-        {!collapsed && user.permissions.length > 0 && (
-          <Flex gap="1" wrap="wrap" style={{ marginTop: "12px" }}>
-            {user.permissions.map(permission => (
-              <Badge 
-                key={permission} 
-                size="1" 
-                variant="soft"
-                style={{ textTransform: "capitalize" }}
-              >
-                {permission}
-              </Badge>
-            ))}
-          </Flex>
-        )}
-      </Box>
+      {/* User Section */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, marginTop: 32 }}>
+        <Avatar
+          size="3"
+          src={user.avatar}
+          fallback={user.name.charAt(0).toUpperCase()}
+          style={{ 
+            borderRadius: "10px",
+            border: "2px solid var(--accent-6)"
+          }}
+        />
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Text size="2" weight="bold" style={{ color: "var(--accent-12)" }} truncate>
+            {user.name}
+          </Text>
+          <Text size="1" style={{ color: "var(--accent-11)" }} truncate>
+            {user.email}
+          </Text>
+        </div>
+      </div>
+
+      {/* Permissions Badges */}
+      {!collapsed && user.permissions.length > 0 && (
+        <Flex gap="1" wrap="wrap" style={{ marginTop: "12px" }}>
+          {user.permissions.map(permission => (
+            <Badge 
+              key={permission} 
+              size="1" 
+              variant="soft"
+              style={{ textTransform: "capitalize" }}
+            >
+              {permission}
+            </Badge>
+          ))}
+        </Flex>
+      )}
 
       <Separator size="4" style={{ margin: "0 20px" }} />
 
-      {/* Navigation Menu */}
-      <Box style={{ 
+      {/* Navigation */}
+      <nav style={{ 
         flex: 1, 
         padding: "12px 12px", 
         overflowY: "auto",
@@ -266,7 +290,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
         <Flex direction="column" gap="1">
           {filteredMenuItems.map(item => renderMenuItem(item))}
         </Flex>
-      </Box>
+      </nav>
 
       {/* Footer */}
       {!collapsed && (

@@ -10,7 +10,8 @@ import {
 } from "@radix-ui/themes";
 import { useThemeToggle } from '../../ThemeProvider';
 
-const Navbar: React.FC = () => {
+// Add props to accept toggle handler
+const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle }) => {
   const { isDark, toggle } = useThemeToggle();
 
   return (
@@ -26,9 +27,20 @@ const Navbar: React.FC = () => {
       }}
     >
       <Flex justify="between" align="center" style={{ height: "70px" }}>
-        {/* Left Section - Logo & Navigation */}
+        {/* Left Section */}
         <Flex align="center" gap="6">
-          {/* Logo */}
+          {/* Sidebar Toggle Button */}
+          {onSidebarToggle && (
+            <Button 
+              variant="ghost" 
+              size="2"
+              onClick={onSidebarToggle}
+              style={{ minWidth: "auto", padding: "6px" }}
+            >
+              <MenuIcon size={16} />
+            </Button>
+          )}
+
           <Text 
             size="5" 
             weight="bold" 
@@ -43,9 +55,9 @@ const Navbar: React.FC = () => {
           {/* Desktop Navigation */}
           <Flex display={{ initial: "none", md: "flex" }} gap="4">
             <NavLink href="/">Home</NavLink>
-            <NavLink href="/features">Features</NavLink>
-            <NavLink href="/pricing">Pricing</NavLink>
-            <NavLink href="/about">About</NavLink>
+            <NavLink href="/test2">Test2</NavLink>
+            <NavLink href="/table">Table</NavLink>
+            <NavLink href="/test-form">Form</NavLink>
           </Flex>
         </Flex>
 
