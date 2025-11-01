@@ -21,7 +21,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   return (
     <Theme
       appearance={isDark ? "dark" : "light"}
-      accentColor="orange"
+      accentColor="pink"
       grayColor="slate"
       radius="large"
       scaling="100%"
