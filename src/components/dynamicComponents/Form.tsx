@@ -10,6 +10,8 @@ import {
   RadioGroup,
   Switch,
   TextArea,
+  Grid,
+  Box,
 } from "@radix-ui/themes";
 
 type Field = {
@@ -18,6 +20,7 @@ type Field = {
   type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch";
   placeholder?: string;
   options?: string[];
+  fullWidth?: boolean; // If true, field will span both columns
 };
 
 type DynamicFormProps = {
@@ -49,7 +52,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       case "password":
         return (
           <TextField.Root
-            key={field.name}
             type={field.type}
             placeholder={field.placeholder}
             value={formValues[field.name] || ""}
@@ -60,16 +62,16 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       case "textarea":
         return (
           <TextArea
-            key={field.name}
             placeholder={field.placeholder}
             value={formValues[field.name] || ""}
             onChange={(e) => handleChange(field.name, e.target.value)}
+            style={{ minHeight: "80px" }}
           />
         );
 
       case "checkbox":
         return (
-          <Flex key={field.name} align="center" gap="2">
+          <Flex align="center" gap="2">
             <Checkbox
               checked={formValues[field.name] || false}
               onCheckedChange={(checked) => handleChange(field.name, checked)}
@@ -80,7 +82,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
       case "switch":
         return (
-          <Flex key={field.name} align="center" gap="2">
+          <Flex align="center" gap="2">
             <Switch
               checked={formValues[field.name] || false}
               onCheckedChange={(checked) => handleChange(field.name, checked)}
@@ -92,7 +94,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       case "select":
         return (
           <Select.Root
-            key={field.name}
             value={formValues[field.name] || ""}
             onValueChange={(value) => handleChange(field.name, value)}
           >
@@ -110,7 +111,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       case "radio":
         return (
           <RadioGroup.Root
-            key={field.name}
             value={formValues[field.name] || ""}
             onValueChange={(value) => handleChange(field.name, value)}
           >
@@ -133,25 +133,47 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   };
 
   return (
-    <Card style={{ maxWidth: 400, margin: "0 auto", padding: "20px" }}>
+    <Card style={{ maxWidth: 800, margin: "0 auto", padding: "24px" }}>
       <form onSubmit={handleSubmit}>
-        <Flex direction="column" gap="3">
-          {fields.map((field) => (
-            <div key={field.name}>
-              {/* Only show label for fields that don't have inline labels */}
-              {!["checkbox", "switch", "radio"].includes(field.type) && (
-                <Text as="label" size="2" weight="bold">
-                  {field.label}
-                </Text>
-              )}
-              {renderField(field)}
-            </div>
-          ))}
-          
-          <Button type="submit" style={{ marginTop: "16px" }}>
+        <Grid 
+          columns={{ initial: "1", sm: "2" }} 
+          gap="4" 
+          gapY="5"
+          style={{ alignItems: "start" }}
+        >
+          {fields.map((field) => {
+            const shouldSpanFullWidth = field.fullWidth || field.type === "textarea" || field.type === "radio";
+            const gridColumn = shouldSpanFullWidth ? "1 / -1" : "auto";
+            
+            return (
+              <Box 
+                key={field.name} 
+                style={{ 
+                  gridColumn,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px"
+                }}
+              >
+                {/* Only show label for fields that don't have inline labels */}
+                {!["checkbox", "switch"].includes(field.type) && (
+                  <Text as="label" size="2" weight="medium" style={{ color: "var(--accent-12)" }}>
+                    {field.label}
+                  </Text>
+                )}
+                
+                {renderField(field)}
+              </Box>
+            );
+          })}
+        </Grid>
+        
+        {/* Submit Button - Always full width */}
+        <Box style={{ gridColumn: "1 / -1", marginTop: "24px" }}>
+          <Button type="submit" size="3" style={{ width: "100%" }}>
             {buttonText}
           </Button>
-        </Flex>
+        </Box>
       </form>
     </Card>
   );

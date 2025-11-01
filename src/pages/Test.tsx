@@ -38,8 +38,8 @@ export default function MyApp() {
         />
 
         <main style={{ flex: 1, padding: 20 }}>
-          <button onClick={() => setCollapsed((s) => !s)} style={{ marginBottom: 12, cursor: "pointer" }}>
-            Toggle Sidebar
+          <button  onClick={() => setCollapsed((s) => !s)} style={{ marginBottom: 12, cursor: "pointer" }}>
+            ☰
           </button>
 
           <Flex direction="column" gap="4">
