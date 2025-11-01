@@ -1,11 +1,8 @@
 import React from 'react'
+import Itinerary from '../../modules/Itinerary/Itinerary'
 
-const Itenery = () => {
-  return (
-    <div>
-      
-    </div>
-  )
+const ItineraryPage = () => {
+	return <Itinerary />
 }
 
-export default Itenery
+export default ItineraryPage

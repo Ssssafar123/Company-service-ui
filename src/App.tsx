@@ -5,6 +5,7 @@ import Test from './pages/Test.js'
 import Test2 from './pages/Test2.js'
 import TableTest from './pages/TableTest.js'
 import Layout from './Layout.js'
+import ItineraryPage from './pages/Dashboard/Itinerary'
 const App = () => {
   return (
     <div>
@@ -14,6 +15,7 @@ const App = () => {
         <Route path='test2' element={<Test2/>} />
         <Route path='test-form' element={<TestForm/>} />
         <Route path='table' element={<TableTest/>} />
+        <Route path='/itinerary' element={<ItineraryPage />} />
         </Route>
       </Routes>
       
