@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
 	Box,
 	Flex,
@@ -15,8 +16,8 @@ type ItineraryData = {
 	id: string
 	name: string
 	city: string
-	price: number // Store as number for proper sorting
-	priceDisplay: string // Display format
+	price: number 
+	priceDisplay: string 
 	status: 'Active' | 'Inactive'
 	trending: string
 }
@@ -113,6 +114,53 @@ const dummyItineraries: ItineraryData[] = [
 		status: 'Inactive',
 		trending: 'No',
 	},
+
+	{
+		id: '11',
+		name: 'Pachmarhi | Ex- Indore',
+		city: 'Pachmarhi',
+		price: 4499,
+		priceDisplay: '₹4,499',
+		status: 'Inactive',
+		trending: 'No',
+	},
+	{
+		id: '12',
+		name: 'Kerala 7D 6N',
+		city: 'Kerala',
+		price: 16499,
+		priceDisplay: '₹16,499',
+		status: 'Active',
+		trending: 'No',
+	},
+	{
+		id: '13',
+		name: 'Spiti Valley Full Circuit',
+		city: 'Spiti Valley',
+		price: 5599,
+		priceDisplay: '₹5,599',
+		status: 'Active',
+		trending: 'No',
+	},
+	{
+		id: '14',
+		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore',
+		city: 'Udaipur, Mount Abu',
+		price: 15999,
+		priceDisplay: '₹15,999',
+		status: 'Active',
+		trending: 'No',
+	},
+	{
+		id: '15',
+		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Delhi',
+		city: 'Udaipur, Mount Abu',
+		price: 15999,
+		priceDisplay: '₹15,999',
+		status: 'Active',
+		trending: 'No',
+	},
+	
 ]
 
 type SortDirection = 'asc' | 'desc' | null
@@ -128,6 +176,7 @@ type ColumnConfig = {
 }
 
 const Itinerary: React.FC = () => {
+	const navigate = useNavigate() 
 	const [searchQuery, setSearchQuery] = useState('')
 	const [currentPage, setCurrentPage] = useState(1)
 	const [sortConfig, setSortConfig] = useState<{
@@ -319,9 +368,8 @@ const Itinerary: React.FC = () => {
 				Manage Itinerary
 			</Text>
 
-			{/* Search Bar and Columns Button */}
+			{/* Search Bar, Add New Itinerary Button, and Columns Button */}
 			<Flex gap="3" align="center" justify="between" style={{ marginBottom: '24px' }}>
-				{/* Search Bar - Left Side */}
 				<TextField.Root
 					placeholder="Search all columns..."
 					value={searchQuery}
@@ -350,52 +398,69 @@ const Itinerary: React.FC = () => {
 					</TextField.Slot>
 				</TextField.Root>
 
-				{/* Columns Button - Right Side */}
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						<Button
-							variant="soft"
-							size="2"
-							style={{
-								color: 'white',
-								backgroundColor: 'var(--accent-9)',
-							}}
-						>
-							Columns
-						</Button>
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content
+				<Flex gap="2" align="center">
+					{/* Add New Itinerary Button */}
+					<Button
+						variant="soft"
+						size="2"
+						onClick={() => navigate('/add-itinerary')}
 						style={{
-							minWidth: '160px',
-							backgroundColor: 'var(--color-panel)',
-							border: '1px solid var(--accent-6)',
+							color: 'white',
+							backgroundColor: 'var(--accent-9)',
+							width: '200px',
 						}}
 					>
-						{allColumns.map((col) => (
-							<DropdownMenu.Item
-								key={col.key}
-								onSelect={(e) => {
-									e.preventDefault()
-									handleColumnToggle(col.key)
-								}}
+						Add New Itinerary
+					</Button>
+
+					{/* Columns Button */}
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							<Button
+								variant="soft"
+								size="2"
 								style={{
-									cursor: 'pointer',
+									color: 'white',
+									backgroundColor: 'var(--accent-9)',
+									width: '100px',
 								}}
 							>
-								<Flex align="center" gap="3">
-									<Checkbox
-										checked={columnVisibility[col.key as keyof typeof columnVisibility]}
-										onCheckedChange={() => handleColumnToggle(col.key)}
-										style={{ pointerEvents: 'none' }}
-									/>
-									<Text size="2" style={{ color: 'var(--accent-12)' }}>
-										{col.dropdownLabel}
-									</Text>
-								</Flex>
-							</DropdownMenu.Item>
-						))}
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
+								Columns
+							</Button>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content
+							style={{
+								minWidth: '160px',
+								backgroundColor: 'var(--color-panel)',
+								border: '1px solid var(--accent-6)',
+							}}
+						>
+							{allColumns.map((col) => (
+								<DropdownMenu.Item
+									key={col.key}
+									onSelect={(e) => {
+										e.preventDefault()
+										handleColumnToggle(col.key)
+									}}
+									style={{
+										cursor: 'pointer',
+									}}
+								>
+									<Flex align="center" gap="3">
+										<Checkbox
+											checked={columnVisibility[col.key as keyof typeof columnVisibility]}
+											onCheckedChange={() => handleColumnToggle(col.key)}
+											style={{ pointerEvents: 'none' }}
+										/>
+										<Text size="2" style={{ color: 'var(--accent-12)' }}>
+											{col.dropdownLabel}
+										</Text>
+									</Flex>
+								</DropdownMenu.Item>
+							))}
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				</Flex>
 			</Flex>
 
 			{/* Table Container */}

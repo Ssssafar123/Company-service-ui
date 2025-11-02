@@ -13,28 +13,37 @@ import {
   Grid,
   Box,
 } from "@radix-ui/themes";
+import RichTextEditor from "./RichTextEditor";
+import ImageUpload from "./ImageUpload";
+import DaywiseActivities from './DaywiseActivities'
+import HotelDetails from './HotelDetails'
+import PackageDetails from './PackageDetails'
+import BatchManagement from './BatchManagement'
 
 type Field = {
   name: string;
   label: string;
-  type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch";
+  type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch" | "richtext" | "file" | "number" | "multiselect" | "daywise" | "hotels" | "packages" | "batches" | "custom";
   placeholder?: string;
-  options?: string[];
-  fullWidth?: boolean; // If true, field will span both columns
+  options?: string[] | { value: string; label: string }[];
+  fullWidth?: boolean;
+  customRender?: (value: any, onChange: (value: any) => void) => React.ReactNode;
 };
 
 type DynamicFormProps = {
   fields: Field[];
   buttonText?: string;
   onSubmit?: (values: Record<string, any>) => void;
+  initialValues?: Record<string, any>;
 };
 
 const DynamicForm: React.FC<DynamicFormProps> = ({
   fields,
   buttonText = "Submit",
   onSubmit,
+  initialValues = {},
 }) => {
-  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [formValues, setFormValues] = useState<Record<string, any>>(initialValues);
 
   const handleChange = (name: string, value: any) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -46,6 +55,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   };
 
   const renderField = (field: Field) => {
+    if (field.customRender) {
+      return field.customRender(
+        formValues[field.name],
+        (value) => handleChange(field.name, value)
+      );
+    }
+
     switch (field.type) {
       case "text":
       case "email":
@@ -59,6 +75,16 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           />
         );
 
+      case "number":
+        return (
+          <TextField.Root
+            type="number"
+            placeholder={field.placeholder}
+            value={formValues[field.name] || ""}
+            onChange={(e) => handleChange(field.name, e.target.value)}
+          />
+        );
+
       case "textarea":
         return (
           <TextArea
@@ -66,6 +92,25 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             value={formValues[field.name] || ""}
             onChange={(e) => handleChange(field.name, e.target.value)}
             style={{ minHeight: "80px" }}
+          />
+        );
+
+      case "richtext":
+        return (
+          <RichTextEditor
+            value={formValues[field.name] || ""}
+            onChange={(value) => handleChange(field.name, value)}
+            placeholder={field.placeholder}
+            label={field.label}
+          />
+        );
+
+      case "file":
+        return (
+          <ImageUpload
+            images={formValues[field.name] || [""]}
+            onChange={(images) => handleChange(field.name, images)}
+            label={field.label}
           />
         );
 
@@ -91,40 +136,138 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           </Flex>
         );
 
-      case "select":
+        case "select":
+          return (
+            <Select.Root
+              value={formValues[field.name] || undefined}
+              onValueChange={(value) => handleChange(field.name, value)}
+            >
+              <Select.Trigger placeholder={field.placeholder} />
+              <Select.Content>
+                {field.options
+                  ?.filter((option) => {
+                    const optValue = typeof option === "string" ? option : option.value;
+                    return optValue !== "";
+                  })
+                  .map((option) => {
+                    const optValue = typeof option === "string" ? option : option.value;
+                    const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? ""); // Fixed to always be string
+                    return (
+                      <Select.Item key={optValue} value={optValue}>
+                        {optLabel}
+                      </Select.Item>
+                    );
+                  })}
+              </Select.Content>
+            </Select.Root>
+          );
+
+      case "multiselect":
+        // Simple multi-select implementation
         return (
           <Select.Root
-            value={formValues[field.name] || ""}
-            onValueChange={(value) => handleChange(field.name, value)}
+            value={Array.isArray(formValues[field.name]) && formValues[field.name].length > 0
+              ? formValues[field.name][0]
+              : undefined}
+            onValueChange={(value) => {
+              const current = formValues[field.name] || [];
+              const newValue = Array.isArray(current)
+                ? current.includes(value)
+                  ? current.filter((v) => v !== value)
+                  : [...current, value]
+                : [value];
+              handleChange(field.name, newValue);
+            }}
           >
             <Select.Trigger placeholder={field.placeholder} />
             <Select.Content>
-              {field.options?.map((option) => (
-                <Select.Item key={option} value={option}>
-                  {option}
-                </Select.Item>
-              ))}
+              {field.options
+                ?.filter((option) => {
+                  const optValue = typeof option === "string" ? option : option.value;
+                  return optValue !== "";
+                })
+                .map((option) => {
+                  const optValue = typeof option === "string" ? option : option.value;
+                  const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? ""); // Fixed to always be string
+                  return (
+                    <Select.Item key={optValue} value={optValue}>
+                      {optLabel}
+                    </Select.Item>
+                  );
+                })}
             </Select.Content>
           </Select.Root>
         );
 
-      case "radio":
+        case "radio":
+          return (
+            <RadioGroup.Root
+              value={formValues[field.name] || undefined}
+              onValueChange={(value) => handleChange(field.name, value)}
+            >
+              <Flex direction="column" gap="2">
+                {field.options
+                  ?.filter((option) => {
+                    const optValue = typeof option === "string" ? option : option.value;
+                    return optValue !== "";
+                  })
+                  .map((option) => {
+                    const optValue = typeof option === "string" ? option : option.value;
+                    const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? ""); // Fixed to always be string
+                    return (
+                      <Flex key={optValue} align="center" gap="2">
+                        <RadioGroup.Item value={optValue} id={`${field.name}-${optValue}`} />
+                        <Text as="label" size="2" htmlFor={`${field.name}-${optValue}`}>
+                          {optLabel}
+                        </Text>
+                      </Flex>
+                    );
+                  })}
+              </Flex>
+            </RadioGroup.Root>
+          );
+        case "daywise":
         return (
-          <RadioGroup.Root
-            value={formValues[field.name] || ""}
-            onValueChange={(value) => handleChange(field.name, value)}
-          >
-            <Flex direction="column" gap="2">
-              {field.options?.map((option) => (
-                <Flex key={option} align="center" gap="2">
-                  <RadioGroup.Item value={option} id={`${field.name}-${option}`} />
-                  <Text as="label" size="2" htmlFor={`${field.name}-${option}`}>
-                    {option}
-                  </Text>
-                </Flex>
-              ))}
-            </Flex>
-          </RadioGroup.Root>
+          <DaywiseActivities
+            activities={formValues[field.name] || []}
+            onChange={(activities) => handleChange(field.name, activities)}
+            label={field.label}
+            error={undefined}
+          />
+        );
+
+      case "hotels":
+        return (
+          <HotelDetails
+            hotels={formValues[field.name] || []}
+            onChange={(hotels) => handleChange(field.name, hotels)}
+            label={field.label}
+            error={undefined}
+          />
+        );
+
+      case "packages":
+        return (
+          <PackageDetails
+            packages={formValues[field.name] || {
+              base_packages: [],
+              pickup_point: [],
+              drop_point: [],
+            }}
+            onChange={(packages) => handleChange(field.name, packages)}
+            label={field.label}
+            error={undefined}
+          />
+        );
+
+      case "batches":
+        return (
+          <BatchManagement
+            batches={formValues[field.name] || []}
+            onChange={(batches) => handleChange(field.name, batches)}
+            label={field.label}
+            error={undefined}
+          />
         );
 
       default:
@@ -133,7 +276,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   };
 
   return (
-    <Card style={{ maxWidth: 800, margin: "0 auto", padding: "24px" }}>
+    <Card style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
       <form onSubmit={handleSubmit}>
         <Grid 
           columns={{ initial: "1", sm: "2" }} 
@@ -142,7 +285,15 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           style={{ alignItems: "start" }}
         >
           {fields.map((field) => {
-            const shouldSpanFullWidth = field.fullWidth || field.type === "textarea" || field.type === "radio";
+            const shouldSpanFullWidth = field.fullWidth || 
+            field.type === "textarea" || 
+            field.type === "richtext" || 
+            field.type === "file" || 
+            field.type === "radio" || 
+            field.type === "daywise" || 
+            field.type === "hotels" || 
+            field.type === "packages" || 
+            field.type === "batches";
             const gridColumn = shouldSpanFullWidth ? "1 / -1" : "auto";
             
             return (
@@ -156,7 +307,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 }}
               >
                 {/* Only show label for fields that don't have inline labels */}
-                {!["checkbox", "switch"].includes(field.type) && (
+                {!["checkbox", "switch", "richtext", "file", "daywise", "hotels", "packages", "batches", "custom"].includes(field.type) && (
                   <Text as="label" size="2" weight="medium" style={{ color: "var(--accent-12)" }}>
                     {field.label}
                   </Text>

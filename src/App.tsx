@@ -6,6 +6,7 @@ import Test2 from './pages/Test2.js'
 import TableTest from './pages/TableTest.js'
 import Layout from './Layout.js'
 import ItineraryPage from './pages/Dashboard/Itinerary'
+import AddNewItinerary from './modules/Itinerary/AddNewItinerary'
 const App = () => {
   return (
     <div>
@@ -16,6 +17,7 @@ const App = () => {
         <Route path='test-form' element={<TestForm/>} />
         <Route path='table' element={<TableTest/>} />
         <Route path='/itinerary' element={<ItineraryPage />} />
+        <Route path='add-itinerary' element={<AddNewItinerary />} />
         </Route>
       </Routes>
       
