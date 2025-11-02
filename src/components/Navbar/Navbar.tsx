@@ -15,17 +15,21 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
   const { isDark, toggle } = useThemeToggle();
 
   return (
-    <Box
-      style={{
-        backgroundColor: "var(--color-panel)",
-        borderBottom: "1px solid var(--accent-6)",
-        padding: "0 24px",
-        position: "sticky",
-        top: 0,
-        zIndex: 1000,
-        backdropFilter: "blur(8px)",
-      }}
-    >
+<Box
+  style={{
+    backgroundColor: "var(--color-panel)",
+    borderBottom: "1px solid var(--accent-6)",
+    padding: "0 24px",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1100,
+    backdropFilter: "blur(8px)",
+    boxSizing: "border-box",
+  }}
+>
+
       <Flex justify="between" align="center" style={{ height: "70px" }}>
         {/* Left Section */}
         <Flex align="center" gap="6">
@@ -41,16 +45,24 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
             </Button>
           )}
 
-          <Text 
-            size="5" 
-            weight="bold" 
-            style={{ 
-              color: "var(--accent-12)",
-              letterSpacing: "-0.02em"
-            }}
-          >
-            Brand
-          </Text>
+  
+<Text 
+  size="5" 
+  weight="bold" 
+  style={{ 
+    fontFamily: "'Playfair Display', 'Georgia', serif",
+    background: "linear-gradient(135deg, var(--accent-11) 0%, var(--accent-9) 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+    letterSpacing: "0.02em",
+    fontSize: "24px",
+    fontWeight: 700,
+  }}
+>
+  Safar Wanderlust
+</Text>
+
 
           {/* Desktop Navigation */}
           <Flex display={{ initial: "none", md: "flex" }} gap="4">
@@ -98,10 +110,10 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
           {/* Auth Buttons - Desktop */}
           <Flex display={{ initial: "none", sm: "flex" }} align="center" gap="2">
             <Button variant="ghost" size="2">
-              Sign In
+              Sign Up
             </Button>
             <Button size="2">
-              Sign Up
+              Login
             </Button>
           </Flex>
 

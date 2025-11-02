@@ -34,6 +34,7 @@ type SidebarProps = {
   onNavigate?: (path: string) => void;
   collapsed?: boolean;
   onToggle?: () => void; // Add this
+  topOffset?: number; // px height of top navbar to avoid overlap (default 64)
 };
 
 // Beautiful SVG Icons
@@ -86,9 +87,17 @@ const hasPermission = (user: User, item: MenuItem) => {
   return user.permissions.includes(item.permission);
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapsed = false, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapsed = false, onToggle, topOffset = 64 }) => {
   const [activeItem, setActiveItem] = useState<string>("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  // If parent controls collapsed via prop, use it; otherwise manage internally
+  const [internalCollapsed, setInternalCollapsed] = useState<boolean>(collapsed);
+  React.useEffect(() => { setInternalCollapsed(collapsed); }, [collapsed]);
+
+  const isCollapsed = internalCollapsed;
+
+  // Responsive overlay state for small screens when sidebar is open
+  const [showOverlay, setShowOverlay] = useState(false);
 
   const handleItemClick = (item: MenuItem) => {
     if (item.path) {
@@ -151,7 +160,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
           {item.icon}
         </Box>
         
-        {!collapsed && (
+  {!isCollapsed && (
           <>
             <Text size="2" weight="medium" style={{ flex: 1 }}>
               {item.label}
@@ -181,7 +190,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
 
     return (
       <Box key={item.id}>
-        {collapsed ? (
+  {isCollapsed ? (
           <Tooltip content={item.label} side="right">
             {menuItemContent}
           </Tooltip>
@@ -201,47 +210,40 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
   const filteredMenuItems = menuItems.filter(item => hasPermission(user, item));
 
   return (
-    <Box
-      style={{
-        width: collapsed ? "70px" : "280px",
-        height: "100vh",
-        backgroundColor: "var(--accent-1)",
-        borderRight: "1px solid var(--accent-6)",
-        padding: "20px 0",
-        transition: "width 0.3s ease",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
-      {/* Toggle Button */}
-      {onToggle && (
-        <button
-          onClick={onToggle}
+    <>
+      {/* Overlay for mobile when sidebar is open */}
+      {showOverlay && !isCollapsed && (
+        <div
+          onClick={() => { setInternalCollapsed(true); setShowOverlay(false); }}
           style={{
-            position: "absolute",
-            top: 12,
-            right: collapsed ? 12 : -12,
-            width: 24,
-            height: 24,
-            borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,0.2)",
-            background: "#1e293b",
-            color: "white",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 12,
-            zIndex: 10,
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 1200,
           }}
-        >
-          {collapsed ? "→" : "←"}
-        </button>
+        />
       )}
 
+      <Box
+        style={{
+          position: "fixed",
+          left: 0,
+          top: topOffset,
+          height: `calc(100% - ${topOffset}px)`,
+          width: isCollapsed ? "70px" : "280px",
+          backgroundColor: "var(--accent-1)",
+          borderRight: "1px solid var(--accent-6)",
+          padding: "20px 0",
+          transition: "width 0.25s ease, transform 0.25s ease",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          zIndex: 900, // put below typical navbar z-index so navbar remains visible
+          boxSizing: "border-box",
+        }}
+      >
       {/* User Section */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, marginTop: 32 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, marginTop: 32, padding: "0 12px" }}>
         <Avatar
           size="3"
           src={user.avatar}
@@ -252,18 +254,18 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
           }}
         />
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Text size="2" weight="bold" style={{ color: "var(--accent-12)" }} truncate>
-            {user.name}
-          </Text>
-          <Text size="1" style={{ color: "var(--accent-11)" }} truncate>
-            {user.email}
-          </Text>
-        </div>
-      </div>
-
-      {/* Permissions Badges */}
-      {!collapsed && user.permissions.length > 0 && (
+        {!isCollapsed && (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Text size="2" weight="bold" style={{ color: "var(--accent-12)" }} truncate>
+              {user.name}
+            </Text>
+            <Text size="1" style={{ color: "var(--accent-11)" }} truncate>
+              {user.email}
+            </Text>
+          </div>
+        )}
+      </div>      {/* Permissions Badges */}
+  {!isCollapsed && user.permissions.length > 0 && (
         <Flex gap="1" wrap="wrap" style={{ marginTop: "12px" }}>
           {user.permissions.map(permission => (
             <Badge 
@@ -293,7 +295,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
       </nav>
 
       {/* Footer */}
-      {!collapsed && (
+      {!isCollapsed && (
         <Box style={{ padding: "0 20px" }}>
           <Separator size="4" style={{ marginBottom: "16px" }} />
           <Text size="1" style={{ color: "var(--accent-11)", textAlign: "center" }}>
@@ -302,6 +304,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
         </Box>
       )}
     </Box>
+    </>
   );
 };
 

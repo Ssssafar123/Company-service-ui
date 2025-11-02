@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import Navbar from './components/Navbar/Navbar'
 import Sidebar from './components/Sidebar/Sidebar'
 
 const Layout = () => {
   const [collapsed, setCollapsed] = useState(false);
-
+const navigate = useNavigate();
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <Navbar onSidebarToggle={() => setCollapsed(s => !s)} />
@@ -18,6 +18,7 @@ const Layout = () => {
             avatar: "https://i.pravatar.cc/40?img=3",
           }}
           menuItems={[
+            {id: "itinerary" , label: "Itinerary", path: "/itinerary"},
             { id: "home", label: "Home", path: "/" },
             { id: "form", label: "Form", path: "/test-form" },
             { id: "table", label: "Table", path: "/table" },
@@ -25,8 +26,15 @@ const Layout = () => {
           ]}
           collapsed={collapsed}
           onToggle={() => setCollapsed(s => !s)}
+          onNavigate={(path) => navigate(path)}
         />
-        <main style={{ flex: 1, padding: 20 }}>
+        <main style={{ 
+          flex: 1, 
+          padding: 20,
+          marginLeft: collapsed ? "70px" : "280px",
+          transition: "margin-left 0.25s ease",
+          marginTop: "64px"
+        }}>
           <Outlet />
         </main>
       </div>

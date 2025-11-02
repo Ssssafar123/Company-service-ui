@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "node-version": "node -v",
-    "dev": "C:/nvm4w/nodejs/npx.cmd vite",
-    "build": "tsc -b && C:/nvm4w/nodejs/npx.cmd vite build",
+    "dev": "C:\\nvm4w\\nodejs\\node.exe node_modules/vite/bin/vite.js --host --port 5173",
+    "build": "tsc -b && C:\\nvm4w\\nodejs\\node.exe node_modules/vite/bin/vite.js build",
     "lint": "eslint .",
-    "preview": "C:/nvm4w/nodejs/npx.cmd vite preview"
+    "preview": "C:\\nvm4w\\nodejs\\node.exe node_modules/vite/bin/vite.js preview --host --port 5173"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
