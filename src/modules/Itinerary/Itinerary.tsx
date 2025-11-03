@@ -9,8 +9,11 @@ import {
 	Badge,
 	DropdownMenu,
 	Checkbox,
+	IconButton,
+	AlertDialog,
 } from '@radix-ui/themes'
 import Table from '../../components/dynamicComponents/Table'
+
 
 type ItineraryData = {
 	id: string
@@ -22,7 +25,6 @@ type ItineraryData = {
 	trending: string
 }
 
-// Dummy data
 const dummyItineraries: ItineraryData[] = [
 	{
 		id: '1',
@@ -114,7 +116,6 @@ const dummyItineraries: ItineraryData[] = [
 		status: 'Inactive',
 		trending: 'No',
 	},
-
 	{
 		id: '11',
 		name: 'Pachmarhi | Ex- Indore',
@@ -160,16 +161,14 @@ const dummyItineraries: ItineraryData[] = [
 		status: 'Active',
 		trending: 'No',
 	},
-	
 ]
 
 type SortDirection = 'asc' | 'desc' | null
 
-// Column configuration with mapping to dropdown labels
 type ColumnConfig = {
 	key: string
 	label: string
-	dropdownLabel: string // Label shown in dropdown
+	dropdownLabel: string
 	width: string
 	sortable: boolean
 	render: (row: ItineraryData) => React.ReactNode
@@ -183,19 +182,151 @@ const Itinerary: React.FC = () => {
 		key: string
 		direction: SortDirection
 	} | null>(null)
+     
+	// Add dialog state for controlled dialog
+	const [dialogOpen, setDialogOpen] = useState(false)
+	const [dialogConfig, setDialogConfig] = useState<{
+		title: string
+		description: string
+		actionText: string
+		cancelText?: string
+		onConfirm: () => void
+		color?: 'red' | 'blue' | 'green' | 'gray'
+	} | null>(null)
 
-	// Column visibility state - all visible by default
 	const [columnVisibility, setColumnVisibility] = useState({
 		name: true,
 		city: true,
 		price: true,
 		trending: true,
 		status: true,
+		edit: true,
+		actions: true,
 	})
+
+	const [trendingStatus, setTrendingStatus] = useState<Record<string, boolean>>(() => {
+		const initial: Record<string, boolean> = {}
+		dummyItineraries.forEach(item => {
+			initial[item.id] = item.trending === 'Yes'
+		})
+		return initial
+	})
+
+	const [itineraries, setItineraries] = useState<ItineraryData[]>(dummyItineraries)
 
 	const itemsPerPage = 10
 
-	// All column definitions
+	
+
+	const handleEdit = (itinerary: ItineraryData) => {
+		navigate('/add-itinerary', {
+			state: { itineraryData: itinerary },
+		})
+	}
+
+	const handleDuplicate = (itinerary: ItineraryData) => {
+		setDialogConfig({
+			title: 'Duplicate Itinerary',
+			description: `Are you sure you want to duplicate "${itinerary.name}"?`,
+			actionText: 'Duplicate',
+			cancelText: 'Cancel',
+			color: 'blue',
+			onConfirm: () => {
+				const duplicated: ItineraryData = {
+					...itinerary,
+					id: `${itinerary.id}_copy_${Date.now()}`,
+					name: `${itinerary.name} (Copy)`,
+				}
+				setItineraries(prev => [...prev, duplicated])
+				setDialogOpen(false)
+				// Show success
+				setDialogConfig({
+					title: 'Success',
+					description: `Itinerary "${itinerary.name}" duplicated successfully!`,
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => setDialogOpen(false),
+				})
+				setDialogOpen(true)
+			},
+		})
+		setDialogOpen(true)
+	}
+
+	const handleToggleStatus = (itinerary: ItineraryData) => {
+		const newStatus = itinerary.status === 'Active' ? 'Inactive' : 'Active'
+		setDialogConfig({
+			title: 'Change Status',
+			description: `Are you sure you want to change status to "${newStatus}"?`,
+			actionText: 'Change',
+			cancelText: 'Cancel',
+			color: 'blue',
+			onConfirm: () => {
+				setItineraries(prev =>
+					prev.map(item =>
+						item.id === itinerary.id
+							? {
+									...item,
+									status: item.status === 'Active' ? 'Inactive' : 'Active',
+								}
+							: item
+					)
+				)
+				setDialogOpen(false)
+				// Show success
+				setDialogConfig({
+					title: 'Success',
+					description: `Status changed to "${newStatus}" successfully!`,
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => setDialogOpen(false),
+				})
+				setDialogOpen(true)
+			},
+		})
+		setDialogOpen(true)
+	}
+
+	const handleDelete = (itinerary: ItineraryData) => {
+		setDialogConfig({
+			title: 'Delete Itinerary',
+			description: `Are you sure you want to delete "${itinerary.name}"? This action cannot be undone.`,
+			actionText: 'Delete',
+			cancelText: 'Cancel',
+			color: 'red',
+			onConfirm: () => {
+				setItineraries(prev => prev.filter(item => item.id !== itinerary.id))
+				setDialogOpen(false)
+				// Show success
+				setDialogConfig({
+					title: 'Success',
+					description: `Itinerary "${itinerary.name}" deleted successfully!`,
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => setDialogOpen(false),
+				})
+				setDialogOpen(true)
+			},
+		})
+		setDialogOpen(true)
+	}
+
+	const handleTrendingChange = (id: string, checked: boolean) => {
+		setItineraries(prev =>
+			prev.map(item =>
+				item.id === id
+					? { ...item, trending: checked ? 'Yes' : 'No' }
+					: item
+			)
+		)
+		
+		// Then sync trendingStatus state
+		setTrendingStatus(prev => ({
+			...prev,
+			[id]: checked,
+		}))
+	}
+
 	const allColumns: ColumnConfig[] = [
 		{
 			key: 'name',
@@ -230,8 +361,22 @@ const Itinerary: React.FC = () => {
 			label: 'Trending',
 			dropdownLabel: 'Is_trending',
 			width: '120px',
-			sortable: true,
-			render: (row: ItineraryData) => <Text size="2">{row.trending}</Text>,
+			sortable: false,
+			render: (row: ItineraryData) => {
+				// Use row data directly - state will sync via handleTrendingChange
+				const isChecked = row.trending === 'Yes'
+				
+				return (
+					<Flex align="center" justify="center">
+						<Checkbox
+							checked={isChecked}
+							onCheckedChange={(checked) => {
+								handleTrendingChange(row.id, checked === true)
+							}}
+						/>
+					</Flex>
+				)
+			},
 		},
 		{
 			key: 'status',
@@ -241,9 +386,192 @@ const Itinerary: React.FC = () => {
 			sortable: true,
 			render: (row: ItineraryData) => renderStatus(row.status),
 		},
+		{
+			key: 'edit',
+			label: '', // Empty label so header doesn't show
+			dropdownLabel: 'Edit',
+			width: '80px',
+			sortable: false,
+			render: (row: ItineraryData) => (
+				<Flex gap="2" align="center" justify="center">
+					<Button
+						variant="soft"
+						size="1"
+						onClick={() => handleEdit(row)}
+						style={{
+							color: 'white',
+							backgroundColor: 'var(--accent-9)',
+							cursor: 'pointer',
+						}}
+					>
+						Edit
+					</Button>
+				</Flex>
+			),
+		},
+		{
+			key: 'actions',
+			label: '', // Empty label so header doesn't show
+			dropdownLabel: 'Actions',
+			width: '80px',
+			sortable: false,
+			render: (row: ItineraryData) => (
+				<Flex gap="2" align="center" justify="center">
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							<IconButton
+								variant="ghost"
+								size="2"
+								style={{
+									cursor: 'pointer',
+									color: 'var(--accent-11)',
+								}}
+							>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<circle cx="8" cy="3" r="1.5" fill="currentColor" />
+									<circle cx="8" cy="8" r="1.5" fill="currentColor" />
+									<circle cx="8" cy="13" r="1.5" fill="currentColor" />
+								</svg>
+							</IconButton>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content
+							style={{
+								minWidth: '180px',
+								backgroundColor: 'var(--color-panel)',
+								border: '1px solid var(--accent-6)',
+							}}
+						>
+							<DropdownMenu.Item
+								onSelect={(e) => {
+									e.preventDefault()
+									handleEdit(row)
+								}}
+								style={{ cursor: 'pointer' }}
+							>
+								<Flex align="center" gap="2">
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 16 16"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											d="M8 3C5.5 3 3.3 4.2 2 6C3.3 7.8 5.5 9 8 9C10.5 9 12.7 7.8 14 6C12.7 4.2 10.5 3 8 3ZM8 8C6.9 8 6 7.1 6 6C6 4.9 6.9 4 8 4C9.1 4 10 4.9 10 6C10 7.1 9.1 8 8 8Z"
+											fill="currentColor"
+										/>
+									</svg>
+									<Text size="2" style={{ color: 'var(--accent-12)' }}>
+										View Itinerary
+									</Text>
+								</Flex>
+							</DropdownMenu.Item>
+
+							<DropdownMenu.Item
+								onSelect={(e) => {
+									e.preventDefault()
+									handleDuplicate(row)
+								}}
+								style={{ cursor: 'pointer' }}
+							>
+								<Flex align="center" gap="2">
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 16 16"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											d="M4 2C2.9 2 2 2.9 2 4V12C2 13.1 2.9 14 4 14H12C13.1 14 14 13.1 14 12V4C14 2.9 13.1 2 12 2H4ZM4 3H12C12.6 3 13 3.4 13 4V12C13 12.6 12.6 13 12 13H4C3.4 13 3 12.6 3 12V4C3 3.4 3.4 3 4 3Z"
+											fill="currentColor"
+										/>
+										<path
+											d="M6 6H10V7H6V6ZM6 8H10V9H6V8ZM6 10H10V11H6V10Z"
+											fill="currentColor"
+										/>
+									</svg>
+									<Text size="2" style={{ color: 'var(--accent-12)' }}>
+										Duplicate Itinerary
+									</Text>
+								</Flex>
+							</DropdownMenu.Item>
+
+							<DropdownMenu.Item
+								onSelect={(e) => {
+									e.preventDefault()
+									handleToggleStatus(row)
+								}}
+								style={{ cursor: 'pointer' }}
+							>
+								<Flex align="center" gap="2">
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 16 16"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											d="M8 2C4.7 2 2 4.7 2 8C2 11.3 4.7 14 8 14C11.3 14 14 11.3 14 8C14 4.7 11.3 2 8 2ZM8 13C5.2 13 3 10.8 3 8C3 5.2 5.2 3 8 3C10.8 3 13 5.2 13 8C13 10.8 10.8 13 8 13Z"
+											fill="currentColor"
+										/>
+										<path
+											d="M8 5C6.3 5 5 6.3 5 8C5 9.7 6.3 11 8 11C9.7 11 11 9.7 11 8C11 6.3 9.7 5 8 5Z"
+											fill="currentColor"
+										/>
+									</svg>
+									<Text size="2" style={{ color: 'var(--accent-12)' }}>
+										Status ({row.status === 'Active' ? 'Set Inactive' : 'Set Active'})
+									</Text>
+								</Flex>
+							</DropdownMenu.Item>
+
+							<DropdownMenu.Separator />
+
+							<DropdownMenu.Item
+								onSelect={(e) => {
+									e.preventDefault()
+									handleDelete(row)
+								}}
+								style={{ cursor: 'pointer' }}
+								color="red"
+							>
+								<Flex align="center" gap="2">
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 16 16"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											d="M5 2V1C5 0.4 5.4 0 6 0H10C10.6 0 11 0.4 11 1V2H14V4H13V13C13 14.1 12.1 15 11 15H5C3.9 15 3 14.1 3 13V4H2V2H5ZM6 1V2H10V1H6ZM4 4V13C4 13.6 4.4 14 5 14H11C11.6 14 12 13.6 12 13V4H4Z"
+											fill="currentColor"
+										/>
+										<path
+											d="M6 6V12H7V6H6ZM9 6V12H10V6H9Z"
+											fill="currentColor"
+										/>
+									</svg>
+									<Text size="2" style={{ color: 'var(--red-11)' }}>
+										Delete
+									</Text>
+								</Flex>
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				</Flex>
+			),
+		},
 	]
 
-	// Filter columns based on visibility
 	const visibleColumns = useMemo(() => {
 		return allColumns.filter((col) => columnVisibility[col.key as keyof typeof columnVisibility])
 	}, [columnVisibility])
@@ -255,23 +583,21 @@ const Itinerary: React.FC = () => {
 		}))
 	}
 
-	// Filter data based on search query
 	const filteredData = useMemo(() => {
 		if (!searchQuery.trim()) {
-			return dummyItineraries
+			return itineraries
 		}
 
 		const query = searchQuery.toLowerCase()
-		return dummyItineraries.filter(
+		return itineraries.filter(
 			(item) =>
 				item.name.toLowerCase().includes(query) ||
 				item.city.toLowerCase().includes(query) ||
 				item.priceDisplay.toLowerCase().includes(query) ||
 				item.status.toLowerCase().includes(query)
 		)
-	}, [searchQuery])
+	}, [searchQuery, itineraries])
 
-	// Sort data
 	const sortedData = useMemo(() => {
 		if (!sortConfig || !sortConfig.direction) {
 			return filteredData
@@ -281,14 +607,12 @@ const Itinerary: React.FC = () => {
 			let aValue: any = a[sortConfig.key as keyof ItineraryData]
 			let bValue: any = b[sortConfig.key as keyof ItineraryData]
 
-			// Handle price separately
 			if (sortConfig.key === 'price') {
 				return sortConfig.direction === 'asc'
 					? a.price - b.price
 					: b.price - a.price
 			}
 
-			// Handle status (Active should come before Inactive)
 			if (sortConfig.key === 'status') {
 				const aStatus = a.status === 'Active' ? 1 : 0
 				const bStatus = b.status === 'Active' ? 1 : 0
@@ -297,7 +621,6 @@ const Itinerary: React.FC = () => {
 					: bStatus - aStatus
 			}
 
-			// Handle string values
 			if (aValue == null && bValue == null) return 0
 			if (aValue == null) return 1
 			if (bValue == null) return -1
@@ -313,7 +636,6 @@ const Itinerary: React.FC = () => {
 		})
 	}, [filteredData, sortConfig])
 
-	// Pagination
 	const totalPages = Math.ceil(sortedData.length / itemsPerPage)
 	const startIndex = (currentPage - 1) * itemsPerPage
 	const endIndex = startIndex + itemsPerPage
@@ -321,7 +643,7 @@ const Itinerary: React.FC = () => {
 
 	const handleSort = (columnKey: string, direction: SortDirection) => {
 		setSortConfig(direction ? { key: columnKey, direction } : null)
-		setCurrentPage(1) // Reset to first page on sort
+		setCurrentPage(1)
 	}
 
 	const handleHideColumn = (columnKey: string) => {
@@ -347,15 +669,13 @@ const Itinerary: React.FC = () => {
 		)
 	}
 
-	// Prepare table rows with all necessary fields
 	const tableRows = paginatedData.map((item) => ({
 		...item,
-		price: item.priceDisplay, // Display formatted price in table
+		price: item.priceDisplay,
 	}))
 
 	return (
 		<Box style={{ padding: '24px' }}>
-			{/* Title */}
 			<Text
 				size="7"
 				weight="bold"
@@ -368,7 +688,6 @@ const Itinerary: React.FC = () => {
 				Manage Itinerary
 			</Text>
 
-			{/* Search Bar, Add New Itinerary Button, and Columns Button */}
 			<Flex gap="3" align="center" justify="between" style={{ marginBottom: '24px' }}>
 				<TextField.Root
 					placeholder="Search all columns..."
@@ -399,7 +718,6 @@ const Itinerary: React.FC = () => {
 				</TextField.Root>
 
 				<Flex gap="2" align="center">
-					{/* Add New Itinerary Button */}
 					<Button
 						variant="soft"
 						size="2"
@@ -413,7 +731,6 @@ const Itinerary: React.FC = () => {
 						Add New Itinerary
 					</Button>
 
-					{/* Columns Button */}
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							<Button
@@ -463,7 +780,6 @@ const Itinerary: React.FC = () => {
 				</Flex>
 			</Flex>
 
-			{/* Table Container */}
 			<Box
 				style={{
 					backgroundColor: 'var(--color-panel)',
@@ -472,17 +788,15 @@ const Itinerary: React.FC = () => {
 					border: '1px solid var(--accent-6)',
 				}}
 			>
-				{/* Using Dynamic Table Component */}
 				<Table
 					columns={visibleColumns}
 					rows={tableRows}
 					onSort={handleSort}
 					sortConfig={sortConfig}
-          onHideColumn={handleHideColumn}
+					onHideColumn={handleHideColumn}
 				/>
 			</Box>
 
-			{/* Pagination */}
 			{sortedData.length > itemsPerPage && (
 				<Flex
 					justify="end"
@@ -512,6 +826,35 @@ const Itinerary: React.FC = () => {
 						Next
 					</Button>
 				</Flex>
+			)}
+			{/* Controlled AlertDialog - replaces alerts */}
+			{dialogConfig && (
+				<AlertDialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
+					<AlertDialog.Content maxWidth="450px">
+						<AlertDialog.Title>{dialogConfig.title}</AlertDialog.Title>
+						<AlertDialog.Description size="2">
+							{dialogConfig.description}
+						</AlertDialog.Description>
+						<Flex gap="3" mt="4" justify="end">
+							{dialogConfig.cancelText && (
+								<AlertDialog.Cancel>
+									<Button variant="soft" color="gray">
+										{dialogConfig.cancelText}
+									</Button>
+								</AlertDialog.Cancel>
+							)}
+							<AlertDialog.Action>
+								<Button 
+									variant="solid" 
+									color={dialogConfig.color || 'red'} 
+									onClick={dialogConfig.onConfirm}
+								>
+									{dialogConfig.actionText}
+								</Button>
+							</AlertDialog.Action>
+						</Flex>
+					</AlertDialog.Content>
+				</AlertDialog.Root>
 			)}
 		</Box>
 	)

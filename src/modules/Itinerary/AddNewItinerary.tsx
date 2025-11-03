@@ -1,6 +1,8 @@
-import React, { useState } from 'react'
-import { Box, Text, Separator, Flex } from '@radix-ui/themes'
+import React, { useState, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Box, Text, Separator, Flex, Button, AlertDialog } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
+
 
 // Dummy data for options
 const dummyLocations = [
@@ -28,12 +30,84 @@ const dummyPackageTypes = [
 ]
 
 const AddNewItinerary: React.FC = () => {
+	const location = useLocation()
+	const navigate = useNavigate()
 	const [formData, setFormData] = useState<any>({})
+	const [initialValues, setInitialValues] = useState<any>({})
+	const [isEditMode, setIsEditMode] = useState(false)
+
+	// Add dialog state
+	const [dialogOpen, setDialogOpen] = useState(false)
+	const [dialogConfig, setDialogConfig] = useState<{
+		title: string
+		description: string
+		actionText: string
+		color?: 'red' | 'blue' | 'green' | 'gray'
+		onConfirm: () => void 
+	} | null>(null)
+  
+
+	// Helper function to find location ID by city name
+	const findLocationIdByCity = (cityName: string): string => {
+		const location = dummyLocations.find(
+			loc => loc.label.toLowerCase() === cityName.toLowerCase() ||
+				   cityName.toLowerCase().includes(loc.label.toLowerCase())
+		)
+		return location?.value || ''
+	}
+
+	// Check if we're in edit mode based on location state
+	useEffect(() => {
+		const itineraryData = location.state?.itineraryData
+		if (itineraryData) {
+			setIsEditMode(true)
+			
+			// Map itinerary data to form initial values
+			// Adjust this mapping based on your actual backend data structure
+			const mappedValues = {
+				iti_name: itineraryData.name || '',
+				travel_location: findLocationIdByCity(itineraryData.city) || '',
+				categories: [], 
+			}
+			
+			setInitialValues(mappedValues)
+		} else {
+			setIsEditMode(false)
+			setInitialValues({})
+		}
+	}, [location.state])
+
+	
 
 	const handleSubmit = (values: Record<string, any>) => {
-		console.log('Form submitted with values:', values)
-		setFormData(values)
-		alert('Form submitted! Check console for data.')
+		if (isEditMode) {
+			console.log('Itinerary updated with values:', values)
+			setFormData(values)
+			setDialogConfig({
+				title: 'Success',
+				description: 'Itinerary updated successfully!',
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => {
+					setDialogOpen(false)
+					navigate('/itinerary')
+				},
+			})
+		} else {
+			console.log('Form submitted with values:', values)
+			setFormData(values)
+			setDialogConfig({
+				title: 'Success',
+				description: 'Itinerary created successfully!',
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => {
+					setDialogOpen(false)
+					navigate('/itinerary')
+				},
+			})
+		}
+		setDialogOpen(true)
 	}
 
 	const formFields = [
@@ -262,23 +336,61 @@ const AddNewItinerary: React.FC = () => {
 
 	return (
 		<Box style={{ padding: '24px' }}>
-			<Text
-				size="7"
-				weight="bold"
-				style={{
-					color: 'var(--accent-12)',
-					marginBottom: '24px',
-					display: 'block',
-				}}
-			>
-				Add New Itinerary
-			</Text>
+			<Flex justify="between" align="center" style={{ marginBottom: '24px' }}>
+				<Text
+					size="7"
+					weight="bold"
+					style={{
+						color: 'var(--accent-12)',
+						display: 'block',
+					}}
+				>
+					{isEditMode ? 'Update Itinerary' : 'Add New Itinerary'}
+				</Text>
+				
+				{isEditMode && (
+					<Button
+						variant="soft"
+						size="2"
+						onClick={() => navigate('/itinerary')}
+						style={{
+							color: 'white',
+							backgroundColor: 'var(--accent-9)',
+						}}
+					>
+						Back to List
+					</Button>
+				)}
+			</Flex>
 
 			<DynamicForm
 				fields={formFields}
-				buttonText="Create New Itinerary"
+				buttonText={isEditMode ? 'Update Itinerary' : 'Create New Itinerary'}
 				onSubmit={handleSubmit}
+				initialValues={initialValues}
 			/>
+			{/* Controlled AlertDialog - replaces alerts */}
+			{dialogConfig && (
+				<AlertDialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
+					<AlertDialog.Content maxWidth="450px">
+						<AlertDialog.Title>{dialogConfig.title}</AlertDialog.Title>
+						<AlertDialog.Description size="2">
+							{dialogConfig.description}
+						</AlertDialog.Description>
+						<Flex gap="3" mt="4" justify="end">
+							<AlertDialog.Action>
+								<Button 
+									variant="solid" 
+									color={dialogConfig.color || 'green'} 
+									onClick={dialogConfig.onConfirm}
+								>
+									{dialogConfig.actionText}
+								</Button>
+							</AlertDialog.Action>
+						</Flex>
+					</AlertDialog.Content>
+				</AlertDialog.Root>
+			)}
 		</Box>
 	)
 }

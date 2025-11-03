@@ -16,6 +16,7 @@ const App = () => {
         <Route path='table' element={<TableTest/>} />
         <Route path='itinerary' element={<ItineraryPage />} />
         <Route path='add-itinerary' element={<AddNewItinerary />} />
+        <Route path='edit-itinerary' element={<AddNewItinerary />} /> 
         </Route>
       </Routes>
       
