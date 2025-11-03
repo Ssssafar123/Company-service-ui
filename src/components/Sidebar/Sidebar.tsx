@@ -155,7 +155,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
           alignItems: "center",
           justifyContent: "center",
           width: "20px",
-          height: "20px"
+          height: "20px",
         }}>
           {item.icon}
         </Box>
@@ -264,6 +264,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
             </Text>
           </div>
         )}
+
+
       </div>      {/* Permissions Badges */}
   {!isCollapsed && user.permissions.length > 0 && (
         <Flex gap="1" wrap="wrap" style={{ marginTop: "12px" }}>
@@ -272,7 +274,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
               key={permission} 
               size="1" 
               variant="soft"
-              style={{ textTransform: "capitalize" }}
+              style={{ textTransform: "capitalize" , backgroundColor: "white" }}
             >
               {permission}
             </Badge>
@@ -280,7 +282,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
         </Flex>
       )}
 
-      <Separator size="4" style={{ margin: "0 20px" }} />
+      <Separator size="4" style={{ margin: "0 0px" }} />
 
       {/* Navigation */}
       <nav style={{ 

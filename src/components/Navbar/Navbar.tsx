@@ -67,7 +67,6 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
           {/* Desktop Navigation */}
           <Flex display={{ initial: "none", md: "flex" }} gap="4">
             <NavLink href="/">Home</NavLink>
-            <NavLink href="/test2">Test2</NavLink>
             <NavLink href="/table">Table</NavLink>
             <NavLink href="/test-form">Form</NavLink>
           </Flex>
