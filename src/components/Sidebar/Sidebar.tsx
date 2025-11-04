@@ -274,7 +274,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
               key={permission} 
               size="1" 
               variant="soft"
-              style={{ textTransform: "capitalize" , backgroundColor: "white" }}
+              style={{ textTransform: "capitalize" , backgroundColor: "transparent" }}
             >
               {permission}
             </Badge>
