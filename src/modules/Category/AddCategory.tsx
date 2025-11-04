@@ -160,7 +160,7 @@ const AddCategory: React.FC = () => {
 				color: 'green',
 				onConfirm: () => {
 					setDialogOpen(false)
-					navigate('/category')
+					navigate('/dashboard/category')
 				},
 			})
 		} else {
@@ -173,7 +173,7 @@ const AddCategory: React.FC = () => {
 				color: 'green',
 				onConfirm: () => {
 					setDialogOpen(false)
-					navigate('/category')
+					navigate('/dashboard/category')
 				},
 			})
 		}

@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
-import Navbar from './components/Navbar/Navbar'
-import Sidebar from './components/Sidebar/Sidebar'
-
+import Navbar from '../../components/Navbar/Navbar'
+import Sidebar from '../../components/Sidebar/Sidebar'
 
 const HomeIcon = (props : any) =>{
   return(
@@ -33,7 +32,6 @@ const ItineraryIcon = () => {
   </svg>
   )
 }
-
 const CategoryIcon = () => {
   return(
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -70,9 +68,8 @@ const navigate = useNavigate();
             avatar: "https://i.pravatar.cc/40?img=3",
           }}
           menuItems={[
-            {id: "itinerary" , label: "Itinerary", path: "/itinerary", icon : <ItineraryIcon/>},
-            {id: "category" , label: "Category", path: "/category", icon : <CategoryIcon/>},
-            {id: "add-itinerary" , label: "Add Itinerary", path: "/add-itinerary", icon : <AddIcon/>},
+            {id: "itinerary" , label: "Itinerary", path: "/dashboard/itinerary", icon : <ItineraryIcon/>},
+            {id: "add-itinerary" , label: "Category", path: "/dashboard/category", icon : <CategoryIcon/>},
             { id: "home", label: "Home", path: "/", icon :<HomeIcon/>},
             // { id: "form", label: "Form", path: "/test-form" },
             // { id: "table", label: "Table", path: "/table" },

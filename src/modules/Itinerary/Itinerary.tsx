@@ -219,7 +219,7 @@ const Itinerary: React.FC = () => {
 	
 
 	const handleEdit = (itinerary: ItineraryData) => {
-		navigate('/add-itinerary', {
+		navigate('/dashboard/add-itinerary', {
 			state: { itineraryData: itinerary },
 		})
 	}
@@ -721,7 +721,7 @@ const Itinerary: React.FC = () => {
 					<Button
 						variant="soft"
 						size="2"
-						onClick={() => navigate('/add-itinerary')}
+						onClick={() => navigate('/dashboard/add-itinerary')}
 						style={{
 							color: 'white',
 							backgroundColor: 'var(--accent-9)',

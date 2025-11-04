@@ -352,7 +352,7 @@ const AddNewItinerary: React.FC = () => {
 					<Button
 						variant="soft"
 						size="2"
-						onClick={() => navigate('/itinerary')}
+						onClick={() => navigate('/dashboard/itinerary')}
 						style={{
 							color: 'white',
 							backgroundColor: 'var(--accent-9)',

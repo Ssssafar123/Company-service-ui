@@ -200,7 +200,7 @@ const Category: React.FC = () => {
 	}
 
 	const handleEdit = (category: CategoryData) => {
-		navigate('/add-category', {
+		navigate('/dashboard/add-category', {
 			state: { categoryData: category },
 		})
 	}
@@ -315,7 +315,7 @@ const Category: React.FC = () => {
 					<Button
 						variant="soft"
 						size="2"
-						onClick={() => navigate('/add-category')}
+						onClick={() => navigate('/dashboard/add-category')}
 						style={{
 							color: 'white',
 							backgroundColor: 'var(--accent-9)',
