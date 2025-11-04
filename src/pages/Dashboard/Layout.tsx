@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar/Navbar'
 import Sidebar from '../../components/Sidebar/Sidebar'
+import Dashboard from './Dashboard'
 
 const HomeIcon = (props : any) =>{
   return(
@@ -43,6 +44,33 @@ const CategoryIcon = () => {
   )
 }
 
+// ...existing code...
+
+const DashboardIcon = () => {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <line x1="9" y1="21" x2="9" y2="9" />
+    </svg>
+  );
+};
+
+// ...existing code...
+
+
+
+
+
 const AddIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="12" r="10" />
@@ -68,6 +96,7 @@ const navigate = useNavigate();
             avatar: "https://i.pravatar.cc/40?img=3",
           }}
           menuItems={[
+            {id: "dashboard" , label: "Dashboard", path: "/dashboard", icon : <DashboardIcon/>},
             {id: "itinerary" , label: "Itinerary", path: "/dashboard/itinerary", icon : <ItineraryIcon/>},
             {id: "add-itinerary" , label: "Category", path: "/dashboard/category", icon : <CategoryIcon/>},
             { id: "home", label: "Home", path: "/", icon :<HomeIcon/>},
