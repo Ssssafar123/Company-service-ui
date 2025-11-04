@@ -34,6 +34,17 @@ const ItineraryIcon = () => {
   )
 }
 
+const CategoryIcon = () => {
+  return(
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  )
+}
+
 const AddIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="12" r="10" />
@@ -60,6 +71,7 @@ const navigate = useNavigate();
           }}
           menuItems={[
             {id: "itinerary" , label: "Itinerary", path: "/itinerary", icon : <ItineraryIcon/>},
+            {id: "category" , label: "Category", path: "/category", icon : <CategoryIcon/>},
             {id: "add-itinerary" , label: "Add Itinerary", path: "/add-itinerary", icon : <AddIcon/>},
             { id: "home", label: "Home", path: "/", icon :<HomeIcon/>},
             // { id: "form", label: "Form", path: "/test-form" },
