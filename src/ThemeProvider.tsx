@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { Theme } from "@radix-ui/themes";
 
 type ThemeContextType = {
@@ -15,8 +15,20 @@ export const useThemeToggle = () => {
 };
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isDark, setIsDark] = useState(false);
-  const toggle = () => setIsDark((s) => !s);
+  // Initialize theme from localStorage or default to light mode
+  const [isDark, setIsDark] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme === 'dark';
+  });
+
+  // Save theme preference to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
+  const toggle = () => {
+    setIsDark((s) => !s);
+  };
 
   return (
     <Theme

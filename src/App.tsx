@@ -10,6 +10,7 @@ import Layout from './pages/Dashboard/Layout.js'
 import AddNewItinerary from './modules/Itinerary/AddNewItinerary'
 import AddCategory from './modules/Category/AddCategory'
 import Dashboard from './pages/Dashboard/Dashboard.js'
+import Leads from './modules/Leads/Leads'
 const App = () => {
   return (
     <div>
@@ -36,6 +37,7 @@ const App = () => {
         <Route path='table' element={<TableTest/>} />
         <Route path='itinerary' element={<ItineraryPage />} />
         <Route path='category' element={<CategoryPage />} />
+        <Route path='leads' element={<Leads />} />
         <Route path='add-itinerary' element={<AddNewItinerary />} />
         <Route path='edit-itinerary' element={<AddNewItinerary />} /> 
         <Route path='add-category' element={<AddCategory />} />
