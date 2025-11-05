@@ -15,10 +15,10 @@ import {
 } from "@radix-ui/themes";
 import RichTextEditor from "./RichTextEditor";
 import ImageUpload from "./ImageUpload";
-import DaywiseActivities from './DaywiseActivities'
-import HotelDetails from './HotelDetails'
-import PackageDetails from './PackageDetails'
-import BatchManagement from './BatchManagement'
+import DaywiseActivities from '../../modules/Itinerary/DaywiseActivities'
+import HotelDetails from '../../modules/Itinerary/HotelDetails'
+import PackageDetails from '../../modules/Itinerary/PackageDetails'
+import BatchManagement from '../../modules/Itinerary/BatchManagement'
 
 type Field = {
   name: string;

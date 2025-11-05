@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Flex, Text, TextField, Button, Grid, Select } from '@radix-ui/themes'
-import ImageUpload from './ImageUpload'
+import ImageUpload from '../../components/dynamicComponents/ImageUpload'
 
 export type HotelDetail = {
 	id: string
