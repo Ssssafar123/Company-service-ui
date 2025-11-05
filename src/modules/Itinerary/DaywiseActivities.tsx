@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Flex, Text, TextField, Button } from '@radix-ui/themes'
-import RichTextEditor from './RichTextEditor'
-import ImageUpload from './ImageUpload'
+import RichTextEditor from '../../components/dynamicComponents/RichTextEditor'
+import ImageUpload from '../../components/dynamicComponents/ImageUpload'
 
 export type DayActivity = {
 	id: string

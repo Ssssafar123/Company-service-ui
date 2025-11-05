@@ -44,7 +44,16 @@ const CategoryIcon = () => {
   )
 }
 
-// ...existing code...
+const LeadsIcon = () => {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  )
+}
 
 const DashboardIcon = () => {
   return (
@@ -64,11 +73,6 @@ const DashboardIcon = () => {
     </svg>
   );
 };
-
-// ...existing code...
-
-
-
 
 
 const AddIcon = () => (
@@ -99,6 +103,7 @@ const navigate = useNavigate();
             {id: "dashboard" , label: "Dashboard", path: "/dashboard", icon : <DashboardIcon/>},
             {id: "itinerary" , label: "Itinerary", path: "/dashboard/itinerary", icon : <ItineraryIcon/>},
             {id: "add-itinerary" , label: "Category", path: "/dashboard/category", icon : <CategoryIcon/>},
+            {id: "leads" , label: "Leads", path: "/dashboard/leads", icon : <LeadsIcon/>}, 
             { id: "home", label: "Home", path: "/", icon :<HomeIcon/>},
             // { id: "form", label: "Form", path: "/test-form" },
             // { id: "table", label: "Table", path: "/table" },
