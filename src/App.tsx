@@ -3,7 +3,7 @@ import { Routes , Route } from 'react-router-dom'
 import TestForm from './pages/TestForm.js'
 import Test from './pages/Test.js'
 import TableTest from './pages/TableTest.js'
-// import Layout from './Layout.js'
+import Login from './pages/Login.js'
 import ItineraryPage from './pages/Dashboard/Itinerary'
 import CategoryPage from './pages/Dashboard/Category'
 import Layout from './pages/Dashboard/Layout.js'
@@ -29,6 +29,7 @@ const App = () => {
 
       <Routes>
         <Route path='/' element={<Test/>}/>
+        <Route path='/login' element={<Login/>}/>
 
         <Route path='/dashboard' element={<Layout/>} >
           <Route index element={<Dashboard/>} />
