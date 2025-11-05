@@ -68,8 +68,7 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
           {/* Desktop Navigation */}
           <Flex display={{ initial: "none", md: "flex" }} gap="4">
             <NavLink href="/">Home</NavLink>
-            <NavLink href="/table">Table</NavLink>
-            <NavLink href="/test-form">Form</NavLink>
+            
           </Flex>
         </Flex>
 
@@ -110,7 +109,7 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
           {/* Auth Buttons - Desktop */}
           <Flex display={{ initial: "none", sm: "flex" }} align="center" gap="2">
             <Button variant="ghost" size="2">
-              Sign Up
+             Sign Up
             </Button>
             <Button onClick={() => navigate('/login')} size="2">
               Login
@@ -122,7 +121,6 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
             <MobileMenuDropdown />
           </Box>
 
-          {/* Avatar Dropdown */}
           <AvatarDropdown />
         </Flex>
       </Flex>
