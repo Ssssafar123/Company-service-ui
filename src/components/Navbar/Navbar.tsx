@@ -9,11 +9,12 @@ import {
   TextField
 } from "@radix-ui/themes";
 import { useThemeToggle } from '../../ThemeProvider';
+import { useNavigate } from "react-router-dom";
 
 // Add props to accept toggle handler
 const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle }) => {
   const { isDark, toggle } = useThemeToggle();
-
+  const navigate = useNavigate();
   return (
 <Box
   style={{
@@ -111,7 +112,7 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
             <Button variant="ghost" size="2">
               Sign Up
             </Button>
-            <Button size="2">
+            <Button onClick={() => navigate('/login')} size="2">
               Login
             </Button>
           </Flex>
