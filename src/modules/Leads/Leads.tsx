@@ -12,13 +12,13 @@ const Leads: React.FC = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const totalPages = 10;
 
     // Dummy leads data
     const leadsData = [
         {
             id: 1,
             name: "Priyanshu",
+            badgeType: "instalink",
             leadId: "2142599",
             time: "Today at 7:15 PM",
             phone: "6367710137",
@@ -32,6 +32,7 @@ const Leads: React.FC = () => {
         {
             id: 2,
             name: "Aarav Kumar",
+            badgeType: "itinerary",
             leadId: "2142600",
             time: "Today at 6:30 PM",
             phone: "9876543210",
@@ -45,6 +46,7 @@ const Leads: React.FC = () => {
         {
             id: 3,
             name: "Sneha Patel",
+            badgeType: "itinerary",
             leadId: "2142601",
             time: "Today at 5:45 PM",
             phone: "8765432109",
@@ -59,6 +61,7 @@ const Leads: React.FC = () => {
             id: 4,
             name: "Rahul Singh",
             leadId: "2142602",
+            badgeType: "itinerary",
             time: "Today at 4:20 PM",
             phone: "7654321098",
             destination: "Ladakh Adventure | Group",
@@ -71,6 +74,7 @@ const Leads: React.FC = () => {
         {
             id: 5,
             name: "Priya Sharma",
+            badgeType: "itinerary",
             leadId: "2142603",
             time: "Today at 3:10 PM",
             phone: "6543210987",
@@ -84,6 +88,7 @@ const Leads: React.FC = () => {
         {
             id: 6,
             name: "Vikram Reddy",
+            badgeType: "itinerary",
             leadId: "2142604",
             time: "Today at 2:05 PM",
             phone: "5432109876",
@@ -97,6 +102,7 @@ const Leads: React.FC = () => {
         {
             id: 7,
             name: "Ananya Verma",
+            badgeType: "itinerary",
             leadId: "2142605",
             time: "Today at 1:30 PM",
             phone: "4321098765",
@@ -111,6 +117,7 @@ const Leads: React.FC = () => {
             id: 8,
             name: "Karan Mehta",
             leadId: "2142606",
+            badgeType: "instalink",
             time: "Today at 12:15 PM",
             phone: "3210987654",
             destination: "Darjeeling Tea Gardens | Solo",
@@ -123,6 +130,7 @@ const Leads: React.FC = () => {
         {
             id: 9,
             name: "Divya Nair",
+            badgeType: "instalink",
             leadId: "2142607",
             time: "Today at 11:00 AM",
             phone: "2109876543",
@@ -134,8 +142,79 @@ const Leads: React.FC = () => {
             assignedTo: "Sonia"
         },
         {
-            id: 10,
+            id: 11,
             name: "Arjun Gupta",
+            badgeType: "itinerary",
+            leadId: "2142608",
+            time: "Today at 10:00 AM",
+            phone: "1098765432",
+            destination: "Rishikesh Rafting | Group",
+            packageCode: "#RR17",
+            remarks: "confirm availability",
+            status: "Hot",
+            contacted: "Contacted",
+            assignedTo: "Rohit"
+        },
+        {
+            id: 12,
+            name: "Arjun Gupta",
+            badgeType: "itinerary",
+            leadId: "2142608",
+            time: "Today at 10:00 AM",
+            phone: "1098765432",
+            destination: "Rishikesh Rafting | Group",
+            packageCode: "#RR17",
+            remarks: "confirm availability",
+            status: "Hot",
+            contacted: "Contacted",
+            assignedTo: "Rohit"
+        },
+        {
+            id: 13,
+            name: "Arjun Gupta",
+            badgeType: "itinerary",
+            leadId: "2142608",
+            time: "Today at 10:00 AM",
+            phone: "1098765432",
+            destination: "Rishikesh Rafting | Group",
+            packageCode: "#RR17",
+            remarks: "confirm availability",
+            status: "Hot",
+            contacted: "Contacted",
+            assignedTo: "Rohit"
+        },
+        {
+            id: 14,
+            name: "Arjun Gupta",
+            badgeType: "itinerary",
+            leadId: "2142608",
+            time: "Today at 10:00 AM",
+            phone: "1098765432",
+            destination: "Rishikesh Rafting | Group",
+            packageCode: "#RR17",
+            remarks: "confirm availability",
+            status: "Hot",
+            contacted: "Contacted",
+            assignedTo: "Rohit"
+        },
+        {
+            id: 15,
+            name: "Arjun Gupta",
+            badgeType: "itinerary",
+            leadId: "2142608",
+            time: "Today at 10:00 AM",
+            phone: "1098765432",
+            destination: "Rishikesh Rafting | Group",
+            packageCode: "#RR17",
+            remarks: "confirm availability",
+            status: "Hot",
+            contacted: "Contacted",
+            assignedTo: "Rohit"
+        },
+        {
+            id: 16,
+            name: "Arjun Gupta",
+            badgeType: "instalink",
             leadId: "2142608",
             time: "Today at 10:00 AM",
             phone: "1098765432",
@@ -147,6 +226,19 @@ const Leads: React.FC = () => {
             assignedTo: "Rohit"
         }
     ];
+
+    // Calculate pagination values
+    const totalItems = leadsData.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentLeads = leadsData.slice(startIndex, endIndex);
+
+    // Reset to page 1 when items per page changes
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1);
+    };
 
     const WhatsAppIcon = () => (
       <svg 
@@ -462,7 +554,7 @@ const Leads: React.FC = () => {
                   <Text style={{
                       fontSize : "14px"
                   }}>
-                      Showing  <span style={{fontWeight : "bold"}}>10</span>  lead(s) out of <span style={{fontWeight : "bold"}}>100</span>
+                      Showing <span style={{fontWeight : "bold"}}>{startIndex + 1}</span> to <span style={{fontWeight : "bold"}}>{Math.min(endIndex, totalItems)}</span> of <span style={{fontWeight : "bold"}}>{totalItems}</span> lead(s)
                   </Text>
               </Flex>
           </Flex>
@@ -521,11 +613,11 @@ const Leads: React.FC = () => {
                   </Box>
               </Flex>
 
-              {/* Table Body - Loop through leads data */}
-              {leadsData.map((lead, index) => (
+              {/* Table Body - Loop through CURRENT PAGE leads data */}
+              {currentLeads.map((lead, index) => (
                 <Flex key={lead.id} style={{
                     marginTop : "10px",
-                    borderBottom: index < leadsData.length - 1 ? "1px solid #e5e7eb" : "none",
+                    borderBottom: index < currentLeads.length - 1 ? "1px solid #e5e7eb" : "none",
                     paddingBottom: "10px"
                 }}>
                     <Box style={{ 
@@ -535,7 +627,7 @@ const Leads: React.FC = () => {
                         paddingLeft: "10px",
                         minHeight: "120px"
                     }}>
-                        {/* S.No Column - 80px */}
+                        {/* S.No Column - Show actual position */}
                         <Box style={{
                             width: "80px",
                             display : "flex",
@@ -551,7 +643,7 @@ const Leads: React.FC = () => {
                             }} size="2"/>
                             <Text style={{
                                 paddingLeft : "2px"
-                            }}>{lead.id}</Text>
+                            }}>{startIndex + index + 1}</Text>
                         </Box>
 
                         {/* Lead Details Column - 200px */}
@@ -572,6 +664,41 @@ const Leads: React.FC = () => {
                             <Text>
                                 ID : {lead.leadId}
                             </Text>
+
+                            {lead.badgeType === "instalink" ? (
+                                 <Box style={{
+                                width : "60px",
+                                height : "30px",
+                                borderRadius : "12px",
+                                backgroundColor : "#f678a7",
+                                display : "flex",
+                                justifyContent : "center",
+                                alignItems : "center",
+                                color : "black",
+                                fontSize : "13px"
+                            }}>
+                            Instalink
+                            </Box>
+                            ) : (
+                                 <Box style={{
+                                width : "60px",
+                                height : "30px",
+                                borderRadius : "12px",
+                                backgroundColor : "	#5588ff",
+                                display : "flex",
+                                justifyContent : "center",
+                                alignItems : "center",
+                                color : "white",
+                                fontSize : "13px"
+                            }}>
+                            Itinerary
+                            </Box>
+                            )}
+
+                           
+
+                           
+
                             <Text>
                                 {lead.time}
                             </Text>
@@ -744,7 +871,7 @@ const Leads: React.FC = () => {
                   <Text style={{ fontSize: "14px", color: "#6b7280" }}>Rows per page:</Text>
                   <select 
                       value={itemsPerPage}
-                      onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                      onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
                       style={{
                           width: "80px",
                           height: "35px",
@@ -755,10 +882,10 @@ const Leads: React.FC = () => {
                           fontSize: "14px"
                       }}
                   >
+                      <option value="5">5</option>
                       <option value="10">10</option>
-                      <option value="25">25</option>
-                      <option value="50">50</option>
-                      <option value="100">100</option>
+                      <option value="15">15</option>
+                      <option value="20">20</option>
                   </select>
               </Flex>
 
@@ -789,30 +916,43 @@ const Leads: React.FC = () => {
                       <ChevronLeftIcon width="18" height="18" />
                   </Box>
 
-                  {/* Page numbers */}
-                  {[1, 2, 3, 4, 5].map((pageNum) => (
-                      <Box
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          style={{
-                              width: "35px",
-                              height: "35px",
-                              border: "2px solid #e5e7eb",
-                              borderRadius: "5px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              backgroundColor: currentPage === pageNum ? "#000" : "#fff",
-                              color: currentPage === pageNum ? "#fff" : "#000",
-                              fontWeight: currentPage === pageNum ? "bold" : "normal",
-                              fontSize: "14px",
-                              transition: "all 0.2s"
-                          }}
-                      >
-                          {pageNum}
-                      </Box>
-                  ))}
+                  {/* Dynamic page numbers - show max 5 pages */}
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                          pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                      } else {
+                          pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                          <Box
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              style={{
+                                  width: "35px",
+                                  height: "35px",
+                                  border: "2px solid #e5e7eb",
+                                  borderRadius: "5px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  backgroundColor: currentPage === pageNum ? "#000" : "#fff",
+                                  color: currentPage === pageNum ? "#fff" : "#000",
+                                  fontWeight: currentPage === pageNum ? "bold" : "normal",
+                                  fontSize: "14px",
+                                  transition: "all 0.2s"
+                              }}
+                          >
+                              {pageNum}
+                          </Box>
+                      );
+                  })}
 
                   {/* Next button */}
                   <Box 
