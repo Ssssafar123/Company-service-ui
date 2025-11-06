@@ -1,6 +1,6 @@
 import React from 'react'
-import { Box, Flex, Text } from '@radix-ui/themes';
-
+import { Box, Flex, Text, TextField  } from '@radix-ui/themes';
+import {MagnifyingGlassIcon} from '@radix-ui/react-icons'
 const Leads: React.FC = () => {
 	// Dummy data for statistics
 	const totalLeads = 10
@@ -11,71 +11,154 @@ const Leads: React.FC = () => {
 		<Box className="w-full max-w-[1110px] bg-white p-8 rounded-2xl">
 	  
 		  {/* Title */}
-		  <Text size="8" weight="medium" className="text-gray-900 mb-6">
+		  <Text size="8" weight="regular" className="text-gray-900 mb-6">
 			Leads
 		  </Text>
 	  
 		  {/* Statistics Cards */}
-		  <Flex gap="4" mb="4" className="h-[120px]">
+		  <Flex gap="4" mb="4" style={{
+			marginTop: "20px",
+			
+		  }}>
 	  
 			{/* Overall Leads Captured */}
 			<Box
-			  className="bg-white rounded-xl shadow-sm p-6 flex items-center"
+			  
 			  style={{
-				border: "1px solid #e5e7eb",
-				width: "330px",
-				height: "100px"
+				border: "2px solid #e5e7eb",
+				width: "390px",
+				height: "100px",
+				borderRadius : "10px",
+				display : "flex",
+				textAlign : "center",
 			  }}
 			>
-			  <Flex direction="column" justify="center">
-				<Text size="2" className="text-gray-500 mb-1">
+			  <Flex direction="column" justify="center" >
+				<Text size="2" style={ {
+					marginLeft : "10px",
+					color : "gray"
+				}} >
 				  Overall Leads Captured
 				</Text>
-				<Text size="6" className="text-gray-800 font-semibold">
+
+				<Text size="6" style={{
+					marginRight : "115px",
+					fontSize : "20px",
+					
+				}}>
 				  {totalLeads.toLocaleString()}
 				</Text>
+
 			  </Flex>
 			</Box>
 	  
 			{/* Today's Leads */}
-			<Box
-			  className="bg-white rounded-xl shadow-sm p-6 flex items-center"
+				<Box
+			  
 			  style={{
-				border: "1px solid #e5e7eb",
-				width: "330px",
-				height: "100px"
+				border: "2px solid #e5e7eb",
+				width: "390px",
+				height: "100px",
+				borderRadius : "10px",
+				display : "flex",
+				textAlign : "center",
 			  }}
 			>
-			  <Flex direction="column" justify="center">
-				<Text size="2" className="text-gray-500 mb-1">
-				  Today's Leads
+			  <Flex direction="column" justify="center" >
+				<Text size="2" style={ {
+					marginLeft : "10px",
+					color : "gray"
+				}} >
+				  Today Leads Captured
 				</Text>
-				<Text size="6" className="text-gray-800 font-semibold">
-				  {todayLeads}
+
+				<Text size="6" style={{
+					marginRight : "115px",
+					fontSize : "20px"
+				}}>
+				  {todayLeads.toLocaleString()}
 				</Text>
+
 			  </Flex>
 			</Box>
 	  
 			{/* Overall Leads Converted */}
-			<Box
-			  className="bg-white rounded-xl shadow-sm p-6 flex items-center"
+				<Box
+			  
 			  style={{
-				border: "1px solid #e5e7eb",
-				width: "330px",
-				height: "100px"
+				border: "2px solid #e5e7eb",
+				width: "390px",
+				height: "100px",
+				borderRadius : "10px",
+				display : "flex",
+				textAlign : "center",
 			  }}
 			>
-			  <Flex direction="column" justify="center">
-				<Text size="2" className="text-gray-500 mb-1">
-				  Overall Leads Converted
+			  <Flex direction="column" justify="center" >
+				<Text size="2" style={ {
+					marginLeft : "10px",
+					color : "gray"
+				}} >
+				  Overall Leads Captured
 				</Text>
-				<Text size="6" className="text-gray-800 font-semibold">
-				  {convertedLeads}
+
+				<Text size="6" style={{
+					marginRight : "115px",
+					fontSize : "20px"
+				}}>
+				  {convertedLeads.toLocaleString()}
 				</Text>
+
 			  </Flex>
 			</Box>
 	  
 		  </Flex>
+
+				<Flex height="130px">
+					<TextField.Root placeholder='Search...'  style={{
+						width : "800px"
+					}} >
+						<TextField.Slot>
+							<MagnifyingGlassIcon height="16" width="16" />
+						</TextField.Slot>
+					</TextField.Root>
+
+					<Flex style={{
+						marginLeft : "auto"
+					}}>
+
+					<Box style={{
+						border: "2px solid #e5e7eb",
+						borderRadius : "5px",
+						paddingLeft : "10px",
+						paddingRight : "10px",
+						display : "flex",
+						alignItems : "center",
+						justifyContent : "center",
+						marginLeft : "15px",
+						width : "140px",
+						height : "36px"
+					}}>
+					Actions
+					</Box>
+					<Box style={{
+						border: "2px solid #e5e7eb",
+						borderRadius : "5px",
+						paddingLeft : "10px",
+						paddingRight : "10px",
+						display : "flex",
+						alignItems : "center",
+						justifyContent : "center",
+						marginLeft : "15px",
+						width : "140px",
+						height : "36px"
+					}}>
+					Refresh
+					</Box>
+
+						</Flex>
+				</Flex>
+
 		</Box>
 	  )
 }
