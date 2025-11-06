@@ -114,7 +114,7 @@ const Leads: React.FC = () => {
 	  
 		  </Flex>
 
-				<Flex height="130px">
+				<Flex >
 					<TextField.Root placeholder='Search...'  style={{
 						width : "800px"
 					}} >
@@ -137,7 +137,8 @@ const Leads: React.FC = () => {
 						justifyContent : "center",
 						marginLeft : "15px",
 						width : "140px",
-						height : "36px"
+						height : "36px",
+						cursor : "pointer"
 					}}>
 					Actions
 					</Box>
@@ -151,13 +152,123 @@ const Leads: React.FC = () => {
 						justifyContent : "center",
 						marginLeft : "15px",
 						width : "140px",
-						height : "36px"
+						height : "36px",
+						cursor : "pointer"
 					}}>
 					Refresh
 					</Box>
 
 						</Flex>
 				</Flex>
+
+
+					<Flex style={{
+						marginTop : "15px",
+						gap : "20px"
+					}}>
+						<Box style={{
+							border : "2px solid #e5e7eb",
+							borderRadius : "5px",
+							width : "60px",
+							display : "flex",
+							justifyContent : 'center',
+							alignItems : "center",
+							paddingTop : "5px",
+							paddingBottom : "5px",
+							cursor : "pointer",
+							height : "35px"
+						}}
+						
+						>All</Box>
+
+
+						<Box style={{
+							border : "2px solid #e5e7eb",
+							borderRadius : "5px",
+							width : "60px",
+							display : "flex",
+							justifyContent : 'center',
+							alignItems : "center",
+							paddingTop : "10px",
+							paddingBottom : "10px",
+							cursor : "pointer",
+							height : "35px"
+						}}
+						
+						>Hot</Box>
+						<Box style={{
+							border : "2px solid #e5e7eb",
+							borderRadius : "5px",
+							width : "80px",
+							display : "flex",
+							justifyContent : 'center',
+							alignItems : "center",
+							paddingTop : "10px",
+							paddingBottom : "10px",
+							cursor : "pointer",
+							height : "35px"
+						}}
+						
+						>Warm</Box>
+						<Box style={{
+							border : "2px solid #e5e7eb",
+							borderRadius : "5px",
+							width : "80px",
+							display : "flex",
+							justifyContent : 'center',
+							alignItems : "center",
+							paddingTop : "10px",
+							paddingBottom : "10px",
+							cursor : "pointer",
+							height : "35px"
+						}}
+						
+						>Cold</Box>
+						<Box style={{
+							border : "2px solid #e5e7eb",
+							borderRadius : "5px",
+							width : "120px",
+							display : "flex",
+							justifyContent : 'center',
+							alignItems : "center",
+							paddingTop : "10px",
+							paddingBottom : "10px",
+							cursor : "pointer",
+							height : "35px"
+						}}
+						
+						>Remainder</Box>
+						<Box style={{
+							border : "2px solid #e5e7eb",
+							borderRadius : "5px",
+							width : "120px",
+							display : "flex",
+							justifyContent : 'center',
+							alignItems : "center",
+							paddingTop : "10px",
+							paddingBottom : "10px",
+							cursor : "pointer",
+							height : "35px"
+						}}
+						
+						>InstaLink</Box>
+
+						<Flex style={{
+							display : "flex",
+							justifyContent : "end",
+							alignItems : "end",
+							marginLeft : "auto",
+							marginRight : "5px"
+						}}>
+							<Text style={{
+								fontSize : "14px"
+							}}>
+								Showing  <span style={{fontWeight : "bold"}}>10</span>  lead(s) out of <span style={{fontWeight : "bold"}}>100</span>
+							</Text>
+						</Flex>
+
+
+					</Flex>
 
 		</Box>
 	  )
