@@ -326,7 +326,7 @@ const Leads: React.FC = () => {
       
           {/* Title */}
           <Text size="8" weight="regular" className="text-gray-900 mb-6">
-            Leads
+            All Leads
           </Text>
       
           {/* Statistics Cards */}
@@ -543,6 +543,19 @@ const Leads: React.FC = () => {
                   cursor : "pointer",
                   height : "35px"
               }}>InstaLink</Box>
+
+              <Box style={{
+                  border : "2px solid #e5e7eb",
+                  borderRadius : "5px",
+                  width : "120px",
+                  display : "flex",
+                  justifyContent : 'center',
+                  alignItems : "center",
+                  paddingTop : "10px",
+                  paddingBottom : "10px",
+                  cursor : "pointer",
+                  height : "35px"
+              }}>Archive</Box>
 
               <Flex style={{
                   display : "flex",

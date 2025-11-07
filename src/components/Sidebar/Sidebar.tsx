@@ -7,6 +7,7 @@ import {
   Badge,
   Separator,
   Tooltip,
+  Popover,
 } from "@radix-ui/themes";
 
 type Permission = "read" | "write" | "create" | "delete" | "admin";
@@ -33,8 +34,8 @@ type SidebarProps = {
   menuItems: MenuItem[];
   onNavigate?: (path: string) => void;
   collapsed?: boolean;
-  onToggle?: () => void; // Add this
-  topOffset?: number; // px height of top navbar to avoid overlap (default 64)
+  onToggle?: () => void;
+  topOffset?: number;
 };
 
 // Beautiful SVG Icons
@@ -90,30 +91,43 @@ const hasPermission = (user: User, item: MenuItem) => {
 const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapsed = false, onToggle, topOffset = 64 }) => {
   const [activeItem, setActiveItem] = useState<string>("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  // If parent controls collapsed via prop, use it; otherwise manage internally
   const [internalCollapsed, setInternalCollapsed] = useState<boolean>(collapsed);
+  const [popoverOpen, setPopoverOpen] = useState<Record<string, boolean>>({});
+  
   React.useEffect(() => { setInternalCollapsed(collapsed); }, [collapsed]);
 
   const isCollapsed = internalCollapsed;
-
-  // Responsive overlay state for small screens when sidebar is open
   const [showOverlay, setShowOverlay] = useState(false);
 
   const handleItemClick = (item: MenuItem) => {
     if (item.path) {
       setActiveItem(item.id);
       onNavigate?.(item.path);
+      setPopoverOpen(prev => ({ ...prev, [item.id]: false }));
     } else if (item.children) {
-      setExpandedItems(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(item.id)) {
-          newSet.delete(item.id);
-        } else {
-          newSet.add(item.id);
-        }
-        return newSet;
-      });
+      if (isCollapsed) {
+        setPopoverOpen(prev => ({
+          ...prev,
+          [item.id]: !prev[item.id]
+        }));
+      } else {
+        setExpandedItems(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(item.id)) {
+            newSet.delete(item.id);
+          } else {
+            newSet.add(item.id);
+          }
+          return newSet;
+        });
+      }
     }
+  };
+
+  const handleChildClick = (parentId: string, child: MenuItem) => {
+    setActiveItem(child.id);
+    onNavigate?.(child.path || '');
+    setPopoverOpen(prev => ({ ...prev, [parentId]: false }));
   };
 
   const renderMenuItem = (item: MenuItem, level = 0) => {
@@ -121,6 +135,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems.has(item.id);
     const filteredChildren = item.children?.filter(child => hasPermission(user, child));
+    const hasActiveChild = filteredChildren?.some(child => activeItem === child.id) || false;
+    const isPopoverOpen = popoverOpen[item.id] || false;
 
     const menuItemContent = (
       <Flex
@@ -130,20 +146,20 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
           padding: "10px 16px",
           borderRadius: "8px",
           cursor: item.path || hasChildren ? "pointer" : "default",
-          backgroundColor: isActive ? "var(--accent-5)" : "transparent",
-          color: isActive ? "var(--accent-12)" : "var(--accent-11)",
+          backgroundColor: isActive || hasActiveChild ? "var(--accent-5)" : "transparent",
+          color: isActive || hasActiveChild ? "var(--accent-12)" : "var(--accent-11)",
           transition: "all 0.2s ease",
           marginLeft: level > 0 ? level * 12 : 0,
-          border: isActive ? "1px solid var(--accent-6)" : "1px solid transparent",
+          border: isActive || hasActiveChild ? "1px solid var(--accent-6)" : "1px solid transparent",
         }}
         onClick={() => handleItemClick(item)}
         onMouseOver={(e) => {
-          if (!isActive && (item.path || hasChildren)) {
+          if (!isActive && !hasActiveChild && (item.path || hasChildren)) {
             e.currentTarget.style.backgroundColor = "var(--accent-4)";
           }
         }}
         onMouseOut={(e) => {
-          if (!isActive && (item.path || hasChildren)) {
+          if (!isActive && !hasActiveChild && (item.path || hasChildren)) {
             e.currentTarget.style.backgroundColor = "transparent";
           }
         }}
@@ -160,7 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
           {item.icon}
         </Box>
         
-  {!isCollapsed && (
+        {!isCollapsed && (
           <>
             <Text size="2" weight="medium" style={{ flex: 1 }}>
               {item.label}
@@ -188,9 +204,65 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
       </Flex>
     );
 
+    // Render children in popover when collapsed
+    const renderPopoverContent = () => {
+      if (!hasChildren || !filteredChildren || filteredChildren.length === 0) return null;
+      
+      return (
+        <Box style={{ padding: "4px", minWidth: "180px" }}>
+          {filteredChildren.map(child => {
+            const isChildActive = activeItem === child.id;
+            return (
+              <Flex
+                key={child.id}
+                align="center"
+                gap="2"
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  backgroundColor: isChildActive ? "var(--accent-5)" : "transparent",
+                  color: isChildActive ? "var(--accent-12)" : "var(--accent-11)",
+                  transition: "all 0.2s ease",
+                }}
+                onClick={() => handleChildClick(item.id, child)}
+                onMouseOver={(e) => {
+                  if (!isChildActive) {
+                    e.currentTarget.style.backgroundColor = "var(--accent-4)";
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!isChildActive) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                <Text size="2" weight="medium">
+                  {child.label}
+                </Text>
+              </Flex>
+            );
+          })}
+        </Box>
+      );
+    };
+
     return (
       <Box key={item.id}>
-  {isCollapsed ? (
+        {isCollapsed && hasChildren ? (
+          <Popover.Root open={isPopoverOpen} onOpenChange={(open) => {
+            setPopoverOpen(prev => ({ ...prev, [item.id]: open }));
+          }}>
+            <Popover.Trigger>
+              <Tooltip content={item.label} side="right">
+                {menuItemContent}
+              </Tooltip>
+            </Popover.Trigger>
+            <Popover.Content side="right" align="start" style={{ padding: "8px" }}>
+              {renderPopoverContent()}
+            </Popover.Content>
+          </Popover.Root>
+        ) : isCollapsed ? (
           <Tooltip content={item.label} side="right">
             {menuItemContent}
           </Tooltip>
@@ -238,74 +310,74 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          zIndex: 900, // put below typical navbar z-index so navbar remains visible
+          zIndex: 900,
           boxSizing: "border-box",
         }}
       >
-      {/* User Section */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, marginTop: 32, padding: "0 12px" }}>
-        <Avatar
-          size="3"
-          src={user.avatar}
-          fallback={user.name.charAt(0).toUpperCase()}
-          style={{ 
-            borderRadius: "10px",
-            border: "2px solid var(--accent-6)"
-          }}
-        />
+        {/* User Section */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, marginTop: 32, padding: "0 12px" }}>
+          <Avatar
+            size="3"
+            src={user.avatar}
+            fallback={user.name.charAt(0).toUpperCase()}
+            style={{ 
+              borderRadius: "10px",
+              border: "2px solid var(--accent-6)"
+            }}
+          />
 
-        {!isCollapsed && (
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Text size="2" weight="bold" style={{ color: "var(--accent-12)" }} truncate>
-              {user.name}
-            </Text>
-            <Text size="1" style={{ color: "var(--accent-11)" }} truncate>
-              {user.email}
-            </Text>
-          </div>
+          {!isCollapsed && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Text size="2" weight="bold" style={{ color: "var(--accent-12)" }} truncate>
+                {user.name}
+              </Text>
+              <Text size="1" style={{ color: "var(--accent-11)" }} truncate>
+                {user.email}
+              </Text>
+            </div>
+          )}
+        </div>
+
+        {/* Permissions Badges */}
+        {!isCollapsed && user.permissions.length > 0 && (
+          <Flex gap="1" wrap="wrap" style={{ marginTop: "12px", padding: "0 12px" }}>
+            {user.permissions.map(permission => (
+              <Badge 
+                key={permission} 
+                size="1" 
+                variant="soft"
+                style={{ textTransform: "capitalize" , backgroundColor: "transparent" }}
+              >
+                {permission}
+              </Badge>
+            ))}
+          </Flex>
         )}
 
+        <Separator size="4" style={{ margin: "0 0px" }} />
 
-      </div>      {/* Permissions Badges */}
-  {!isCollapsed && user.permissions.length > 0 && (
-        <Flex gap="1" wrap="wrap" style={{ marginTop: "12px" }}>
-          {user.permissions.map(permission => (
-            <Badge 
-              key={permission} 
-              size="1" 
-              variant="soft"
-              style={{ textTransform: "capitalize" , backgroundColor: "transparent" }}
-            >
-              {permission}
-            </Badge>
-          ))}
-        </Flex>
-      )}
+        {/* Navigation */}
+        <nav style={{ 
+          flex: 1, 
+          padding: "12px 12px", 
+          overflowY: "auto",
+          overflowX: "hidden"
+        }}>
+          <Flex direction="column" gap="1">
+            {filteredMenuItems.map(item => renderMenuItem(item))}
+          </Flex>
+        </nav>
 
-      <Separator size="4" style={{ margin: "0 0px" }} />
-
-      {/* Navigation */}
-      <nav style={{ 
-        flex: 1, 
-        padding: "12px 12px", 
-        overflowY: "auto",
-        overflowX: "hidden"
-      }}>
-        <Flex direction="column" gap="1">
-          {filteredMenuItems.map(item => renderMenuItem(item))}
-        </Flex>
-      </nav>
-
-      {/* Footer */}
-      {!isCollapsed && (
-        <Box style={{ padding: "0 20px" }}>
-          <Separator size="4" style={{ marginBottom: "16px" }} />
-          <Text size="1" style={{ color: "var(--accent-11)", textAlign: "center" }}>
-            © 2024 Your Company
-          </Text>
-        </Box>
-      )}
-    </Box>
+        {/* Footer */}
+        {!isCollapsed && (
+          <Box style={{ padding: "0 20px" }}>
+            <Separator size="4" style={{ marginBottom: "16px" }} />
+            <Text size="1" style={{ color: "var(--accent-11)", textAlign: "center" }}>
+              © 2024 Your Company
+            </Text>
+          </Box>
+        )}
+      </Box>
     </>
   );
 };
