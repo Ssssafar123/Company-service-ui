@@ -90,7 +90,7 @@ const AddNewItinerary: React.FC = () => {
 				color: 'green',
 				onConfirm: () => {
 					setDialogOpen(false)
-					navigate('/itinerary')
+					navigate('/dashboard/itinerary')
 				},
 			})
 		} else {
@@ -103,7 +103,7 @@ const AddNewItinerary: React.FC = () => {
 				color: 'green',
 				onConfirm: () => {
 					setDialogOpen(false)
-					navigate('/itinerary')
+					navigate('/dashboard/itinerary')
 				},
 			})
 		}
@@ -332,6 +332,25 @@ const AddNewItinerary: React.FC = () => {
 			type: 'batches' as const,
 			fullWidth: true,
 		},
+
+		{
+			name: '_separator_seo',
+			label: '',
+			type: 'custom' as const,
+			customRender: () => (
+			  <Box style={{ gridColumn: '1 / -1', marginTop: '24px', marginBottom: '16px' }}>
+				<Separator size="4" style={{ borderColor: 'var(--accent-9)', borderWidth: '2px' }} />
+			  </Box>
+			),
+			fullWidth: true,
+		  },
+		  // Section 12: SEO Fields (Full Width)
+		  {
+			name: 'seo_fields',
+			label: 'SEO Settings',
+			type: 'seo' as const,
+			fullWidth: true,
+		  },
 	]
 
 	return (

@@ -323,6 +323,24 @@ const AddCategory: React.FC = () => {
 			label: 'Total Itineraries',
 			customRender: renderItinerariesField,
 		},
+		{
+			type: 'custom' as const,
+			name: '_separator_seo',
+			label: '',
+			customRender: () => (
+				<Box style={{ gridColumn: '1 / -1', marginTop: '24px', marginBottom: '16px' }}>
+					<Separator size="4" style={{ borderColor: 'var(--accent-9)', borderWidth: '2px' }} />
+				</Box>
+			),
+			fullWidth: true,
+		},
+		// Add SEO Fields section
+		{
+			name: 'seo_fields',
+			label: 'SEO Settings',
+			type: 'seo' as const,
+			fullWidth: true,
+		},
 	], [renderItinerariesField])
 
 	return (

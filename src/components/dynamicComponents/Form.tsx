@@ -19,11 +19,11 @@ import DaywiseActivities from '../../modules/Itinerary/DaywiseActivities'
 import HotelDetails from '../../modules/Itinerary/HotelDetails'
 import PackageDetails from '../../modules/Itinerary/PackageDetails'
 import BatchManagement from '../../modules/Itinerary/BatchManagement'
-
+import SEOFields from '../../modules/Itinerary/SEOFields'
 type Field = {
   name: string;
   label: string;
-  type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch" | "richtext" | "file" | "number" | "multiselect" | "daywise" | "hotels" | "packages" | "batches" | "custom";
+  type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch" | "richtext" | "file" | "number" | "multiselect" | "daywise" | "hotels" | "packages" | "batches" | "custom" | "seo";
   placeholder?: string;
   options?: string[] | { value: string; label: string }[];
   fullWidth?: boolean;
@@ -270,6 +270,16 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           />
         );
 
+        case "seo":
+          return (
+            <SEOFields
+              seoData={formValues[field.name] || null}
+              onChange={(seoData) => handleChange(field.name, seoData)}
+              label={field.label}
+              error={undefined}
+            />
+          );
+
       default:
         return null;
     }
@@ -294,6 +304,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             field.type === "hotels" || 
             field.type === "packages" || 
             field.type === "batches";
+            field.type === "seo";
             const gridColumn = shouldSpanFullWidth ? "1 / -1" : "auto";
             
             return (
@@ -307,7 +318,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 }}
               >
                 {/* Only show label for fields that don't have inline labels */}
-                {!["checkbox", "switch", "richtext", "file", "daywise", "hotels", "packages", "batches", "custom"].includes(field.type) && (
+                {!["checkbox", "switch", "richtext", "file", "daywise", "hotels", "packages", "batches", "custom", "seo"].includes(field.type) && (
                   <Text as="label" size="2" weight="medium" style={{ color: "var(--accent-12)" }}>
                     {field.label}
                   </Text>

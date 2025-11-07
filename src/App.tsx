@@ -11,6 +11,15 @@ import AddNewItinerary from './modules/Itinerary/AddNewItinerary'
 import AddCategory from './modules/Category/AddCategory'
 import Dashboard from './pages/Dashboard/Dashboard.js'
 import Leads from './modules/Leads/Leads'
+import LocationPage from './pages/Dashboard/Location'
+import AddLocation from './modules/Location/AddLocation'
+import CustomizeLeadsPage from './pages/Dashboard/CustomizeLeads'
+import HotelPage from './pages/Dashboard/Hotel'
+import TransportPage from './pages/Dashboard/Transport'
+import LocalSupportPage from './pages/Dashboard/LocalSupport'
+import CoordinatorPage from './pages/Dashboard/Coordinator'
+import ActivitiesPage from './pages/Dashboard/Activities'
+
 const App = () => {
   return (
     <div>
@@ -33,16 +42,25 @@ const App = () => {
         <Route path='/login' element={<Login/>}/>
 
         <Route path='/dashboard' element={<Layout/>} >
-          <Route index element={<Dashboard/>} />
+        <Route index element={<Dashboard/>} />
         <Route path='test-form' element={<TestForm/>} />
         <Route path='table' element={<TableTest/>} />
         <Route path='itinerary' element={<ItineraryPage />} />
         <Route path='category' element={<CategoryPage />} />
+        <Route path='location' element={<LocationPage />} />
         <Route path='leads' element={<Leads />} />
+        <Route path='customize-leads' element={<CustomizeLeadsPage />} />
+        <Route path='library/hotel' element={<HotelPage />} />
+        <Route path='library/transport' element={<TransportPage />} />
+        <Route path='library/local-support' element={<LocalSupportPage />} />
+        <Route path='library/coordinator' element={<CoordinatorPage />} />
+        <Route path='library/activities' element={<ActivitiesPage />} />
         <Route path='add-itinerary' element={<AddNewItinerary />} />
         <Route path='edit-itinerary' element={<AddNewItinerary />} /> 
         <Route path='add-category' element={<AddCategory />} />
         <Route path='edit-category' element={<AddCategory />} />
+        <Route path='add-location' element={<AddLocation />} />  
+        <Route path='edit-location' element={<AddLocation />} />
 
         </Route>
         

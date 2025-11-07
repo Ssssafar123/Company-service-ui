@@ -43,17 +43,27 @@ const CategoryIcon = () => {
     </svg>
   )
 }
-
-const LeadsIcon = () => {
-  return (
+const LocationIcon = () => {
+  return(
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
     </svg>
   )
 }
+
+const LeadsIcon = ({ color = "currentColor", size = 24 }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none"stroke={color}strokeWidth="1.5"strokeLinecap="round"strokeLinejoin="round"aria-hidden="true"role="img"> 
+      <path d="M4 11a8 8 0 0 1 16 0v2" />
+      <rect x="2.5" y="11" width="3" height="6" rx="1.2" />
+      <rect x="18.5" y="11" width="3" height="6" rx="1.2" />
+      <path d="M6 17c0 1.5.8 2.5 2.5 2.5H10" />
+     </svg>
+  );
+};
+
+
 
 const DashboardIcon = () => {
   return (
@@ -74,20 +84,19 @@ const DashboardIcon = () => {
   );
 };
 
-
-const AddIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="8" x2="12" y2="16" />
-    <line x1="8" y1="12" x2="16" y2="12" />
-  </svg>
-);
-
-
+const LibraryIcon = () => {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      <path d="M8 7h8M8 11h8M8 15h4" />
+    </svg>
+  )
+}
 
 const Layout = () => {
   const [collapsed, setCollapsed] = useState(false);
-const navigate = useNavigate();
+  const navigate = useNavigate();
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <Navbar onSidebarToggle={() => setCollapsed(s => !s)} />
@@ -103,10 +112,29 @@ const navigate = useNavigate();
             {id: "dashboard" , label: "Dashboard", path: "/dashboard", icon : <DashboardIcon/>},
             {id: "itinerary" , label: "Itinerary", path: "/dashboard/itinerary", icon : <ItineraryIcon/>},
             {id: "add-itinerary" , label: "Category", path: "/dashboard/category", icon : <CategoryIcon/>},
-            {id: "leads" , label: "Leads", path: "/dashboard/leads", icon : <LeadsIcon/>}, 
+            {id: "location" , label: "Location", path: "/dashboard/location", icon : <LocationIcon/>},
+            {
+              id: "leads" , 
+              label: "Leads", 
+              icon : <LeadsIcon/>,
+              children: [
+                { id: "all-leads", label: "All Leads", path: "/dashboard/leads" },
+                { id: "customize-leads", label: "Customize Leads", path: "/dashboard/customize-leads" }
+              ]
+            },
+            {
+              id: "library",
+              label: "Library",
+              icon: <LibraryIcon/>,
+              children: [
+                { id: "hotel", label: "Hotel", path: "/dashboard/library/hotel" },
+                { id: "activities", label: "Activities", path: "/dashboard/library/activities" },
+                { id: "transport", label: "Transport", path: "/dashboard/library/transport" },
+                { id: "coordinator", label: "Coordinator", path: "/dashboard/library/coordinator" },
+                { id: "local-support", label: "Local Support", path: "/dashboard/library/local-support" }
+              ]
+            },
             { id: "home", label: "Home", path: "/", icon :<HomeIcon/>},
-            // { id: "form", label: "Form", path: "/test-form" },
-            // { id: "table", label: "Table", path: "/table" },
           ]}
           collapsed={collapsed}
           onToggle={() => setCollapsed(s => !s)}
