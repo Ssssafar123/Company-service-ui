@@ -33,7 +33,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   return (
     <Theme
       appearance={isDark ? "dark" : "light"}
-      accentColor="gray"
+      accentColor="violet"
       grayColor="slate"
       radius="large"
       scaling="100%"

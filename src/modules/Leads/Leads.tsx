@@ -336,9 +336,9 @@ const Leads: React.FC = () => {
       
             {/* Overall Leads Captured */}
             <Box style={{
-                border: "1px solid #e5e7eb",
-                width: "330px",
-                height: "90px",
+                border: "2px solid #e5e7eb",
+                width: "390px",
+                height: "100px",
                 borderRadius : "10px",
                 display : "flex",
                 textAlign : "center",
@@ -363,9 +363,9 @@ const Leads: React.FC = () => {
       
             {/* Today's Leads */}
             <Box style={{
-                border: "1px solid #e5e7eb",
-                width: "330px",
-                height: "90px",
+                border: "2px solid #e5e7eb",
+                width: "390px",
+                height: "100px",
                 borderRadius : "10px",
                 display : "flex",
                 textAlign : "center",
@@ -390,9 +390,9 @@ const Leads: React.FC = () => {
       
             {/* Overall Leads Converted */}
             <Box style={{
-                border: "1px solid #e5e7eb",
-                width: "330px",
-                height: "90px",
+                border: "2px solid #e5e7eb",
+                width: "390px",
+                height: "100px",
                 borderRadius : "10px",
                 display : "flex",
                 textAlign : "center",
@@ -419,7 +419,7 @@ const Leads: React.FC = () => {
 
           <Flex >
               <TextField.Root placeholder='Search...'  style={{
-                  width : "600px"
+                  width : "800px"
               }} >
                   <TextField.Slot>
                       <MagnifyingGlassIcon height="16" width="16" />
@@ -430,7 +430,7 @@ const Leads: React.FC = () => {
                   marginLeft : "auto"
               }}>
                 <Box style={{
-                    border: "1px solid #e5e7eb",
+                    border: "2px solid #e5e7eb",
                     borderRadius : "5px",
                     paddingLeft : "10px",
                     paddingRight : "10px",
@@ -438,14 +438,14 @@ const Leads: React.FC = () => {
                     alignItems : "center",
                     justifyContent : "center",
                     marginLeft : "15px",
-                    width : "120px",
-                    height : "33px",
+                    width : "140px",
+                    height : "36px",
                     cursor : "pointer"
                 }}>
                 Actions
                 </Box>
                 <Box style={{
-                    border: "1px solid #e5e7eb",
+                    border: "2px solid #e5e7eb",
                     borderRadius : "5px",
                     paddingLeft : "10px",
                     paddingRight : "10px",
@@ -453,8 +453,8 @@ const Leads: React.FC = () => {
                     alignItems : "center",
                     justifyContent : "center",
                     marginLeft : "15px",
-                    width : "120px",
-                    height : "33px",
+                    width : "140px",
+                    height : "36px",
                     cursor : "pointer"
                 }}>
                 Refresh
@@ -467,7 +467,7 @@ const Leads: React.FC = () => {
               gap : "20px"
           }}>
               <Box style={{
-                  border : "1px solid #e5e7eb",
+                  border : "2px solid #e5e7eb",
                   borderRadius : "5px",
                   width : "60px",
                   display : "flex",
