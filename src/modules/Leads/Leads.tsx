@@ -42,34 +42,6 @@ const Leads: React.FC = () => {
             contacted: "Not Contacted",
             assignedTo: "Shivam"
         },
-        {
-            id: 2,
-            name: "Aarav Kumar",
-            badgeType: "itinerary",
-            leadId: "2142600",
-            time: "Today at 6:30 PM",
-            phone: "9876543210",
-            destination: "Goa Beach | Solo",
-            packageCode: "#GB01",
-            remarks: "wants discount",
-            status: "Warm",
-            contacted: "Not Contacted",
-            assignedTo: "Shivam"
-        },
-        {
-            id: 2,
-            name: "Aarav Kumar",
-            badgeType: "itinerary",
-            leadId: "2142600",
-            time: "Today at 6:30 PM",
-            phone: "9876543210",
-            destination: "Goa Beach | Solo",
-            packageCode: "#GB01",
-            remarks: "wants discount",
-            status: "Warm",
-            contacted: "Not Contacted",
-            assignedTo: "Shivam"
-        },
         // ... rest of your leads data
     ];
 
@@ -169,12 +141,14 @@ const Leads: React.FC = () => {
 
     return (
         <Box style={{
-            width: '90%',
-            maxWidth: '90%',
+            width: '100%',
+            maxWidth: '100%',
             backgroundColor: 'white',
             padding: '20px',
             boxSizing: 'border-box',
-          
+            // Make it responsive to sidebar
+            marginLeft: 'auto',
+            marginRight: 'auto'
         }}>
       
             {/* Title */}
@@ -187,13 +161,13 @@ const Leads: React.FC = () => {
                 display: 'flex',
                 gap: '16px',
                 marginBottom: '20px',
-                
+                flexWrap: 'wrap'
             }}>
                 {/* Overall Leads Captured */}
                 <div style={{
                     border: "2px solid #e5e7eb",
                     flex: '1',
-                    minWidth: '250px',
+                    minWidth: '200px', // Reduced minWidth for better responsiveness
                     height: '100px',
                     borderRadius: '10px',
                     display: 'flex',
@@ -216,7 +190,7 @@ const Leads: React.FC = () => {
                 <div style={{
                     border: "2px solid #e5e7eb",
                     flex: '1',
-                    minWidth: '250px',
+                    minWidth: '200px', // Reduced minWidth for better responsiveness
                     height: '100px',
                     borderRadius: '10px',
                     display: 'flex',
@@ -239,7 +213,7 @@ const Leads: React.FC = () => {
                 <div style={{
                     border: "2px solid #e5e7eb",
                     flex: '1',
-                    minWidth: '250px',
+                    minWidth: '200px', // Reduced minWidth for better responsiveness
                     height: '100px',
                     borderRadius: '10px',
                     display: 'flex',
@@ -267,7 +241,7 @@ const Leads: React.FC = () => {
                 alignItems: 'center',
                 marginBottom: '16px'
             }}>
-                <div style={{ flex: '1', minWidth: '300px' }}>
+                <div style={{ flex: '1', minWidth: '250px' }}> {/* Reduced minWidth */}
                     <TextField.Root placeholder='Search...' style={{ width: '100%' }}>
                         <TextField.Slot>
                             <MagnifyingGlassIcon height="16" width="16" />
@@ -288,7 +262,7 @@ const Leads: React.FC = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         cursor: "pointer",
-                        minWidth: '100px'
+                        minWidth: '80px' // Reduced minWidth
                     }}>
                         Actions
                     </div>
@@ -300,7 +274,7 @@ const Leads: React.FC = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         cursor: "pointer",
-                        minWidth: '100px'
+                        minWidth: '80px' // Reduced minWidth
                     }}>
                         Refresh
                     </div>
@@ -311,7 +285,7 @@ const Leads: React.FC = () => {
             <div style={{
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: '12px',
+                gap: '8px', // Reduced gap
                 marginBottom: '16px',
                 alignItems: 'center'
             }}>
@@ -321,12 +295,12 @@ const Leads: React.FC = () => {
                         style={{
                             border: "2px solid #e5e7eb",
                             borderRadius: "5px",
-                            padding: "8px 12px",
+                            padding: "6px 10px", // Reduced padding
                             display: "flex",
                             justifyContent: 'center',
                             alignItems: "center",
                             cursor: "pointer",
-                            fontSize: '14px',
+                            fontSize: '13px', // Smaller font
                             whiteSpace: 'nowrap'
                         }}
                     >
@@ -336,7 +310,7 @@ const Leads: React.FC = () => {
                 
                 <div style={{
                     marginLeft: 'auto',
-                    fontSize: '14px',
+                    fontSize: '13px', // Smaller font
                     whiteSpace: 'nowrap'
                 }}>
                     Showing <span style={{fontWeight: "bold"}}>{startIndex + 1}</span> to <span style={{fontWeight: "bold"}}>{Math.min(endIndex, totalItems)}</span> of <span style={{fontWeight: "bold"}}>{totalItems}</span> lead(s)
@@ -348,39 +322,40 @@ const Leads: React.FC = () => {
                 border: "2px solid #e5e7eb",
                 borderRadius: "5px",
                 overflowX: 'auto',
-                marginBottom: '20px'
+                marginBottom: '20px',
+                width: '100%'
             }}>
                 {/* Table with minimum width to maintain structure on small screens */}
-                <div style={{ minWidth: '1000px' }}>
+                <div style={{ minWidth: '900px' }}> {/* Reduced minWidth */}
                     {/* Table Header */}
                     <div style={{
                         display: 'flex',
                         padding: '12px 16px',
                         borderBottom: "2px solid #e5e7eb",
                         backgroundColor: '#f9fafb',
-                        fontSize: '14px',
+                        fontSize: '13px', // Smaller font
                         fontWeight: '500'
                     }}>
-                        <div style={{ width: '80px', display: 'flex', alignItems: 'center' }}>
-                            <Checkbox style={{ marginRight: '10px' }}/>
+                        <div style={{ width: '70px', display: 'flex', alignItems: 'center' }}> {/* Reduced width */}
+                            <Checkbox style={{ marginRight: '8px' }}/>
                             S.No.
                         </div>
-                        <div style={{ width: '200px', paddingLeft: '20px' }}>
+                        <div style={{ width: '180px', paddingLeft: '16px' }}> {/* Reduced width */}
                             Lead Details
                         </div>
-                        <div style={{ width: '250px', paddingLeft: '20px' }}>
+                        <div style={{ width: '220px', paddingLeft: '16px' }}> {/* Reduced width */}
                             Enquiry Details
                         </div>
-                        <div style={{ width: '200px', paddingLeft: '20px' }}>
+                        <div style={{ width: '180px', paddingLeft: '16px' }}> {/* Reduced width */}
                             Remarks & Reminders
                         </div>
-                        <div style={{ width: '150px', paddingLeft: '20px' }}>
+                        <div style={{ width: '130px', paddingLeft: '16px' }}> {/* Reduced width */}
                             Quick Actions
                         </div>
-                        <div style={{ width: '150px', paddingLeft: '20px' }}>
+                        <div style={{ width: '130px', paddingLeft: '16px' }}> {/* Reduced width */}
                             Assigned To
                         </div>
-                        <div style={{ width: '120px', paddingLeft: '20px' }}>
+                        <div style={{ width: '100px', paddingLeft: '16px' }}> {/* Reduced width */}
                             Actions
                         </div>
                     </div>
@@ -389,19 +364,19 @@ const Leads: React.FC = () => {
                     {currentLeads.map((lead, index) => (
                         <div key={lead.id} style={{
                             display: 'flex',
-                            padding: '16px',
+                            padding: '12px', // Reduced padding
                             borderBottom: index < currentLeads.length - 1 ? "1px solid #e5e7eb" : "none",
                             alignItems: 'flex-start',
-                            minHeight: '120px'
+                            minHeight: '110px' // Slightly reduced height
                         }}>
                             {/* S.No Column */}
                             <div style={{
-                                width: '80px',
+                                width: '70px', // Reduced width
                                 display: 'flex',
                                 alignItems: 'flex-start',
-                                gap: '8px',
-                                fontSize: '14px',
-                                paddingTop: '8px'
+                                gap: '6px', // Reduced gap
+                                fontSize: '13px', // Smaller font
+                                paddingTop: '6px' // Reduced padding
                             }}>
                                 <Checkbox style={{ marginTop: '2px', cursor: 'pointer' }} />
                                 {startIndex + index + 1}
@@ -409,13 +384,13 @@ const Leads: React.FC = () => {
 
                             {/* Lead Details Column */}
                             <div style={{
-                                width: '200px',
+                                width: '180px', // Reduced width
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
-                                fontSize: '14px',
-                                paddingTop: '8px',
-                                paddingLeft: '20px'
+                                gap: '6px', // Reduced gap
+                                fontSize: '13px', // Smaller font
+                                paddingTop: '6px', // Reduced padding
+                                paddingLeft: '16px' // Reduced padding
                             }}>
                                 <div style={{ fontWeight: 'bold', textDecoration: 'underline' }}>
                                     {lead.name}
@@ -423,28 +398,28 @@ const Leads: React.FC = () => {
                                 <div>ID: {lead.leadId}</div>
                                 <div style={{
                                     width: 'fit-content',
-                                    padding: '4px 8px',
+                                    padding: '3px 6px', // Reduced padding
                                     borderRadius: '12px',
                                     backgroundColor: lead.badgeType === "instalink" ? "#f678a7" : "#5588ff",
                                     color: lead.badgeType === "instalink" ? "black" : "white",
-                                    fontSize: '12px'
+                                    fontSize: '11px' // Smaller font
                                 }}>
                                     {lead.badgeType === "instalink" ? "Instalink" : "Itinerary"}
                                 </div>
-                                <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                                <div style={{ fontSize: '12px', color: '#6b7280' }}> {/* Smaller font */}
                                     {lead.time}
                                 </div>
                             </div>
 
                             {/* Enquiry Details Column */}
                             <div style={{
-                                width: '250px',
+                                width: '220px', // Reduced width
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
-                                fontSize: '14px',
-                                paddingTop: '8px',
-                                paddingLeft: '20px'
+                                gap: '6px', // Reduced gap
+                                fontSize: '13px', // Smaller font
+                                paddingTop: '6px', // Reduced padding
+                                paddingLeft: '16px' // Reduced padding
                             }}>
                                 <div>
                                     {lead.phone} <WhatsAppIcon /> <PhoneIcon />
@@ -458,13 +433,13 @@ const Leads: React.FC = () => {
 
                             {/* Remarks Column */}
                             <div style={{
-                                width: '200px',
+                                width: '180px', // Reduced width
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
-                                fontSize: '14px',
-                                paddingTop: '8px',
-                                paddingLeft: '20px'
+                                gap: '6px', // Reduced gap
+                                fontSize: '13px', // Smaller font
+                                paddingTop: '6px', // Reduced padding
+                                paddingLeft: '16px' // Reduced padding
                             }}>
                                 <div>Remarks</div>
                                 <div>{lead.remarks}</div>
@@ -474,7 +449,7 @@ const Leads: React.FC = () => {
                                     cursor: 'pointer',
                                     color: '#3b82f6',
                                     textDecoration: 'underline',
-                                    fontSize: '13px'
+                                    fontSize: '12px' // Smaller font
                                 }}>
                                     <AddIcon />
                                     Add Remark
@@ -483,23 +458,23 @@ const Leads: React.FC = () => {
 
                             {/* Quick Actions Column */}
                             <div style={{
-                                width: '150px',
+                                width: '130px', // Reduced width
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
-                                fontSize: '14px',
-                                paddingTop: '8px',
-                                paddingLeft: '20px'
+                                gap: '6px', // Reduced gap
+                                fontSize: '13px', // Smaller font
+                                paddingTop: '6px', // Reduced padding
+                                paddingLeft: '16px' // Reduced padding
                             }}>
                                 <select 
                                     defaultValue={lead.status}
                                     style={{
                                         width: '100%',
-                                        height: '35px',
+                                        height: '32px', // Reduced height
                                         border: "2px solid #e5e7eb",
                                         borderRadius: "5px",
-                                        padding: '0 8px',
-                                        fontSize: '13px'
+                                        padding: '0 6px', // Reduced padding
+                                        fontSize: '12px' // Smaller font
                                     }}
                                 >
                                     <option value="Hot">Hot</option>
@@ -510,11 +485,11 @@ const Leads: React.FC = () => {
                                     defaultValue={lead.contacted}
                                     style={{
                                         width: '100%',
-                                        height: '35px',
+                                        height: '32px', // Reduced height
                                         border: "2px solid #e5e7eb",
                                         borderRadius: "5px",
-                                        padding: '0 8px',
-                                        fontSize: '13px'
+                                        padding: '0 6px', // Reduced padding
+                                        fontSize: '12px' // Smaller font
                                     }}
                                 >
                                     <option value="Contacted">Contacted</option>
@@ -522,7 +497,7 @@ const Leads: React.FC = () => {
                                 </select>
                                 <div style={{
                                     fontWeight: 'bold',
-                                    fontSize: '12px',
+                                    fontSize: '11px', // Smaller font
                                     cursor: 'pointer',
                                     color: '#3b82f6'
                                 }}>
@@ -532,19 +507,19 @@ const Leads: React.FC = () => {
 
                             {/* Assigned To Column */}
                             <div style={{
-                                width: '150px',
-                                paddingTop: '8px',
-                                paddingLeft: '20px'
+                                width: '130px', // Reduced width
+                                paddingTop: '6px', // Reduced padding
+                                paddingLeft: '16px' // Reduced padding
                             }}>
                                 <select 
                                     defaultValue={lead.assignedTo}
                                     style={{
                                         width: '100%',
-                                        height: '35px',
+                                        height: '32px', // Reduced height
                                         border: "2px solid #e5e7eb",
                                         borderRadius: "5px",
-                                        padding: '0 8px',
-                                        fontSize: '13px'
+                                        padding: '0 6px', // Reduced padding
+                                        fontSize: '12px' // Smaller font
                                     }}
                                 >
                                     <option value="Rohit">Rohit</option>
@@ -555,14 +530,14 @@ const Leads: React.FC = () => {
 
                             {/* Actions Column */}
                             <div style={{
-                                width: '120px',
-                                paddingTop: '8px',
-                                paddingLeft: '20px'
+                                width: '100px', // Reduced width
+                                paddingTop: '6px', // Reduced padding
+                                paddingLeft: '16px' // Reduced padding
                             }}>
                                 <div style={{
                                     backgroundColor: "black",
-                                    width: '100px',
-                                    height: '35px',
+                                    width: '90px', // Reduced width
+                                    height: '32px', // Reduced height
                                     border: "2px solid #e5e7eb",
                                     borderRadius: "5px",
                                     color: "white",
@@ -570,7 +545,7 @@ const Leads: React.FC = () => {
                                     justifyContent: "center",
                                     alignItems: "center",
                                     cursor: "pointer",
-                                    fontSize: '13px'
+                                    fontSize: '12px' // Smaller font
                                 }}>
                                     Actions
                                 </div>
@@ -586,24 +561,24 @@ const Leads: React.FC = () => {
                 flexWrap: 'wrap',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: '16px',
-                padding: '16px 0',
+                gap: '12px', // Reduced gap
+                padding: '12px 0', // Reduced padding
                 borderTop: "2px solid #e5e7eb"
             }}>
                 {/* Items per page */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ fontSize: '14px', color: '#6b7280' }}>Rows per page:</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}> {/* Reduced gap */}
+                    <div style={{ fontSize: '13px', color: '#6b7280' }}>Rows per page:</div>
                     <select 
                         value={itemsPerPage}
                         onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
                         style={{
-                            width: '80px',
-                            height: '35px',
+                            width: '70px', // Reduced width
+                            height: '32px', // Reduced height
                             border: "2px solid #e5e7eb",
                             borderRadius: "5px",
-                            padding: '0 8px',
+                            padding: '0 6px', // Reduced padding
                             cursor: 'pointer',
-                            fontSize: '14px'
+                            fontSize: '13px' // Smaller font
                         }}
                     >
                         <option value="5">5</option>
@@ -614,18 +589,18 @@ const Leads: React.FC = () => {
                 </div>
 
                 {/* Page info */}
-                <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                <div style={{ fontSize: '13px', color: '#6b7280' }}> {/* Smaller font */}
                     Page <span style={{ fontWeight: 'bold', color: '#000' }}>{currentPage}</span> of <span style={{ fontWeight: 'bold', color: '#000' }}>{totalPages}</span>
                 </div>
 
                 {/* Navigation buttons */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}> {/* Reduced gap */}
                     {/* Previous button */}
                     <div 
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         style={{
-                            width: '35px',
-                            height: '35px',
+                            width: '32px', // Reduced width
+                            height: '32px', // Reduced height
                             border: "2px solid #e5e7eb",
                             borderRadius: "5px",
                             display: 'flex',
@@ -636,7 +611,7 @@ const Leads: React.FC = () => {
                             backgroundColor: 'white'
                         }}
                     >
-                        <ChevronLeftIcon width="18" height="18" />
+                        <ChevronLeftIcon width="16" height="16" /> {/* Smaller icon */}
                     </div>
 
                     {/* Page numbers */}
@@ -648,8 +623,6 @@ const Leads: React.FC = () => {
                             pageNum = i + 1;
                         } else if (currentPage >= totalPages - 2) {
                             pageNum = totalPages - 4 + i;
-
-
                         } else {
                             pageNum = currentPage - 2 + i;
                         }
@@ -659,8 +632,8 @@ const Leads: React.FC = () => {
                                 key={pageNum}
                                 onClick={() => setCurrentPage(pageNum)}
                                 style={{
-                                    width: '35px',
-                                    height: '35px',
+                                    width: '32px', // Reduced width
+                                    height: '32px', // Reduced height
                                     border: "2px solid #e5e7eb",
                                     borderRadius: "5px",
                                     display: 'flex',
@@ -670,7 +643,7 @@ const Leads: React.FC = () => {
                                     backgroundColor: currentPage === pageNum ? '#000' : '#fff',
                                     color: currentPage === pageNum ? '#fff' : '#000',
                                     fontWeight: currentPage === pageNum ? 'bold' : 'normal',
-                                    fontSize: '14px'
+                                    fontSize: '13px' // Smaller font
                                 }}
                             >
                                 {pageNum}
@@ -682,8 +655,8 @@ const Leads: React.FC = () => {
                     <div 
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         style={{
-                            width: '35px',
-                            height: '35px',
+                            width: '32px', // Reduced width
+                            height: '32px', // Reduced height
                             border: "2px solid #e5e7eb",
                             borderRadius: "5px",
                             display: 'flex',
@@ -694,7 +667,7 @@ const Leads: React.FC = () => {
                             backgroundColor: 'white'
                         }}
                     >
-                        <ChevronRightIcon width="18" height="18" />
+                        <ChevronRightIcon width="16" height="16" /> {/* Smaller icon */}
                     </div>
                 </div>
             </div>
