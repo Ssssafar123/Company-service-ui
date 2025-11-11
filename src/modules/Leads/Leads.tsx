@@ -1,20 +1,51 @@
 import React, { useState } from 'react'
-import { Box, Flex, Text, TextField, Badge, Checkbox } from '@radix-ui/themes'
-import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons'
-import Table from '../../components/dynamicComponents/Table'
+import { Box, Flex, Text, TextField, Checkbox, DropdownMenu, Button, Dialog, TextArea } from '@radix-ui/themes'
+import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } from '@radix-ui/react-icons'
+
+// Define Lead type
+interface Lead {
+	id: number
+	name: string
+	badgeType: string
+	leadId: string
+	time: string
+	phone: string
+	destination: string
+	packageCode: string
+	remarks: string
+	status: string
+	contacted: string
+	assignedTo: string
+	savedRemarks?: string[]
+}
 
 const Leads: React.FC = () => {
-	// Dummy data for statistics
-	const totalLeads = 10
-	const todayLeads = 2
-	const convertedLeads = 1
+    // Dummy data for statistics
+    const totalLeads = 10
+    const todayLeads = 2
+    const convertedLeads = 1
 
-	// Pagination state
-	const [currentPage, setCurrentPage] = useState(1)
-	const [itemsPerPage, setItemsPerPage] = useState(10)
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+    
+    // Checkbox state
+    const [selectedLeads, setSelectedLeads] = useState<number[]>([])
+    const [selectAll, setSelectAll] = useState(false)
 
-	// Dummy leads data
-	const leadsData = [
+    // Active filter state
+    const [activeFilter, setActiveFilter] = useState<string>("All")
+
+    // Remark modal state
+    const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false)
+    const [selectedLeadForRemark, setSelectedLeadForRemark] = useState<number | null>(null)
+    const [remarkText, setRemarkText] = useState("")
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState("")
+
+	// Initial leads data
+	const initialLeadsData: Lead[] = [
 		{
 			id: 1,
 			name: 'Priyanshu',
@@ -227,17 +258,134 @@ const Leads: React.FC = () => {
 		},
 	]
 
+	// Leads data state with localStorage support
+	const [leadsData, setLeadsData] = useState<Lead[]>(() => {
+		// Load saved remarks from localStorage on initial load
+		const savedRemarks = localStorage.getItem('leadRemarks')
+		if (savedRemarks) {
+			const remarksMap = JSON.parse(savedRemarks)
+			return initialLeadsData.map(lead => ({
+				...lead,
+				savedRemarks: remarksMap[lead.id] || []
+			}))
+		}
+		return initialLeadsData.map(lead => ({ ...lead, savedRemarks: [] }))
+	})
+
+	// Filter leads based on search query
+	const filteredLeads = leadsData.filter((lead) => {
+		if (!searchQuery) return true // If no search query, show all leads
+		
+		const query = searchQuery.toLowerCase()
+		return (
+			lead.name.toLowerCase().includes(query) ||
+			lead.leadId.toLowerCase().includes(query) ||
+			lead.phone.toLowerCase().includes(query) ||
+			lead.destination.toLowerCase().includes(query) ||
+			lead.packageCode.toLowerCase().includes(query) ||
+			lead.remarks.toLowerCase().includes(query) ||
+			lead.status.toLowerCase().includes(query) ||
+			lead.assignedTo.toLowerCase().includes(query)
+		)
+	})
+
 	// Calculate pagination values
-	const totalItems = leadsData.length
+	const totalItems = filteredLeads.length
 	const totalPages = Math.ceil(totalItems / itemsPerPage)
 	const startIndex = (currentPage - 1) * itemsPerPage
 	const endIndex = startIndex + itemsPerPage
-	const currentLeads = leadsData.slice(startIndex, endIndex)
+	const currentLeads = filteredLeads.slice(startIndex, endIndex)
 
 	// Reset to page 1 when items per page changes
 	const handleItemsPerPageChange = (newItemsPerPage: number) => {
 		setItemsPerPage(newItemsPerPage)
 		setCurrentPage(1)
+	}
+
+	// Handle refresh button
+	const handleRefresh = () => {
+		window.location.reload()
+	}
+
+	// Handle select all checkbox
+	const handleSelectAll = (checked: boolean) => {
+		setSelectAll(checked)
+		if (checked) {
+			const currentPageIds = currentLeads.map(lead => lead.id)
+			setSelectedLeads(currentPageIds)
+		} else {
+			setSelectedLeads([])
+		}
+	}
+
+	// Handle individual checkbox
+	const handleSelectLead = (leadId: number, checked: boolean) => {
+		if (checked) {
+			setSelectedLeads(prev => [...prev, leadId])
+		} else {
+			setSelectedLeads(prev => prev.filter(id => id !== leadId))
+			setSelectAll(false)
+		}
+	}
+
+	// Check if all current page leads are selected
+	React.useEffect(() => {
+		const currentPageIds = currentLeads.map(lead => lead.id)
+		const allSelected = currentPageIds.every(id => selectedLeads.includes(id))
+		setSelectAll(allSelected && currentPageIds.length > 0)
+	}, [selectedLeads, currentLeads])
+
+	// Handle filter change
+	const handleFilterChange = (filter: string) => {
+		setActiveFilter(filter)
+		setCurrentPage(1) // Reset to first page when filter changes
+	}
+
+	// Handle search input change
+	const handleSearchChange = (value: string) => {
+		setSearchQuery(value)
+		setCurrentPage(1) // Reset to first page when search query changes
+	}
+
+	// Handle open remark modal
+	const handleOpenRemarkModal = (leadId: number) => {
+		setSelectedLeadForRemark(leadId)
+		setRemarkText("")
+		setIsRemarkModalOpen(true)
+	}
+
+	// Handle save remark
+	const handleSaveRemark = () => {
+		if (!selectedLeadForRemark || !remarkText.trim()) return
+
+		// Get current timestamp
+		const timestamp = new Date().toLocaleString()
+		const newRemark = `${timestamp}: ${remarkText}`
+
+		// Update leads data
+		const updatedLeads = leadsData.map(lead => {
+			if (lead.id === selectedLeadForRemark) {
+				const updatedSavedRemarks = [...(lead.savedRemarks || []), newRemark]
+				return { ...lead, savedRemarks: updatedSavedRemarks }
+			}
+			return lead
+		})
+
+		setLeadsData(updatedLeads)
+
+		// Save to localStorage
+		const remarksMap: Record<number, string[]> = {}
+		updatedLeads.forEach(lead => {
+			if (lead.savedRemarks && lead.savedRemarks.length > 0) {
+				remarksMap[lead.id] = lead.savedRemarks
+			}
+		})
+		localStorage.setItem('leadRemarks', JSON.stringify(remarksMap))
+
+		// Close modal and reset
+		setIsRemarkModalOpen(false)
+		setSelectedLeadForRemark(null)
+		setRemarkText("")
 	}
 
 	const WhatsAppIcon = () => (
@@ -320,6 +468,38 @@ const Leads: React.FC = () => {
 		>
 			<path
 				d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	)
+
+	const UserIcon = () => (
+		<svg
+			width="14"
+			height="14"
+			viewBox="0 0 24 24"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+			style={{
+				display: 'inline-block',
+				verticalAlign: 'middle',
+				marginRight: '4px',
+			}}
+		>
+			<path
+				d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<circle
+				cx="12"
+				cy="7"
+				r="4"
 				stroke="currentColor"
 				strokeWidth="2"
 				strokeLinecap="round"
@@ -481,6 +661,8 @@ const Leads: React.FC = () => {
 			>
 				<TextField.Root
 					placeholder="Search..."
+					value={searchQuery}
+					onChange={(e) => handleSearchChange(e.target.value)}
 					style={{
 						flex: '1 1 300px',
 						minWidth: '200px',
@@ -490,41 +672,58 @@ const Leads: React.FC = () => {
 					<TextField.Slot>
 						<MagnifyingGlassIcon height="16" width="16" />
 					</TextField.Slot>
-				</TextField.Root>
+			</TextField.Root>
 
-				<Flex gap="2" wrap="wrap">
-					<Box
-						style={{
-							border: '1px solid #e5e7eb',
-							borderRadius: '5px',
-							padding: '8px 16px',
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							cursor: 'pointer',
-							whiteSpace: 'nowrap',
-						}}
-					>
-						Actions
-					</Box>
-					<Box
-						style={{
-							border: '1px solid #e5e7eb',
-							borderRadius: '5px',
-							padding: '8px 16px',
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							cursor: 'pointer',
-							whiteSpace: 'nowrap',
-						}}
-					>
-						Refresh
-					</Box>
-				</Flex>
+			<Flex gap="2" wrap="wrap">
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						<Box
+							style={{
+								border: '1px solid #e5e7eb',
+								borderRadius: '5px',
+								padding: '8px 16px',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								cursor: 'pointer',
+								whiteSpace: 'nowrap',
+								backgroundColor: '#fff',
+							}}
+						>
+							Actions {selectedLeads.length > 0 && `(${selectedLeads.length})`}
+						</Box>
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content>
+						<DropdownMenu.Item disabled={selectedLeads.length === 0}>
+							Assign Selected ({selectedLeads.length})
+						</DropdownMenu.Item>
+						<DropdownMenu.Item disabled={selectedLeads.length === 0}>
+							Change Status ({selectedLeads.length})
+						</DropdownMenu.Item>
+						<DropdownMenu.Item disabled={selectedLeads.length === 0}>
+							Delete Selected ({selectedLeads.length})
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+				<Box
+					onClick={handleRefresh}
+					style={{
+						border: '1px solid #e5e7eb',
+						borderRadius: '5px',
+						padding: '8px 16px',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						gap: '6px',
+						cursor: 'pointer',
+						whiteSpace: 'nowrap',
+					}}
+				>
+					<ReloadIcon width="14" height="14" />
+					<Text size="2">Refresh</Text>
+				</Box>
 			</Flex>
-
-			{/* Filter Buttons - Responsive */}
+		</Flex>			{/* Filter Buttons - Responsive */}
 			<Flex
 				wrap="wrap"
 				gap="2"
@@ -535,26 +734,27 @@ const Leads: React.FC = () => {
 					boxSizing: 'border-box',
 				}}
 			>
-				{['All', 'Hot', 'Warm', 'Cold', 'Remainder', 'InstaLink', 'Archive'].map((filter) => (
-					<Box
-						key={filter}
-						style={{
-							border: '1px solid #e5e7eb',
-							borderRadius: '5px',
-							padding: '8px 16px',
-							display: 'flex',
-							justifyContent: 'center',
-							alignItems: 'center',
-							cursor: 'pointer',
-							whiteSpace: 'nowrap',
-							minWidth: '60px',
-						}}
-					>
-						<Text size="2">{filter}</Text>
-					</Box>
-				))}
-
-				<Flex
+			{['All', 'Hot', 'Warm', 'Cold', 'Remainder', 'InstaLink', 'Archive'].map((filter) => (
+				<Box
+					key={filter}
+					onClick={() => handleFilterChange(filter)}
+					style={{
+						border: '1px solid #e5e7eb',
+						borderRadius: '5px',
+						padding: '8px 16px',
+						display: 'flex',
+						justifyContent: 'center',
+						alignItems: 'center',
+						cursor: 'pointer',
+						whiteSpace: 'nowrap',
+						minWidth: '60px',
+						backgroundColor: activeFilter === filter ? '#000' : '#fff',
+						color: activeFilter === filter ? '#fff' : '#000',
+					}}
+				>
+					<Text size="2">{filter}</Text>
+				</Box>
+			))}				<Flex
 					style={{
 						marginLeft: 'auto',
 						alignItems: 'center',
@@ -596,13 +796,15 @@ const Leads: React.FC = () => {
 						boxSizing: 'border-box',
 					}}
 				>
-					{/* S.No Header */}
-					<Box style={{ width: '6%', minWidth: '50px', display: 'flex', alignItems: 'center', paddingRight: '8px' }}>
-						<Checkbox style={{ marginRight: '6px' }} />
-						<Text style={{ fontSize: '12px' }}>S.No.</Text>
-					</Box>
-
-					{/* Lead Details Header */}
+				{/* S.No Header */}
+				<Box style={{ width: '6%', minWidth: '50px', display: 'flex', alignItems: 'center', paddingRight: '8px' }}>
+					<Checkbox 
+						style={{ marginRight: '6px' }} 
+						checked={selectAll}
+						onCheckedChange={handleSelectAll}
+					/>
+					<Text style={{ fontSize: '12px' }}>S.No.</Text>
+				</Box>					{/* Lead Details Header */}
 					<Box style={{ width: '16%', minWidth: '140px', paddingLeft: '8px', paddingRight: '8px' }}>
 						<Text style={{ fontSize: '12px' }}>Lead Details</Text>
 					</Box>
@@ -675,6 +877,8 @@ const Leads: React.FC = () => {
 										cursor: 'pointer',
 									}}
 									size="2"
+									checked={selectedLeads.includes(lead.id)}
+									onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
 								/>
 								<Text
 									style={{
@@ -750,45 +954,60 @@ const Leads: React.FC = () => {
 								<Text style={{ fontSize: '12px' }}>{lead.time}</Text>
 							</Box>
 
-							{/* Enquiry Details Column */}
-							<Box
+						{/* Enquiry Details Column */}
+						<Box
+							style={{
+								width: '20%',
+								minWidth: '160px',
+								display: 'flex',
+								flexDirection: 'column',
+								justifyContent: 'flex-start',
+								alignItems: 'flex-start',
+								gap: '4px',
+								fontSize: '13px', // Reduced from 15px
+								paddingTop: '8px',
+								paddingLeft: '8px',
+								paddingRight: '8px',
+								maxHeight: '120px',
+								overflowY: 'auto',
+							}}
+						>
+							<Text style={{ fontSize: '12px' }}>
+								{lead.phone} | 
+								<span 
+									onClick={() => window.open(`https://wa.me/${lead.phone}`, '_blank')}
+									style={{ cursor: 'pointer' }}
+								>
+									<WhatsAppIcon />
+								</span>
+								<span 
+									onClick={() => window.location.href = `tel:${lead.phone}`}
+									style={{ cursor: 'pointer' }}
+								>
+									<PhoneIcon />
+								</span>
+							</Text>
+							<Text style={{ fontSize: '12px' }}>{lead.destination}</Text>
+							<Text style={{ fontSize: '12px', display: 'flex', alignItems: 'center' }}>
+								<UserIcon /> Pax
+							</Text>
+							<span
 								style={{
-									width: '20%',
-									minWidth: '160px',
 									display: 'flex',
-									flexDirection: 'column',
-									justifyContent: 'flex-start',
-									alignItems: 'flex-start',
-									gap: '4px',
-									fontSize: '13px', // Reduced from 15px
-									paddingTop: '8px',
-									paddingLeft: '8px',
-									paddingRight: '8px',
+									alignItems: 'center',
 								}}
 							>
-								<Text style={{ fontSize: '12px' }}>
-									{lead.phone} | <WhatsAppIcon /> <PhoneIcon />
-								</Text>
-								<Text style={{ fontSize: '12px' }}>{lead.destination}</Text>
-								<span
+								<MessageIcon />
+								<Text
 									style={{
-										display: 'flex',
-										alignItems: 'center',
+										marginLeft: '4px',
+										fontSize: '12px',
 									}}
 								>
-									<MessageIcon />
-									<Text
-										style={{
-											marginLeft: '4px',
-											fontSize: '12px',
-										}}
-									>
-										{lead.packageCode}
-									</Text>
-								</span>
-							</Box>
-
-							{/* Remarks Column */}
+									{lead.packageCode}
+								</Text>
+							</span>
+						</Box>							{/* Remarks Column */}
 							<Box
 								style={{
 									width: '16%',
@@ -803,29 +1022,50 @@ const Leads: React.FC = () => {
 									paddingLeft: '8px',
 									paddingRight: '8px',
 								}}
+						>
+							<Text style={{ fontSize: '12px', fontWeight: 'bold' }}>Remarks</Text>
+							<Text style={{ fontSize: '12px' }}>{lead.remarks}</Text>
+							
+							{/* Display saved remarks */}
+							{lead.savedRemarks && lead.savedRemarks.length > 0 && (
+								<Box style={{ marginTop: '4px', width: '100%' }}>
+									{lead.savedRemarks.map((remark, idx) => (
+										<Text 
+											key={idx} 
+											style={{ 
+												fontSize: '11px', 
+												color: '#666',
+												marginBottom: '2px',
+												display: 'block',
+												borderLeft: '2px solid #5588ff',
+												paddingLeft: '4px',
+											}}
+										>
+											{remark}
+										</Text>
+									))}
+								</Box>
+							)}
+							
+							<span
+								onClick={() => handleOpenRemarkModal(lead.id)}
+								style={{
+									cursor: 'pointer',
+									display: 'flex',
+									alignItems: 'center',
+								}}
 							>
-								<Text style={{ fontSize: '12px' }}>Remarks</Text>
-								<Text style={{ fontSize: '12px' }}>{lead.remarks}</Text>
-								<span
+								<AddIcon />
+								<Text
 									style={{
-										cursor: 'pointer',
-										display: 'flex',
-										alignItems: 'center',
+										textDecoration: 'underline',
+										fontSize: '11px', // Reduced from 13px
 									}}
 								>
-									<AddIcon />
-									<Text
-										style={{
-											textDecoration: 'underline',
-											fontSize: '11px', // Reduced from 13px
-										}}
-									>
-										Add Remark
-									</Text>
-								</span>
-							</Box>
-
-							{/* Quick Actions Column */}
+									Add Remark
+								</Text>
+							</span>
+						</Box>							{/* Quick Actions Column */}
 							<Box
 								style={{
 									width: '14%',
@@ -843,6 +1083,7 @@ const Leads: React.FC = () => {
 							>
 								<select
 									id={`status-${lead.id}`}
+									defaultValue=""
 									style={{
 										width: '100%',
 										maxWidth: '110px', // Reduced from 120px
@@ -853,13 +1094,16 @@ const Leads: React.FC = () => {
 										padding: '4px 8px',
 									}}
 								>
-									<option value="Hot" selected={lead.status === 'Hot'}>
+									<option value="" disabled>
+										Lead Status
+									</option>
+									<option value="Hot">
 										Hot
 									</option>
-									<option value="Warm" selected={lead.status === 'Warm'}>
+									<option value="Warm">
 										Warm
 									</option>
-									<option value="Cold" selected={lead.status === 'Cold'}>
+									<option value="Cold">
 										Cold
 									</option>
 								</select>
@@ -1134,6 +1378,32 @@ const Leads: React.FC = () => {
 					</Box>
 				</Flex>
 			</Flex>
+
+			{/* Add Remark Modal */}
+			<Dialog.Root open={isRemarkModalOpen} onOpenChange={setIsRemarkModalOpen}>
+				<Dialog.Content style={{ maxWidth: 600 }}>
+					<Dialog.Title>Add Remark</Dialog.Title>
+					<Dialog.Description size="2" mb="4">
+						Add a remark for Lead ID: {selectedLeadForRemark}
+					</Dialog.Description>
+					<TextArea
+						value={remarkText}
+						onChange={(e) => setRemarkText(e.target.value)}
+						placeholder="Enter your remark here..."
+						style={{ minHeight: '150px' }}
+					/>
+					<Flex gap="3" mt="4" justify="end">
+						<Dialog.Close>
+							<Button variant="soft" color="gray">
+								Cancel
+							</Button>
+						</Dialog.Close>
+						<Button onClick={handleSaveRemark}>
+							Save Remark
+						</Button>
+					</Flex>
+				</Dialog.Content>
+			</Dialog.Root>
 		</Box>
 	)
 }
