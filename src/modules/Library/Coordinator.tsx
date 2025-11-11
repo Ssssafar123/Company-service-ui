@@ -12,6 +12,7 @@ import {
 	IconButton,
 } from '@radix-ui/themes'
 import Table from '../../components/dynamicComponents/Table'
+import AddCoordinatorForm from './AddCoordinatorForm'
 
 type CoordinatorData = {
 	id: string
@@ -19,6 +20,7 @@ type CoordinatorData = {
 	email: string
 	phone: string
 	specialties: string
+	bio?: string // Optional
 }
 
 // Dummy coordinator data
@@ -103,6 +105,10 @@ const Coordinator: React.FC = () => {
 	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(['name', 'email', 'phone', 'specialties', 'actions']))
 	const [currentPage, setCurrentPage] = useState(1)
 	const [itemsPerPage] = useState(10)
+	const [editingCoordinator, setEditingCoordinator] = useState<CoordinatorData | null>(null)
+
+	// Form panel state
+	const [isFormOpen, setIsFormOpen] = useState(false)
 
 	// Dialog state
 	const [dialogOpen, setDialogOpen] = useState(false)
@@ -137,6 +143,12 @@ const Coordinator: React.FC = () => {
 				const aValue = a[sortConfig.key as keyof CoordinatorData]
 				const bValue = b[sortConfig.key as keyof CoordinatorData]
 
+				// Handle undefined values
+				if (aValue === undefined && bValue === undefined) return 0
+				if (aValue === undefined) return 1 // undefined values go to the end
+				if (bValue === undefined) return -1
+
+				// Compare values
 				if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
 				if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
 				return 0
@@ -166,9 +178,8 @@ const Coordinator: React.FC = () => {
 	}
 
 	const handleEdit = (coordinator: CoordinatorData) => {
-		// Navigate to edit page or open edit dialog
-		console.log('Edit coordinator:', coordinator)
-		// navigate('/dashboard/library/coordinator/edit', { state: { coordinatorData: coordinator } })
+		setEditingCoordinator(coordinator)
+		setIsFormOpen(true)
 	}
 
 	const handleDelete = (coordinator: CoordinatorData) => {
@@ -195,9 +206,58 @@ const Coordinator: React.FC = () => {
 	}
 
 	const handleAddNew = () => {
-		// Navigate to add coordinator page or open add dialog
-		console.log('Add new coordinator')
-		// navigate('/dashboard/library/coordinator/add')
+		setEditingCoordinator(null)
+		setIsFormOpen(true)
+	}
+
+	const handleFormSubmit = (values: Record<string, any>) => {
+		console.log('Form submitted with values:', values)
+		
+		if (editingCoordinator) {
+			// Update existing coordinator
+			const updatedCoordinator: CoordinatorData = {
+				...editingCoordinator,
+				name: values.name || '',
+				email: values.email || '',
+				phone: values.phone || '',
+				specialties: values.specialties || '',
+				bio: values.bio || '',
+			}
+
+			setCoordinators(coordinators.map((c) => (c.id === editingCoordinator.id ? updatedCoordinator : c)))
+
+			setDialogConfig({
+				title: 'Success',
+				description: `Coordinator "${updatedCoordinator.name}" updated successfully!`,
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => setDialogOpen(false),
+			})
+		} else {
+			// Create new coordinator
+			const newCoordinator: CoordinatorData = {
+				id: String(coordinators.length + 1),
+				name: values.name || '',
+				email: values.email || '',
+				phone: values.phone || '',
+				specialties: values.specialties || '',
+				bio: values.bio || '',
+			}
+
+			setCoordinators([...coordinators, newCoordinator])
+
+			setDialogConfig({
+				title: 'Success',
+				description: `Coordinator "${newCoordinator.name}" added successfully!`,
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => setDialogOpen(false),
+			})
+		}
+
+		setDialogOpen(true)
+		setIsFormOpen(false)
+		setEditingCoordinator(null)
 	}
 
 	// Render actions menu
@@ -304,190 +364,212 @@ const Coordinator: React.FC = () => {
 	].filter((col) => visibleColumns.has(col.key))
 
 	return (
-		<Box style={{ padding: '24px' }}>
-			{/* Header Section */}
-			<Box style={{ marginBottom: '24px' }}>
-				<Text
-					size="7"
-					weight="bold"
-					style={{
-						color: 'var(--accent-12)',
-						marginBottom: '8px',
-						display: 'block',
-					}}
-				>
-					Manage Coordinators
-				</Text>
-				<Text
-					size="2"
-					style={{
-						color: 'var(--accent-11)',
-						display: 'block',
-					}}
-				>
-					Here you can add, edit, and view your Coordinators.
-				</Text>
-			</Box>
+		<Box style={{ padding: '24px', position: 'relative', width: '100%' }}>
+			{/* Add Coordinator Form Component */}
+			<AddCoordinatorForm
+				isOpen={isFormOpen}
+				onClose={() => {
+					setIsFormOpen(false)
+					setEditingCoordinator(null)
+				}}
+				onSubmit={handleFormSubmit}
+				initialData={editingCoordinator ? {
+					id: editingCoordinator.id,
+					name: editingCoordinator.name,
+					email: editingCoordinator.email,
+					phone: editingCoordinator.phone,
+					specialties: editingCoordinator.specialties,
+					bio: editingCoordinator.bio,
+				} : null}
+			/>
 
-			{/* Search and Columns Section */}
-			<Card style={{ padding: '16px', marginBottom: '16px' }}>
-				<Flex gap="3" align="center" justify="between">
-					<TextField.Root
-						placeholder="Search all columns..."
-						value={searchQuery}
-						onChange={(e) => {
-							setSearchQuery(e.target.value)
-							setCurrentPage(1) // Reset to first page on search
+			{/* Main Content */}
+			<Box style={{ width: '100%' }}>
+				{/* Header Section */}
+				<Box style={{ marginBottom: '24px' }}>
+					<Text
+						size="7"
+						weight="bold"
+						style={{
+							color: 'var(--accent-12)',
+							marginBottom: '8px',
+							display: 'block',
 						}}
-						style={{ flex: 1, maxWidth: '400px' }}
 					>
-						<TextField.Slot>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path
-									d="M14 14L10.5355 10.5355M10.5355 10.5355C11.473 9.59802 12 8.32608 12 7C12 4.79086 10.2091 3 8 3C5.79086 3 4 4.79086 4 7C4 9.20914 5.79086 11 8 11C9.32608 11 10.598 10.473 10.5355 10.5355Z"
-									stroke="var(--accent-11)"
-									strokeWidth="1.5"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</svg>
-						</TextField.Slot>
-					</TextField.Root>
-
-					<Flex gap="2" align="center">
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger>
-								<Button variant="soft" size="2">
-									Columns
-								</Button>
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content>
-								{[
-									{ key: 'name', label: 'Name' },
-									{ key: 'email', label: 'Email' },
-									{ key: 'phone', label: 'Phone' },
-									{ key: 'specialties', label: 'Specialties' },
-								].map((col) => (
-									<DropdownMenu.Item
-										key={col.key}
-										onSelect={(e) => {
-											e.preventDefault()
-											setVisibleColumns((prev) => {
-												const newSet = new Set(prev)
-												if (newSet.has(col.key)) {
-													newSet.delete(col.key)
-												} else {
-													newSet.add(col.key)
-												}
-												return newSet
-											})
-										}}
-									>
-										<Flex align="center" gap="2">
-											<input
-												type="checkbox"
-												checked={visibleColumns.has(col.key)}
-												onChange={() => {}}
-												style={{ cursor: 'pointer' }}
-											/>
-											<Text size="2">{col.label}</Text>
-										</Flex>
-									</DropdownMenu.Item>
-								))}
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
-
-						<Button
-							variant="soft"
-							size="2"
-							onClick={handleAddNew}
-							style={{
-								color: 'white',
-								backgroundColor: 'var(--accent-9)',
-								whiteSpace: 'nowrap',
-							}}
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								style={{ marginRight: '8px' }}
-							>
-								<path
-									d="M8 3V13M3 8H13"
-									stroke="white"
-									strokeWidth="2"
-									strokeLinecap="round"
-								/>
-							</svg>
-							Add New Coordinator
-						</Button>
-					</Flex>
-				</Flex>
-			</Card>
-
-			{/* Table Section */}
-			<Card style={{ padding: '16px' }}>
-				<Table
-					columns={columns}
-					rows={paginatedCoordinators}
-					onSort={handleSort}
-					sortConfig={sortConfig}
-					onHideColumn={handleHideColumn}
-				/>
-			</Card>
-
-			{/* Pagination Section */}
-			<Flex justify="end" align="center" gap="2" style={{ marginTop: '16px' }}>
-				<Button
-					variant="soft"
-					size="2"
-					onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-					disabled={currentPage === 1}
-					style={{
-						cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-						opacity: currentPage === 1 ? 0.5 : 1,
-					}}
-				>
-					Previous
-				</Button>
-				<Text size="2" style={{ color: 'var(--accent-11)' }}>
-					Page {currentPage} of {totalPages || 1}
-				</Text>
-				<Button
-					variant="soft"
-					size="2"
-					onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-					disabled={currentPage >= totalPages}
-					style={{
-						cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
-						opacity: currentPage >= totalPages ? 0.5 : 1,
-					}}
-				>
-					Next
-				</Button>
-			</Flex>
-
-			{/* Empty State */}
-			{filteredAndSortedCoordinators.length === 0 && (
-				<Box
-					style={{
-						padding: '48px',
-						textAlign: 'center',
-						color: 'var(--accent-11)',
-					}}
-				>
-					<Text size="3">No results.</Text>
+						Manage Coordinators
+					</Text>
+					<Text
+						size="2"
+						style={{
+							color: 'var(--accent-11)',
+							display: 'block',
+						}}
+					>
+						Here you can add, edit, and view your Coordinators.
+					</Text>
 				</Box>
-			)}
+
+				{/* Search and Columns Section */}
+				<Card style={{ padding: '16px', marginBottom: '16px' }}>
+					<Flex gap="3" align="center" justify="between">
+						<TextField.Root
+							placeholder="Search all columns..."
+							value={searchQuery}
+							onChange={(e) => {
+								setSearchQuery(e.target.value)
+								setCurrentPage(1) // Reset to first page on search
+							}}
+							style={{ flex: 1, maxWidth: '400px' }}
+						>
+							<TextField.Slot>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										d="M14 14L10.5355 10.5355M10.5355 10.5355C11.473 9.59802 12 8.32608 12 7C12 4.79086 10.2091 3 8 3C5.79086 3 4 4.79086 4 7C4 9.20914 5.79086 11 8 11C9.32608 11 10.598 10.473 10.5355 10.5355Z"
+										stroke="var(--accent-11)"
+										strokeWidth="1.5"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									/>
+								</svg>
+							</TextField.Slot>
+						</TextField.Root>
+
+						<Flex gap="2" align="center">
+							{/* Columns dropdown */}
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									<Button variant="soft" size="2">
+										Columns
+									</Button>
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Content>
+									{[
+										{ key: 'name', label: 'Name' },
+										{ key: 'email', label: 'Email' },
+										{ key: 'phone', label: 'Phone' },
+										{ key: 'specialties', label: 'Specialties' },
+									].map((col) => (
+										<DropdownMenu.Item
+											key={col.key}
+											onSelect={(e) => {
+												e.preventDefault()
+												setVisibleColumns((prev) => {
+													const newSet = new Set(prev)
+													if (newSet.has(col.key)) {
+														newSet.delete(col.key)
+													} else {
+														newSet.add(col.key)
+													}
+													return newSet
+												})
+											}}
+										>
+											<Flex align="center" gap="2">
+												<input
+													type="checkbox"
+													checked={visibleColumns.has(col.key)}
+													onChange={() => {}}
+													style={{ cursor: 'pointer' }}
+												/>
+												<Text size="2">{col.label}</Text>
+											</Flex>
+										</DropdownMenu.Item>
+									))}
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
+
+							<Button
+								variant="soft"
+								size="2"
+								onClick={handleAddNew}
+								style={{
+									color: 'white',
+									backgroundColor: 'var(--accent-9)',
+									whiteSpace: 'nowrap',
+								}}
+							>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+									style={{ marginRight: '8px' }}
+								>
+									<path
+										d="M8 3V13M3 8H13"
+										stroke="white"
+										strokeWidth="2"
+										strokeLinecap="round"
+									/>
+								</svg>
+								Add New Coordinator
+							</Button>
+						</Flex>
+					</Flex>
+				</Card>
+
+				{/* Table Section */}
+				<Card style={{ padding: '16px' }}>
+					<Table
+						columns={columns}
+						rows={paginatedCoordinators}
+						onSort={handleSort}
+						sortConfig={sortConfig}
+						onHideColumn={handleHideColumn}
+					/>
+				</Card>
+
+				{/* Pagination Section */}
+				<Flex justify="end" align="center" gap="2" style={{ marginTop: '16px' }}>
+					<Button
+						variant="soft"
+						size="2"
+						onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+						disabled={currentPage === 1}
+						style={{
+							cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+							opacity: currentPage === 1 ? 0.5 : 1,
+						}}
+					>
+						Previous
+					</Button>
+					<Text size="2" style={{ color: 'var(--accent-11)' }}>
+						Page {currentPage} of {totalPages || 1}
+					</Text>
+					<Button
+						variant="soft"
+						size="2"
+						onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+						disabled={currentPage >= totalPages}
+						style={{
+							cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+							opacity: currentPage >= totalPages ? 0.5 : 1,
+						}}
+					>
+						Next
+					</Button>
+				</Flex>
+
+				{/* Empty State */}
+				{filteredAndSortedCoordinators.length === 0 && (
+					<Box
+						style={{
+							padding: '48px',
+							textAlign: 'center',
+							color: 'var(--accent-11)',
+						}}
+					>
+						<Text size="3">No results.</Text>
+					</Box>
+				)}
+			</Box>
 
 			{/* Alert Dialog */}
 			{dialogConfig && (

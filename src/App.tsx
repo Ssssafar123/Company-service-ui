@@ -19,6 +19,7 @@ import TransportPage from './pages/Dashboard/Transport'
 import LocalSupportPage from './pages/Dashboard/LocalSupport'
 import CoordinatorPage from './pages/Dashboard/Coordinator'
 import ActivitiesPage from './pages/Dashboard/Activities'
+import ReviewPage from './pages/Dashboard/Review' 
 
 const App = () => {
   return (
@@ -55,6 +56,7 @@ const App = () => {
         <Route path='library/local-support' element={<LocalSupportPage />} />
         <Route path='library/coordinator' element={<CoordinatorPage />} />
         <Route path='library/activities' element={<ActivitiesPage />} />
+        <Route path='review' element={<ReviewPage />} /> 
         <Route path='add-itinerary' element={<AddNewItinerary />} />
         <Route path='edit-itinerary' element={<AddNewItinerary />} /> 
         <Route path='add-category' element={<AddCategory />} />
