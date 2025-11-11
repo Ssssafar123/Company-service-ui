@@ -10,7 +10,6 @@ import {
 } from "@radix-ui/themes";
 import { useThemeToggle } from '../../ThemeProvider';
 
-// Add props to accept toggle handler
 const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle }) => {
   const { isDark, toggle } = useThemeToggle();
 
