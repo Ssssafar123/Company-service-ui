@@ -12,6 +12,7 @@ import {
 	IconButton,
 } from '@radix-ui/themes'
 import Table from '../../components/dynamicComponents/Table'
+import AddVehicleForm from './AddVehicleForm'
 
 type VehicleData = {
 	id: string
@@ -170,6 +171,10 @@ const Transport: React.FC = () => {
 	const [currentPage, setCurrentPage] = useState(1)
 	const [itemsPerPage] = useState(10)
 
+	// Form panel state
+	const [isFormOpen, setIsFormOpen] = useState(false)
+	const [editingVehicle, setEditingVehicle] = useState<VehicleData | null>(null)
+
 	// Dialog state
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [dialogConfig, setDialogConfig] = useState<{
@@ -237,9 +242,8 @@ const Transport: React.FC = () => {
 	}
 
 	const handleEdit = (vehicle: VehicleData) => {
-		// Navigate to edit page or open edit dialog
-		console.log('Edit vehicle:', vehicle)
-		// navigate('/dashboard/library/transport/edit', { state: { vehicleData: vehicle } })
+		setEditingVehicle(vehicle)
+		setIsFormOpen(true)
 	}
 
 	const handleDelete = (vehicle: VehicleData) => {
@@ -266,9 +270,74 @@ const Transport: React.FC = () => {
 	}
 
 	const handleAddNew = () => {
-		// Navigate to add vehicle page or open add dialog
-		console.log('Add new vehicle')
-		// navigate('/dashboard/library/transport/add')
+		setEditingVehicle(null)
+		setIsFormOpen(true)
+	}
+
+	const handleFormSubmit = (values: Record<string, any>) => {
+		console.log('Form submitted with values:', values)
+		
+		if (editingVehicle) {
+			// Update existing vehicle
+			const today = new Date()
+			const lastUpdated = `${today.getMonth() + 1}/${today.getDate()}/${String(today.getFullYear()).slice(-2)}`
+			
+			const updatedVehicle: VehicleData = {
+				...editingVehicle,
+				vehicleType: values.vehicleType || '',
+				vehicleNumber: values.vehicleNumber || '',
+				capacity: parseInt(values.capacity) || 0,
+				price: parseFloat(values.price) || 0,
+				priceType: (values.priceType as 'Per Tour' | 'Per Km') || 'Per Tour',
+				routes: values.availableRoutes || '',
+				vendorName: values.vendorName || '',
+				contact: values.contact || '',
+				rating: parseInt(values.rating) || 1,
+				lastUpdated: lastUpdated,
+			}
+	
+			setVehicles(vehicles.map((v) => (v.id === editingVehicle.id ? updatedVehicle : v)))
+	
+			setDialogConfig({
+				title: 'Success',
+				description: `Vehicle "${updatedVehicle.vehicleType} - ${updatedVehicle.vehicleNumber}" updated successfully!`,
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => setDialogOpen(false),
+			})
+		} else {
+			// Create new vehicle
+			const today = new Date()
+			const lastUpdated = `${today.getMonth() + 1}/${today.getDate()}/${String(today.getFullYear()).slice(-2)}`
+			
+			const newVehicle: VehicleData = {
+				id: String(vehicles.length + 1),
+				vehicleType: values.vehicleType || '',
+				vehicleNumber: values.vehicleNumber || '',
+				capacity: parseInt(values.capacity) || 0,
+				price: parseFloat(values.price) || 0,
+				priceType: (values.priceType as 'Per Tour' | 'Per Km') || 'Per Tour',
+				routes: values.availableRoutes || '',
+				vendorName: values.vendorName || '',
+				contact: values.contact || '',
+				rating: parseInt(values.rating) || 1,
+				lastUpdated: lastUpdated,
+			}
+	
+			setVehicles([...vehicles, newVehicle])
+	
+			setDialogConfig({
+				title: 'Success',
+				description: `Vehicle "${newVehicle.vehicleType} - ${newVehicle.vehicleNumber}" added successfully!`,
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => setDialogOpen(false),
+			})
+		}
+	
+		setDialogOpen(true)
+		setIsFormOpen(false)
+		setEditingVehicle(null)
 	}
 
 	// Format price as currency
@@ -437,195 +506,221 @@ const Transport: React.FC = () => {
 	].filter((col) => visibleColumns.has(col.key))
 
 	return (
-		<Box style={{ padding: '24px' }}>
-			{/* Header Section */}
-			<Box style={{ marginBottom: '24px' }}>
-				<Text
-					size="7"
-					weight="bold"
-					style={{
-						color: 'var(--accent-12)',
-						marginBottom: '8px',
-						display: 'block',
-					}}
-				>
-					Manage Vehicles
-				</Text>
-				<Text
-					size="2"
-					style={{
-						color: 'var(--accent-11)',
-						display: 'block',
-					}}
-				>
-					Here you can add, edit, and view your vehicle fleet.
-				</Text>
-			</Box>
+		<Box style={{ padding: '24px', position: 'relative', width: '100%' }}>
+			{/* Add Vehicle Form Component */}
+			<AddVehicleForm
+	           isOpen={isFormOpen}
+	           onClose={() => {
+		          setIsFormOpen(false)
+		        setEditingVehicle(null)
+	    }}
+	    onSubmit={handleFormSubmit}
+	    initialData={editingVehicle ? {
+		id: editingVehicle.id,
+		vehicleType: editingVehicle.vehicleType,
+		vehicleNumber: editingVehicle.vehicleNumber,
+		capacity: editingVehicle.capacity,
+		price: editingVehicle.price,
+		priceType: editingVehicle.priceType,
+		routes: editingVehicle.routes,
+		vendorName: editingVehicle.vendorName,
+		contact: editingVehicle.contact,
+		rating: editingVehicle.rating,
+	} : null}
+/>
 
-			{/* Search and Columns Section */}
-			<Card style={{ padding: '16px', marginBottom: '16px' }}>
-				<Flex gap="3" align="center" justify="between">
-					<TextField.Root
-						placeholder="Search all columns..."
-						value={searchQuery}
-						onChange={(e) => {
-							setSearchQuery(e.target.value)
-							setCurrentPage(1) // Reset to first page on search
+			{/* Main Content */}
+			<Box style={{ width: '100%' }}>
+				{/* Header Section */}
+				<Box style={{ marginBottom: '24px' }}>
+					<Text
+						size="7"
+						weight="bold"
+						style={{
+							color: 'var(--accent-12)',
+							marginBottom: '8px',
+							display: 'block',
 						}}
-						style={{ flex: 1, maxWidth: '400px' }}
 					>
-						<TextField.Slot>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path
-									d="M14 14L10.5355 10.5355M10.5355 10.5355C11.473 9.59802 12 8.32608 12 7C12 4.79086 10.2091 3 8 3C5.79086 3 4 4.79086 4 7C4 9.20914 5.79086 11 8 11C9.32608 11 10.598 10.473 10.5355 10.5355Z"
-									stroke="var(--accent-11)"
-									strokeWidth="1.5"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</svg>
-						</TextField.Slot>
-					</TextField.Root>
-
-					<Flex gap="2" align="center">
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger>
-								<Button variant="soft" size="2">
-									Columns
-								</Button>
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content>
-								{[
-									{ key: 'vehicleType', label: 'Vehicle Type' },
-									{ key: 'vehicleNumber', label: 'Vehicle Number' },
-									{ key: 'capacity', label: 'Capacity' },
-									{ key: 'price', label: 'Price' },
-									{ key: 'routes', label: 'Routes' },
-									{ key: 'vendorName', label: 'Vendor Name' },
-									{ key: 'contact', label: 'Contact' },
-									{ key: 'rating', label: 'Rating' },
-									{ key: 'lastUpdated', label: 'Last Updated' },
-								].map((col) => (
-									<DropdownMenu.Item
-										key={col.key}
-										onSelect={(e) => {
-											e.preventDefault()
-											setVisibleColumns((prev) => {
-												const newSet = new Set(prev)
-												if (newSet.has(col.key)) {
-													newSet.delete(col.key)
-												} else {
-													newSet.add(col.key)
-												}
-												return newSet
-											})
-										}}
-									>
-										<Flex align="center" gap="2">
-											<input
-												type="checkbox"
-												checked={visibleColumns.has(col.key)}
-												onChange={() => {}}
-												style={{ cursor: 'pointer' }}
-											/>
-											<Text size="2">{col.label}</Text>
-										</Flex>
-									</DropdownMenu.Item>
-								))}
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
-
-						<Button
-							variant="soft"
-							size="2"
-							onClick={handleAddNew}
-							style={{
-								color: 'white',
-								backgroundColor: 'var(--accent-9)',
-								whiteSpace: 'nowrap',
-							}}
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								style={{ marginRight: '8px' }}
-							>
-								<path
-									d="M8 3V13M3 8H13"
-									stroke="white"
-									strokeWidth="2"
-									strokeLinecap="round"
-								/>
-							</svg>
-							Add New Vehicle
-						</Button>
-					</Flex>
-				</Flex>
-			</Card>
-
-			{/* Table Section */}
-			<Card style={{ padding: '16px' }}>
-				<Table
-					columns={columns}
-					rows={paginatedVehicles}
-					onSort={handleSort}
-					sortConfig={sortConfig}
-					onHideColumn={handleHideColumn}
-				/>
-			</Card>
-
-			{/* Pagination Section */}
-			<Flex justify="end" align="center" gap="2" style={{ marginTop: '16px' }}>
-				<Button
-					variant="soft"
-					size="2"
-					onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-					disabled={currentPage === 1}
-					style={{
-						cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-						opacity: currentPage === 1 ? 0.5 : 1,
-					}}
-				>
-					Previous
-				</Button>
-				<Text size="2" style={{ color: 'var(--accent-11)' }}>
-					Page {currentPage} of {totalPages || 1}
-				</Text>
-				<Button
-					variant="soft"
-					size="2"
-					onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-					disabled={currentPage >= totalPages}
-					style={{
-						cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
-						opacity: currentPage >= totalPages ? 0.5 : 1,
-					}}
-				>
-					Next
-				</Button>
-			</Flex>
-
-			{/* Empty State */}
-			{filteredAndSortedVehicles.length === 0 && (
-				<Box
-					style={{
-						padding: '48px',
-						textAlign: 'center',
-						color: 'var(--accent-11)',
-					}}
-				>
-					<Text size="3">No results.</Text>
+						Manage Vehicles
+					</Text>
+					<Text
+						size="2"
+						style={{
+							color: 'var(--accent-11)',
+							display: 'block',
+						}}
+					>
+						Here you can add, edit, and view your vehicle fleet.
+					</Text>
 				</Box>
-			)}
+
+				{/* Search and Columns Section */}
+				<Card style={{ padding: '16px', marginBottom: '16px' }}>
+					<Flex gap="3" align="center" justify="between">
+						<TextField.Root
+							placeholder="Search all columns..."
+							value={searchQuery}
+							onChange={(e) => {
+								setSearchQuery(e.target.value)
+								setCurrentPage(1) // Reset to first page on search
+							}}
+							style={{ flex: 1, maxWidth: '400px' }}
+						>
+							<TextField.Slot>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										d="M14 14L10.5355 10.5355M10.5355 10.5355C11.473 9.59802 12 8.32608 12 7C12 4.79086 10.2091 3 8 3C5.79086 3 4 4.79086 4 7C4 9.20914 5.79086 11 8 11C9.32608 11 10.598 10.473 10.5355 10.5355Z"
+										stroke="var(--accent-11)"
+										strokeWidth="1.5"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									/>
+								</svg>
+							</TextField.Slot>
+						</TextField.Root>
+
+						<Flex gap="2" align="center">
+							{/* Columns dropdown */}
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									<Button variant="soft" size="2">
+										Columns
+									</Button>
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Content>
+									{[
+										{ key: 'vehicleType', label: 'Vehicle Type' },
+										{ key: 'vehicleNumber', label: 'Vehicle Number' },
+										{ key: 'capacity', label: 'Capacity' },
+										{ key: 'price', label: 'Price' },
+										{ key: 'routes', label: 'Routes' },
+										{ key: 'vendorName', label: 'Vendor Name' },
+										{ key: 'contact', label: 'Contact' },
+										{ key: 'rating', label: 'Rating' },
+										{ key: 'lastUpdated', label: 'Last Updated' },
+									].map((col) => (
+										<DropdownMenu.Item
+											key={col.key}
+											onSelect={(e) => {
+												e.preventDefault()
+												setVisibleColumns((prev) => {
+													const newSet = new Set(prev)
+													if (newSet.has(col.key)) {
+														newSet.delete(col.key)
+													} else {
+														newSet.add(col.key)
+													}
+													return newSet
+												})
+											}}
+										>
+											<Flex align="center" gap="2">
+												<input
+													type="checkbox"
+													checked={visibleColumns.has(col.key)}
+													onChange={() => {}}
+													style={{ cursor: 'pointer' }}
+												/>
+												<Text size="2">{col.label}</Text>
+											</Flex>
+										</DropdownMenu.Item>
+									))}
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
+
+							<Button
+								variant="soft"
+								size="2"
+								onClick={handleAddNew}
+								style={{
+									color: 'white',
+									backgroundColor: 'var(--accent-9)',
+									whiteSpace: 'nowrap',
+								}}
+							>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+									style={{ marginRight: '8px' }}
+								>
+									<path
+										d="M8 3V13M3 8H13"
+										stroke="white"
+										strokeWidth="2"
+										strokeLinecap="round"
+									/>
+								</svg>
+								Add New Vehicle
+							</Button>
+						</Flex>
+					</Flex>
+				</Card>
+
+				{/* Table Section */}
+				<Card style={{ padding: '16px' }}>
+					<Table
+						columns={columns}
+						rows={paginatedVehicles}
+						onSort={handleSort}
+						sortConfig={sortConfig}
+						onHideColumn={handleHideColumn}
+					/>
+				</Card>
+
+				{/* Pagination Section */}
+				<Flex justify="end" align="center" gap="2" style={{ marginTop: '16px' }}>
+					<Button
+						variant="soft"
+						size="2"
+						onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+						disabled={currentPage === 1}
+						style={{
+							cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+							opacity: currentPage === 1 ? 0.5 : 1,
+						}}
+					>
+						Previous
+					</Button>
+					<Text size="2" style={{ color: 'var(--accent-11)' }}>
+						Page {currentPage} of {totalPages || 1}
+					</Text>
+					<Button
+						variant="soft"
+						size="2"
+						onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+						disabled={currentPage >= totalPages}
+						style={{
+							cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+							opacity: currentPage >= totalPages ? 0.5 : 1,
+						}}
+					>
+						Next
+					</Button>
+				</Flex>
+
+				{/* Empty State */}
+				{filteredAndSortedVehicles.length === 0 && (
+					<Box
+						style={{
+							padding: '48px',
+							textAlign: 'center',
+							color: 'var(--accent-11)',
+						}}
+					>
+						<Text size="3">No results.</Text>
+					</Box>
+				)}
+			</Box>
 
 			{/* Alert Dialog */}
 			{dialogConfig && (

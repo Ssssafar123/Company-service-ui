@@ -12,6 +12,7 @@ import {
 	IconButton,
 } from '@radix-ui/themes'
 import Table from '../../components/dynamicComponents/Table'
+import AddActivityForm from './AddActivityForm'
 
 type ActivityData = {
 	id: string
@@ -19,6 +20,8 @@ type ActivityData = {
 	location: string
 	duration: number // in hours
 	price: number // in rupees
+	shortDescription?: string // Optional
+	fullDescription?: string // Optional
 }
 
 // Dummy activity data
@@ -103,6 +106,10 @@ const Activities: React.FC = () => {
 	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(['name', 'location', 'duration', 'price', 'actions']))
 	const [currentPage, setCurrentPage] = useState(1)
 	const [itemsPerPage] = useState(10)
+	const [editingActivity, setEditingActivity] = useState<ActivityData | null>(null)
+
+	// Form panel state
+	const [isFormOpen, setIsFormOpen] = useState(false)
 
 	// Dialog state
 	const [dialogOpen, setDialogOpen] = useState(false)
@@ -137,6 +144,12 @@ const Activities: React.FC = () => {
 				const aValue = a[sortConfig.key as keyof ActivityData]
 				const bValue = b[sortConfig.key as keyof ActivityData]
 
+				// Handle undefined values
+				if (aValue === undefined && bValue === undefined) return 0
+				if (aValue === undefined) return 1 // undefined values go to the end
+				if (bValue === undefined) return -1
+
+				// Compare values
 				if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
 				if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
 				return 0
@@ -166,9 +179,8 @@ const Activities: React.FC = () => {
 	}
 
 	const handleEdit = (activity: ActivityData) => {
-		// Navigate to edit page or open edit dialog
-		console.log('Edit activity:', activity)
-		// navigate('/dashboard/library/activities/edit', { state: { activityData: activity } })
+		setEditingActivity(activity)
+		setIsFormOpen(true)
 	}
 
 	const handleDelete = (activity: ActivityData) => {
@@ -195,9 +207,60 @@ const Activities: React.FC = () => {
 	}
 
 	const handleAddNew = () => {
-		// Navigate to add activity page or open add dialog
-		console.log('Add new activity')
-		// navigate('/dashboard/library/activities/add')
+		setEditingActivity(null)
+		setIsFormOpen(true)
+	}
+
+	const handleFormSubmit = (values: Record<string, any>) => {
+		console.log('Form submitted with values:', values)
+		
+		if (editingActivity) {
+			// Update existing activity
+			const updatedActivity: ActivityData = {
+				...editingActivity,
+				name: values.name || '',
+				location: values.location || '',
+				duration: parseInt(values.duration) || 1,
+				price: parseFloat(values.price) || 0,
+				shortDescription: values.shortDescription || '',
+				fullDescription: values.fullDescription || '',
+			}
+
+			setActivities(activities.map((a) => (a.id === editingActivity.id ? updatedActivity : a)))
+
+			setDialogConfig({
+				title: 'Success',
+				description: `Activity "${updatedActivity.name}" updated successfully!`,
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => setDialogOpen(false),
+			})
+		} else {
+			// Create new activity
+			const newActivity: ActivityData = {
+				id: String(activities.length + 1),
+				name: values.name || '',
+				location: values.location || '',
+				duration: parseInt(values.duration) || 1,
+				price: parseFloat(values.price) || 0,
+				shortDescription: values.shortDescription || '',
+				fullDescription: values.fullDescription || '',
+			}
+
+			setActivities([...activities, newActivity])
+
+			setDialogConfig({
+				title: 'Success',
+				description: `Activity "${newActivity.name}" added successfully!`,
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => setDialogOpen(false),
+			})
+		}
+
+		setDialogOpen(true)
+		setIsFormOpen(false)
+		setEditingActivity(null)
 	}
 
 	// Format price as currency
@@ -333,190 +396,213 @@ const Activities: React.FC = () => {
 	].filter((col) => visibleColumns.has(col.key))
 
 	return (
-		<Box style={{ padding: '24px' }}>
-			{/* Header Section */}
-			<Box style={{ marginBottom: '24px' }}>
-				<Text
-					size="7"
-					weight="bold"
-					style={{
-						color: 'var(--accent-12)',
-						marginBottom: '8px',
-						display: 'block',
-					}}
-				>
-					Manage Activities
-				</Text>
-				<Text
-					size="2"
-					style={{
-						color: 'var(--accent-11)',
-						display: 'block',
-					}}
-				>
-					Here you can add, edit, and view your Activities.
-				</Text>
-			</Box>
+		<Box style={{ padding: '24px', position: 'relative', width: '100%' }}>
+			{/* Add Activity Form Component */}
+			<AddActivityForm
+				isOpen={isFormOpen}
+				onClose={() => {
+					setIsFormOpen(false)
+					setEditingActivity(null)
+				}}
+				onSubmit={handleFormSubmit}
+				initialData={editingActivity ? {
+					id: editingActivity.id,
+					name: editingActivity.name,
+					location: editingActivity.location,
+					duration: editingActivity.duration,
+					price: editingActivity.price,
+					shortDescription: editingActivity.shortDescription,
+					fullDescription: editingActivity.fullDescription,
+				} : null}
+			/>
 
-			{/* Search and Columns Section */}
-			<Card style={{ padding: '16px', marginBottom: '16px' }}>
-				<Flex gap="3" align="center" justify="between">
-					<TextField.Root
-						placeholder="Search all columns..."
-						value={searchQuery}
-						onChange={(e) => {
-							setSearchQuery(e.target.value)
-							setCurrentPage(1) // Reset to first page on search
+			{/* Main Content */}
+			<Box style={{ width: '100%' }}>
+				{/* Header Section */}
+				<Box style={{ marginBottom: '24px' }}>
+					<Text
+						size="7"
+						weight="bold"
+						style={{
+							color: 'var(--accent-12)',
+							marginBottom: '8px',
+							display: 'block',
 						}}
-						style={{ flex: 1, maxWidth: '400px' }}
 					>
-						<TextField.Slot>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path
-									d="M14 14L10.5355 10.5355M10.5355 10.5355C11.473 9.59802 12 8.32608 12 7C12 4.79086 10.2091 3 8 3C5.79086 3 4 4.79086 4 7C4 9.20914 5.79086 11 8 11C9.32608 11 10.598 10.473 10.5355 10.5355Z"
-									stroke="var(--accent-11)"
-									strokeWidth="1.5"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</svg>
-						</TextField.Slot>
-					</TextField.Root>
-
-					<Flex gap="2" align="center">
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger>
-								<Button variant="soft" size="2">
-									Columns
-								</Button>
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content>
-								{[
-									{ key: 'name', label: 'Name' },
-									{ key: 'location', label: 'Location' },
-									{ key: 'duration', label: 'Duration (hrs)' },
-									{ key: 'price', label: 'Price' },
-								].map((col) => (
-									<DropdownMenu.Item
-										key={col.key}
-										onSelect={(e) => {
-											e.preventDefault()
-											setVisibleColumns((prev) => {
-												const newSet = new Set(prev)
-												if (newSet.has(col.key)) {
-													newSet.delete(col.key)
-												} else {
-													newSet.add(col.key)
-												}
-												return newSet
-											})
-										}}
-									>
-										<Flex align="center" gap="2">
-											<input
-												type="checkbox"
-												checked={visibleColumns.has(col.key)}
-												onChange={() => {}}
-												style={{ cursor: 'pointer' }}
-											/>
-											<Text size="2">{col.label}</Text>
-										</Flex>
-									</DropdownMenu.Item>
-								))}
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
-
-						<Button
-							variant="soft"
-							size="2"
-							onClick={handleAddNew}
-							style={{
-								color: 'white',
-								backgroundColor: 'var(--accent-9)',
-								whiteSpace: 'nowrap',
-							}}
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								style={{ marginRight: '8px' }}
-							>
-								<path
-									d="M8 3V13M3 8H13"
-									stroke="white"
-									strokeWidth="2"
-									strokeLinecap="round"
-								/>
-							</svg>
-							Add New Activity
-						</Button>
-					</Flex>
-				</Flex>
-			</Card>
-
-			{/* Table Section */}
-			<Card style={{ padding: '16px' }}>
-				<Table
-					columns={columns}
-					rows={paginatedActivities}
-					onSort={handleSort}
-					sortConfig={sortConfig}
-					onHideColumn={handleHideColumn}
-				/>
-			</Card>
-
-			{/* Pagination Section */}
-			<Flex justify="end" align="center" gap="2" style={{ marginTop: '16px' }}>
-				<Button
-					variant="soft"
-					size="2"
-					onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-					disabled={currentPage === 1}
-					style={{
-						cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-						opacity: currentPage === 1 ? 0.5 : 1,
-					}}
-				>
-					Previous
-				</Button>
-				<Text size="2" style={{ color: 'var(--accent-11)' }}>
-					Page {currentPage} of {totalPages || 1}
-				</Text>
-				<Button
-					variant="soft"
-					size="2"
-					onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-					disabled={currentPage >= totalPages}
-					style={{
-						cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
-						opacity: currentPage >= totalPages ? 0.5 : 1,
-					}}
-				>
-					Next
-				</Button>
-			</Flex>
-
-			{/* Empty State */}
-			{filteredAndSortedActivities.length === 0 && (
-				<Box
-					style={{
-						padding: '48px',
-						textAlign: 'center',
-						color: 'var(--accent-11)',
-					}}
-				>
-					<Text size="3">No results.</Text>
+						Manage Activities
+					</Text>
+					<Text
+						size="2"
+						style={{
+							color: 'var(--accent-11)',
+							display: 'block',
+						}}
+					>
+						Here you can add, edit, and view your Activities.
+					</Text>
 				</Box>
-			)}
+
+				{/* Search and Columns Section */}
+				<Card style={{ padding: '16px', marginBottom: '16px' }}>
+					<Flex gap="3" align="center" justify="between">
+						<TextField.Root
+							placeholder="Search all columns..."
+							value={searchQuery}
+							onChange={(e) => {
+								setSearchQuery(e.target.value)
+								setCurrentPage(1) // Reset to first page on search
+							}}
+							style={{ flex: 1, maxWidth: '400px' }}
+						>
+							<TextField.Slot>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										d="M14 14L10.5355 10.5355M10.5355 10.5355C11.473 9.59802 12 8.32608 12 7C12 4.79086 10.2091 3 8 3C5.79086 3 4 4.79086 4 7C4 9.20914 5.79086 11 8 11C9.32608 11 10.598 10.473 10.5355 10.5355Z"
+										stroke="var(--accent-11)"
+										strokeWidth="1.5"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									/>
+								</svg>
+							</TextField.Slot>
+						</TextField.Root>
+
+						<Flex gap="2" align="center">
+							{/* Columns dropdown */}
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									<Button variant="soft" size="2">
+										Columns
+									</Button>
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Content>
+									{[
+										{ key: 'name', label: 'Name' },
+										{ key: 'location', label: 'Location' },
+										{ key: 'duration', label: 'Duration (hrs)' },
+										{ key: 'price', label: 'Price' },
+									].map((col) => (
+										<DropdownMenu.Item
+											key={col.key}
+											onSelect={(e) => {
+												e.preventDefault()
+												setVisibleColumns((prev) => {
+													const newSet = new Set(prev)
+													if (newSet.has(col.key)) {
+														newSet.delete(col.key)
+													} else {
+														newSet.add(col.key)
+													}
+													return newSet
+												})
+											}}
+										>
+											<Flex align="center" gap="2">
+												<input
+													type="checkbox"
+													checked={visibleColumns.has(col.key)}
+													onChange={() => {}}
+													style={{ cursor: 'pointer' }}
+												/>
+												<Text size="2">{col.label}</Text>
+											</Flex>
+										</DropdownMenu.Item>
+									))}
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
+
+							<Button
+								variant="soft"
+								size="2"
+								onClick={handleAddNew}
+								style={{
+									color: 'white',
+									backgroundColor: 'var(--accent-9)',
+									whiteSpace: 'nowrap',
+								}}
+							>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+									style={{ marginRight: '8px' }}
+								>
+									<path
+										d="M8 3V13M3 8H13"
+										stroke="white"
+										strokeWidth="2"
+										strokeLinecap="round"
+									/>
+								</svg>
+								Add New Activity
+							</Button>
+						</Flex>
+					</Flex>
+				</Card>
+
+				{/* Table Section */}
+				<Card style={{ padding: '16px' }}>
+					<Table
+						columns={columns}
+						rows={paginatedActivities}
+						onSort={handleSort}
+						sortConfig={sortConfig}
+						onHideColumn={handleHideColumn}
+					/>
+				</Card>
+
+				{/* Pagination Section */}
+				<Flex justify="end" align="center" gap="2" style={{ marginTop: '16px' }}>
+					<Button
+						variant="soft"
+						size="2"
+						onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+						disabled={currentPage === 1}
+						style={{
+							cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+							opacity: currentPage === 1 ? 0.5 : 1,
+						}}
+					>
+						Previous
+					</Button>
+					<Text size="2" style={{ color: 'var(--accent-11)' }}>
+						Page {currentPage} of {totalPages || 1}
+					</Text>
+					<Button
+						variant="soft"
+						size="2"
+						onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+						disabled={currentPage >= totalPages}
+						style={{
+							cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+							opacity: currentPage >= totalPages ? 0.5 : 1,
+						}}
+					>
+						Next
+					</Button>
+				</Flex>
+
+				{/* Empty State */}
+				{filteredAndSortedActivities.length === 0 && (
+					<Box
+						style={{
+							padding: '48px',
+							textAlign: 'center',
+							color: 'var(--accent-11)',
+						}}
+					>
+						<Text size="3">No results.</Text>
+					</Box>
+				)}
+			</Box>
 
 			{/* Alert Dialog */}
 			{dialogConfig && (
