@@ -1,7 +1,7 @@
 import React from 'react'
 import { Routes , Route } from 'react-router-dom'
 import TestForm from './pages/TestForm.js'
-import Test from './pages/Test.js'
+import Test from './pages/Home.js'
 import TableTest from './pages/TableTest.js'
 import Login from './pages/Login.js'
 import ItineraryPage from './pages/Dashboard/Itinerary'

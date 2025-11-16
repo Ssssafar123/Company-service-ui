@@ -4,19 +4,20 @@ import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } fr
 
 // Define Lead type
 interface Lead {
-	id: number
-	name: string
-	badgeType: string
-	leadId: string
-	time: string
-	phone: string
-	destination: string
-	packageCode: string
-	remarks: string
-	status: string
-	contacted: string
-	assignedTo: string
-	savedRemarks?: string[]
+    id: number
+    name: string
+    badgeType: string
+    leadId: string
+    time: string
+    phone: string
+    destination: string
+    packageCode: string
+    remarks: string
+    status: string
+    contacted: string
+    assignedTo: string
+    savedRemarks?: string[]
+    reminder?: string | null // NEW: store reminder as datetime-local string (e.g. "2025-11-16T13:30")
 }
 
 const Leads: React.FC = () => {
@@ -40,690 +41,766 @@ const Leads: React.FC = () => {
     const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false)
     const [selectedLeadForRemark, setSelectedLeadForRemark] = useState<number | null>(null)
     const [remarkText, setRemarkText] = useState("")
+    // NEW: Reminder states for modal
+    const [isReminderEnabled, setIsReminderEnabled] = useState(false)
+    const [reminderDateTime, setReminderDateTime] = useState("")
 
     // Search state
     const [searchQuery, setSearchQuery] = useState("")
 
-	// Initial leads data
-	const initialLeadsData: Lead[] = [
-		{
-			id: 1,
-			name: 'Priyanshu',
-			badgeType: 'instalink',
-			leadId: '2142599',
-			time: 'Today at 7:15 PM',
-			phone: '6367710137',
-			destination: 'Manali & Kasol | Group',
-			packageCode: '#MKP02',
-			remarks: 'interested',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Rohit',
-		},
-		{
-			id: 2,
-			name: 'Aarav Kumar',
-			badgeType: 'itinerary',
-			leadId: '2142600',
-			time: 'Today at 6:30 PM',
-			phone: '9876543210',
-			destination: 'Goa Beach | Solo',
-			packageCode: '#GB01',
-			remarks: 'wants discount',
-			status: 'Warm',
-			contacted: 'Not Contacted',
-			assignedTo: 'Shivam',
-		},
-		{
-			id: 3,
-			name: 'Sneha Patel',
-			badgeType: 'itinerary',
-			leadId: '2142601',
-			time: 'Today at 5:45 PM',
-			phone: '8765432109',
-			destination: 'Kerala Backwaters | Family',
-			packageCode: '#KB03',
-			remarks: 'budget friendly',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Sonia',
-		},
-		{
-			id: 4,
-			name: 'Rahul Singh',
-			leadId: '2142602',
-			badgeType: 'itinerary',
-			time: 'Today at 4:20 PM',
-			phone: '7654321098',
-			destination: 'Ladakh Adventure | Group',
-			packageCode: '#LA05',
-			remarks: 'needs info',
-			status: 'Cold',
-			contacted: 'Not Contacted',
-			assignedTo: 'Rohit',
-		},
-		{
-			id: 5,
-			name: 'Priya Sharma',
-			badgeType: 'itinerary',
-			leadId: '2142603',
-			time: 'Today at 3:10 PM',
-			phone: '6543210987',
-			destination: 'Rajasthan Heritage | Couple',
-			packageCode: '#RH07',
-			remarks: 'ready to book',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Shivam',
-		},
-		{
-			id: 6,
-			name: 'Vikram Reddy',
-			badgeType: 'itinerary',
-			leadId: '2142604',
-			time: 'Today at 2:05 PM',
-			phone: '5432109876',
-			destination: 'Shimla Manali | Family',
-			packageCode: '#SM09',
-			remarks: 'comparing prices',
-			status: 'Warm',
-			contacted: 'Not Contacted',
-			assignedTo: 'Sonia',
-		},
-		{
-			id: 7,
-			name: 'Ananya Verma',
-			badgeType: 'itinerary',
-			leadId: '2142605',
-			time: 'Today at 1:30 PM',
-			phone: '4321098765',
-			destination: 'Andaman Islands | Honeymoon',
-			packageCode: '#AI11',
-			remarks: 'interested in luxury',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Rohit',
-		},
-		{
-			id: 8,
-			name: 'Karan Mehta',
-			leadId: '2142606',
-			badgeType: 'instalink',
-			time: 'Today at 12:15 PM',
-			phone: '3210987654',
-			destination: 'Darjeeling Tea Gardens | Solo',
-			packageCode: '#DT13',
-			remarks: 'price too high',
-			status: 'Cold',
-			contacted: 'Not Contacted',
-			assignedTo: 'Shivam',
-		},
-		{
-			id: 9,
-			name: 'Divya Nair',
-			badgeType: 'instalink',
-			leadId: '2142607',
-			time: 'Today at 11:00 AM',
-			phone: '2109876543',
-			destination: 'Udaipur Palace Tour | Couple',
-			packageCode: '#UP15',
-			remarks: 'wants customization',
-			status: 'Warm',
-			contacted: 'Contacted',
-			assignedTo: 'Sonia',
-		},
-		{
-			id: 11,
-			name: 'Arjun Gupta',
-			badgeType: 'itinerary',
-			leadId: '2142608',
-			time: 'Today at 10:00 AM',
-			phone: '1098765432',
-			destination: 'Rishikesh Rafting | Group',
-			packageCode: '#RR17',
-			remarks: 'confirm availability',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Rohit',
-		},
-		{
-			id: 12,
-			name: 'Arjun Gupta',
-			badgeType: 'itinerary',
-			leadId: '2142608',
-			time: 'Today at 10:00 AM',
-			phone: '1098765432',
-			destination: 'Rishikesh Rafting | Group',
-			packageCode: '#RR17',
-			remarks: 'confirm availability',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Rohit',
-		},
-		{
-			id: 13,
-			name: 'Arjun Gupta',
-			badgeType: 'itinerary',
-			leadId: '2142608',
-			time: 'Today at 10:00 AM',
-			phone: '1098765432',
-			destination: 'Rishikesh Rafting | Group',
-			packageCode: '#RR17',
-			remarks: 'confirm availability',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Rohit',
-		},
-		{
-			id: 14,
-			name: 'Arjun Gupta',
-			badgeType: 'itinerary',
-			leadId: '2142608',
-			time: 'Today at 10:00 AM',
-			phone: '1098765432',
-			destination: 'Rishikesh Rafting | Group',
-			packageCode: '#RR17',
-			remarks: 'confirm availability',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Rohit',
-		},
-		{
-			id: 15,
-			name: 'Arjun Gupta',
-			badgeType: 'itinerary',
-			leadId: '2142608',
-			time: 'Today at 10:00 AM',
-			phone: '1098765432',
-			destination: 'Rishikesh Rafting | Group',
-			packageCode: '#RR17',
-			remarks: 'confirm availability',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Rohit',
-		},
-		{
-			id: 16,
-			name: 'Arjun Gupta',
-			badgeType: 'instalink',
-			leadId: '2142608',
-			time: 'Today at 10:00 AM',
-			phone: '1098765432',
-			destination: 'Rishikesh Rafting | Group',
-			packageCode: '#RR17',
-			remarks: 'confirm availability',
-			status: 'Hot',
-			contacted: 'Contacted',
-			assignedTo: 'Rohit',
-		},
-	]
+    // Add state for Lead Stages modal
+    const [isStagesModalOpen, setIsStagesModalOpen] = useState(false)
 
-	// Leads data state with localStorage support
-	const [leadsData, setLeadsData] = useState<Lead[]>(() => {
-		// Load saved remarks from localStorage on initial load
-		const savedRemarks = localStorage.getItem('leadRemarks')
-		if (savedRemarks) {
-			const remarksMap = JSON.parse(savedRemarks)
-			return initialLeadsData.map(lead => ({
-				...lead,
-				savedRemarks: remarksMap[lead.id] || []
-			}))
-		}
-		return initialLeadsData.map(lead => ({ ...lead, savedRemarks: [] }))
-	})
+    // Lead stages data
+    const leadStages = [
+        { label: 'New Enquiry', description: 'A new enquiry has been logged into the Instalink' },
+        { label: 'Call Not Picked', description: "You've tried contacting but they've been unresponsive." },
+        { label: 'Contacted', description: "You've contacted the lead but yet to lock all the requirements." },
+        { label: 'Qualified', description: 'You were able to have a meaningful discovery call with the lead and have locked the requirement.' },
+        { label: 'Plan & Quote Sent', description: "You've shared the plan details and the quote with cost break up." },
+        { label: 'In Pipeline', description: "The lead is still pondering and hasn't started negotiating yet." },
+        { label: 'Negotiating', description: 'The lead is now hot and can be converted.' },
+        { label: 'Awaiting Payment', description: "You've closed negotiations and sent the booking link. Payment is awaited." },
+        { label: 'Booked', description: 'Lead is now your guest, Congratulations!' },
+        { label: 'Lost & Closed', description: 'Standard archive bucket.' },
+        { label: 'Future Prospect', description: "You've tried contacting but they're looking for some future dates." },
+    ]
 
-	// Filter leads based on search query
-	const filteredLeads = leadsData.filter((lead) => {
-		if (!searchQuery) return true // If no search query, show all leads
-		
-		const query = searchQuery.toLowerCase()
-		return (
-			lead.name.toLowerCase().includes(query) ||
-			lead.leadId.toLowerCase().includes(query) ||
-			lead.phone.toLowerCase().includes(query) ||
-			lead.destination.toLowerCase().includes(query) ||
-			lead.packageCode.toLowerCase().includes(query) ||
-			lead.remarks.toLowerCase().includes(query) ||
-			lead.status.toLowerCase().includes(query) ||
-			lead.assignedTo.toLowerCase().includes(query)
-		)
-	})
+    // Initial leads data
+    const initialLeadsData: Lead[] = [
+        {
+            id: 1,
+            name: 'Priyanshu',
+            badgeType: 'instalink',
+            leadId: '2142599',
+            time: 'Today at 7:15 PM',
+            phone: '6367710137',
+            destination: 'Manali & Kasol | Group',
+            packageCode: '#MKP02',
+            remarks: 'interested',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Rohit',
+        },
+        {
+            id: 2,
+            name: 'Aarav Kumar',
+            badgeType: 'itinerary',
+            leadId: '2142600',
+            time: 'Today at 6:30 PM',
+            phone: '9876543210',
+            destination: 'Goa Beach | Solo',
+            packageCode: '#GB01',
+            remarks: 'wants discount',
+            status: 'Warm',
+            contacted: 'Not Contacted',
+            assignedTo: 'Shivam',
+        },
+        {
+            id: 3,
+            name: 'Sneha Patel',
+            badgeType: 'itinerary',
+            leadId: '2142601',
+            time: 'Today at 5:45 PM',
+            phone: '8765432109',
+            destination: 'Kerala Backwaters | Family',
+            packageCode: '#KB03',
+            remarks: 'budget friendly',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Sonia',
+        },
+        {
+            id: 4,
+            name: 'Rahul Singh',
+            leadId: '2142602',
+            badgeType: 'itinerary',
+            time: 'Today at 4:20 PM',
+            phone: '7654321098',
+            destination: 'Ladakh Adventure | Group',
+            packageCode: '#LA05',
+            remarks: 'needs info',
+            status: 'Cold',
+            contacted: 'Not Contacted',
+            assignedTo: 'Rohit',
+        },
+        {
+            id: 5,
+            name: 'Priya Sharma',
+            badgeType: 'itinerary',
+            leadId: '2142603',
+            time: 'Today at 3:10 PM',
+            phone: '6543210987',
+            destination: 'Rajasthan Heritage | Couple',
+            packageCode: '#RH07',
+            remarks: 'ready to book',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Shivam',
+        },
+        {
+            id: 6,
+            name: 'Vikram Reddy',
+            badgeType: 'itinerary',
+            leadId: '2142604',
+            time: 'Today at 2:05 PM',
+            phone: '5432109876',
+            destination: 'Shimla Manali | Family',
+            packageCode: '#SM09',
+            remarks: 'comparing prices',
+            status: 'Warm',
+            contacted: 'Not Contacted',
+            assignedTo: 'Sonia',
+        },
+        {
+            id: 7,
+            name: 'Ananya Verma',
+            badgeType: 'itinerary',
+            leadId: '2142605',
+            time: 'Today at 1:30 PM',
+            phone: '4321098765',
+            destination: 'Andaman Islands | Honeymoon',
+            packageCode: '#AI11',
+            remarks: 'interested in luxury',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Rohit',
+        },
+        {
+            id: 8,
+            name: 'Karan Mehta',
+            leadId: '2142606',
+            badgeType: 'instalink',
+            time: 'Today at 12:15 PM',
+            phone: '3210987654',
+            destination: 'Darjeeling Tea Gardens | Solo',
+            packageCode: '#DT13',
+            remarks: 'price too high',
+            status: 'Cold',
+            contacted: 'Not Contacted',
+            assignedTo: 'Shivam',
+        },
+        {
+            id: 9,
+            name: 'Divya Nair',
+            badgeType: 'instalink',
+            leadId: '2142607',
+            time: 'Today at 11:00 AM',
+            phone: '2109876543',
+            destination: 'Udaipur Palace Tour | Couple',
+            packageCode: '#UP15',
+            remarks: 'wants customization',
+            status: 'Warm',
+            contacted: 'Contacted',
+            assignedTo: 'Sonia',
+        },
+        {
+            id: 11,
+            name: 'Arjun Gupta',
+            badgeType: 'itinerary',
+            leadId: '2142608',
+            time: 'Today at 10:00 AM',
+            phone: '1098765432',
+            destination: 'Rishikesh Rafting | Group',
+            packageCode: '#RR17',
+            remarks: 'confirm availability',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Rohit',
+        },
+        {
+            id: 12,
+            name: 'Arjun Gupta',
+            badgeType: 'itinerary',
+            leadId: '2142608',
+            time: 'Today at 10:00 AM',
+            phone: '1098765432',
+            destination: 'Rishikesh Rafting | Group',
+            packageCode: '#RR17',
+            remarks: 'confirm availability',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Rohit',
+        },
+        {
+            id: 13,
+            name: 'Arjun Gupta',
+            badgeType: 'itinerary',
+            leadId: '2142608',
+            time: 'Today at 10:00 AM',
+            phone: '1098765432',
+            destination: 'Rishikesh Rafting | Group',
+            packageCode: '#RR17',
+            remarks: 'confirm availability',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Rohit',
+        },
+        {
+            id: 14,
+            name: 'Arjun Gupta',
+            badgeType: 'itinerary',
+            leadId: '2142608',
+            time: 'Today at 10:00 AM',
+            phone: '1098765432',
+            destination: 'Rishikesh Rafting | Group',
+            packageCode: '#RR17',
+            remarks: 'confirm availability',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Rohit',
+        },
+        {
+            id: 15,
+            name: 'Arjun Gupta',
+            badgeType: 'itinerary',
+            leadId: '2142608',
+            time: 'Today at 10:00 AM',
+            phone: '1098765432',
+            destination: 'Rishikesh Rafting | Group',
+            packageCode: '#RR17',
+            remarks: 'confirm availability',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Rohit',
+        },
+        {
+            id: 16,
+            name: 'Arjun Gupta',
+            badgeType: 'instalink',
+            leadId: '2142608',
+            time: 'Today at 10:00 AM',
+            phone: '1098765432',
+            destination: 'Rishikesh Rafting | Group',
+            packageCode: '#RR17',
+            remarks: 'confirm availability',
+            status: 'Hot',
+            contacted: 'Contacted',
+            assignedTo: 'Rohit',
+        },
+    ]
 
-	// Calculate pagination values
-	const totalItems = filteredLeads.length
-	const totalPages = Math.ceil(totalItems / itemsPerPage)
-	const startIndex = (currentPage - 1) * itemsPerPage
-	const endIndex = startIndex + itemsPerPage
-	const currentLeads = filteredLeads.slice(startIndex, endIndex)
+    // Leads data state with localStorage support (including reminders)
+    const [leadsData, setLeadsData] = useState<Lead[]>(() => {
+        const savedRemarks = localStorage.getItem('leadRemarks')
+        const savedReminders = localStorage.getItem('leadReminders')
+        const remarksMap = savedRemarks ? JSON.parse(savedRemarks as string) : {}
+        const remindersMap = savedReminders ? JSON.parse(savedReminders as string) : {}
+        return initialLeadsData.map(lead => ({
+            ...lead,
+            savedRemarks: remarksMap[lead.id] || [],
+            reminder: remindersMap[lead.id] || null,
+        }))
+    })
 
-	// Reset to page 1 when items per page changes
-	const handleItemsPerPageChange = (newItemsPerPage: number) => {
-		setItemsPerPage(newItemsPerPage)
-		setCurrentPage(1)
-	}
+    // Filter leads based on search query
+    const filteredLeads = leadsData.filter((lead) => {
+        if (!searchQuery) return true // If no search query, show all leads
+        
+        const query = searchQuery.toLowerCase()
+        return (
+            lead.name.toLowerCase().includes(query) ||
+            lead.leadId.toLowerCase().includes(query) ||
+            lead.phone.toLowerCase().includes(query) ||
+            lead.destination.toLowerCase().includes(query) ||
+            lead.packageCode.toLowerCase().includes(query) ||
+            lead.remarks.toLowerCase().includes(query) ||
+            lead.status.toLowerCase().includes(query) ||
+            lead.assignedTo.toLowerCase().includes(query)
+        )
+    })
 
-	// Handle refresh button
-	const handleRefresh = () => {
-		window.location.reload()
-	}
+    // Calculate pagination values
+    const totalItems = filteredLeads.length
+    const totalPages = Math.ceil(totalItems / itemsPerPage)
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const currentLeads = filteredLeads.slice(startIndex, endIndex)
 
-	// Handle select all checkbox
-	const handleSelectAll = (checked: boolean) => {
-		setSelectAll(checked)
-		if (checked) {
-			const currentPageIds = currentLeads.map(lead => lead.id)
-			setSelectedLeads(currentPageIds)
-		} else {
-			setSelectedLeads([])
-		}
-	}
+    // Reset to page 1 when items per page changes
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(1)
+    }
 
-	// Handle individual checkbox
-	const handleSelectLead = (leadId: number, checked: boolean) => {
-		if (checked) {
-			setSelectedLeads(prev => [...prev, leadId])
-		} else {
-			setSelectedLeads(prev => prev.filter(id => id !== leadId))
-			setSelectAll(false)
-		}
-	}
+    // Handle refresh button
+    const handleRefresh = () => {
+        window.location.reload()
+    }
 
-	// Check if all current page leads are selected
-	React.useEffect(() => {
-		const currentPageIds = currentLeads.map(lead => lead.id)
-		const allSelected = currentPageIds.every(id => selectedLeads.includes(id))
-		setSelectAll(allSelected && currentPageIds.length > 0)
-	}, [selectedLeads, currentLeads])
+    // Handle select all checkbox
+    const handleSelectAll = (checked: boolean) => {
+        setSelectAll(checked)
+        if (checked) {
+            const currentPageIds = currentLeads.map(lead => lead.id)
+            setSelectedLeads(currentPageIds)
+        } else {
+            setSelectedLeads([])
+        }
+    }
 
-	// Handle filter change
-	const handleFilterChange = (filter: string) => {
-		setActiveFilter(filter)
-		setCurrentPage(1) // Reset to first page when filter changes
-	}
+    // Handle individual checkbox
+    const handleSelectLead = (leadId: number, checked: boolean) => {
+        if (checked) {
+            setSelectedLeads(prev => [...prev, leadId])
+        } else {
+            setSelectedLeads(prev => prev.filter(id => id !== leadId))
+            setSelectAll(false)
+        }
+    }
 
-	// Handle search input change
-	const handleSearchChange = (value: string) => {
-		setSearchQuery(value)
-		setCurrentPage(1) // Reset to first page when search query changes
-	}
+    // Check if all current page leads are selected
+    React.useEffect(() => {
+        const currentPageIds = currentLeads.map(lead => lead.id)
+        const allSelected = currentPageIds.every(id => selectedLeads.includes(id))
+        setSelectAll(allSelected && currentPageIds.length > 0)
+    }, [selectedLeads, currentLeads])
 
-	// Handle open remark modal
-	const handleOpenRemarkModal = (leadId: number) => {
-		setSelectedLeadForRemark(leadId)
-		setRemarkText("")
-		setIsRemarkModalOpen(true)
-	}
+    // Handle filter change
+    const handleFilterChange = (filter: string) => {
+        setActiveFilter(filter)
+        setCurrentPage(1) // Reset to first page when filter changes
+    }
 
-	// Handle save remark
-	const handleSaveRemark = () => {
-		if (!selectedLeadForRemark || !remarkText.trim()) return
+    // Handle search input change
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value)
+        setCurrentPage(1) // Reset to first page when search query changes
+    }
 
-		// Get current timestamp
-		const timestamp = new Date().toLocaleString()
-		const newRemark = `${timestamp}: ${remarkText}`
+    // Handle open remark modal
+    const handleOpenRemarkModal = (leadId: number) => {
+        setSelectedLeadForRemark(leadId)
+        setRemarkText("")
+        // initialize reminder modal values if already set on lead
+        const lead = leadsData.find(l => l.id === leadId)
+        setIsReminderEnabled(Boolean(lead?.reminder))
+        setReminderDateTime(lead?.reminder ?? "")
+        setIsRemarkModalOpen(true)
+    }
 
-		// Update leads data
-		const updatedLeads = leadsData.map(lead => {
-			if (lead.id === selectedLeadForRemark) {
-				const updatedSavedRemarks = [...(lead.savedRemarks || []), newRemark]
-				return { ...lead, savedRemarks: updatedSavedRemarks }
-			}
-			return lead
-		})
+    // NEW: Remove reminder
+    const handleRemoveReminder = (leadId: number) => {
+        const updatedLeads = leadsData.map(lead => (lead.id === leadId ? { ...lead, reminder: undefined } : lead))
+        setLeadsData(updatedLeads)
+        // persist reminders map
+        const remindersMap: Record<number, string> = {}
+        updatedLeads.forEach(lead => {
+            if (lead.reminder) remindersMap[lead.id] = lead.reminder
+        })
+        localStorage.setItem('leadReminders', JSON.stringify(remindersMap))
+    }
 
-		setLeadsData(updatedLeads)
+    // Handle save remark (allow saving reminder even if remark is empty)
+    const handleSaveRemark = () => {
+        if (!selectedLeadForRemark) return
+        // If both remark and reminder are empty, do nothing
+        if (!remarkText.trim() && !(isReminderEnabled && reminderDateTime)) return
 
-		// Save to localStorage
-		const remarksMap: Record<number, string[]> = {}
-		updatedLeads.forEach(lead => {
-			if (lead.savedRemarks && lead.savedRemarks.length > 0) {
-				remarksMap[lead.id] = lead.savedRemarks
-			}
-		})
-		localStorage.setItem('leadRemarks', JSON.stringify(remarksMap))
+        // Get current timestamp
+        const timestamp = new Date().toLocaleString()
+        const newRemark = remarkText.trim() ? `${timestamp}: ${remarkText}` : undefined
 
-		// Close modal and reset
-		setIsRemarkModalOpen(false)
-		setSelectedLeadForRemark(null)
-		setRemarkText("")
-	}
+        // Update leads data
+        const updatedLeads = leadsData.map(lead => {
+            if (lead.id === selectedLeadForRemark) {
+                const updatedSavedRemarks = newRemark ? [...(lead.savedRemarks || []), newRemark] : (lead.savedRemarks || [])
+                return {
+                    ...lead,
+                    savedRemarks: updatedSavedRemarks,
+                    reminder: isReminderEnabled && reminderDateTime ? reminderDateTime : undefined,
+                }
+            }
+            return lead
+        })
 
-	const WhatsAppIcon = () => (
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			style={{
-				display: 'inline-block',
-				verticalAlign: 'middle',
-				marginLeft: '4px',
-			}}
-		>
-			<path
-				d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"
-				fill="#25D366"
-			/>
-			<path
-				d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652c1.746.943 3.71 1.444 5.71 1.447h.006c6.585 0 11.946-5.336 11.949-11.896 0-3.176-1.24-6.165-3.48-8.4zm-8.475 18.298c-1.778 0-3.524-.477-5.042-1.377l-.362-.214-3.754.982.999-3.648-.235-.374a9.86 9.86 0 01-1.511-5.26c.002-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.993c-.002 5.45-4.436 9.884-9.864 9.884z"
-				fill="#25D366"
-			/>
-		</svg>
-	)
+        setLeadsData(updatedLeads)
 
-	const PhoneIcon = () => (
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			style={{
-				display: 'inline-block',
-				verticalAlign: 'middle',
-				marginLeft: '4px',
-			}}
-		>
-			<path
-				d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	)
+        // Save saved remarks to localStorage (as before)
+        const remarksMap: Record<number, string[]> = {}
+        updatedLeads.forEach(lead => {
+            if (lead.savedRemarks && lead.savedRemarks.length > 0) {
+                remarksMap[lead.id] = lead.savedRemarks
+            }
+        })
+        localStorage.setItem('leadRemarks', JSON.stringify(remarksMap))
 
-	const AddIcon = () => (
-		<svg
-			width="16"
-			height="16"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			style={{
-				display: 'inline-block',
-				verticalAlign: 'middle',
-				marginRight: '6px',
-			}}
-		>
-			<circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
-			<path d="M12 8V16M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-		</svg>
-	)
+        // Save reminders to localStorage
+        const remindersMap: Record<number, string> = {}
+        updatedLeads.forEach(lead => {
+            if (lead.reminder) {
+                remindersMap[lead.id] = lead.reminder
+            }
+        })
+        localStorage.setItem('leadReminders', JSON.stringify(remindersMap))
 
-	const MessageIcon = () => (
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			style={{
-				display: 'inline-block',
-				verticalAlign: 'middle',
-				marginLeft: '4px',
-			}}
-		>
-			<path
-				d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	)
+        // Close modal and reset
+        setIsRemarkModalOpen(false)
+        setSelectedLeadForRemark(null)
+        setRemarkText("")
+        setIsReminderEnabled(false)
+        setReminderDateTime("")
+    }
 
-	const UserIcon = () => (
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			style={{
-				display: 'inline-block',
-				verticalAlign: 'middle',
-				marginRight: '4px',
-			}}
-		>
-			<path
-				d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<circle
-				cx="12"
-				cy="7"
-				r="4"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	)
+    const WhatsAppIcon = () => (
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginLeft: '4px',
+            }}
+        >
+            <path
+                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"
+                fill="#25D366"
+            />
+            <path
+                d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652c1.746.943 3.71 1.444 5.71 1.447h.006c6.585 0 11.946-5.336 11.949-11.896 0-3.176-1.24-6.165-3.48-8.4zm-8.475 18.298c-1.778 0-3.524-.477-5.042-1.377l-.362-.214-3.754.982.999-3.648-.235-.374a9.86 9.86 0 01-1.511-5.26c.002-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.993c-.002 5.45-4.436 9.884-9.864 9.884z"
+                fill="#25D366"
+            />
+        </svg>
+    )
 
-	return (
-		<Box
-			style={{
-				width: '100%',
-				maxWidth: '100%',
-				padding: '24px',
-				boxSizing: 'border-box',
-				overflowX: 'hidden',
-				overflowY: 'visible',
-			}}
-		>
-			{/* Title */}
-			<Text size="8" weight="regular" style={{ color: 'var(--accent-12)', marginBottom: '24px', display: 'block' }}>
-				All Leads
-			</Text>
+    const PhoneIcon = () => (
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginLeft: '4px',
+            }}
+        >
+            <path
+                d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    )
 
-			{/* Statistics Cards - Responsive Grid */}
-			<Flex
-				gap="4"
-				mb="4"
-				wrap="wrap"
-				style={{
-					marginTop: '20px',
-					width: '100%',
-					boxSizing: 'border-box',
-				}}
-			>
-				{/* Overall Leads Captured */}
-				<Box
-					style={{
-						border: '1px solid #e5e7eb',
-						flex: '1 1 300px',
-						minWidth: '250px',
-						maxWidth: '100%',
-						height: '90px',
-						borderRadius: '10px',
-						display: 'flex',
-						textAlign: 'center',
-						padding: '16px',
-						boxSizing: 'border-box',
-					}}
-				>
-					<Flex direction="column" justify="center" style={{ width: '100%' }}>
-						<Text
-							size="2"
-							style={{
-								marginBottom: '8px',
-								color: 'gray',
-							}}
-						>
-							Overall Leads Captured
-						</Text>
-						<Text
-							size="6"
-							style={{
-								fontSize: '20px',
-								fontWeight: 'bold',
-							}}
-						>
-							{totalLeads.toLocaleString()}
-						</Text>
-					</Flex>
-				</Box>
+    const AddIcon = () => (
+        <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginRight: '6px',
+            }}
+        >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+            <path d="M12 8V16M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+    )
 
-				{/* Today's Leads */}
-				<Box
-					style={{
-						border: '1px solid #e5e7eb',
-						flex: '1 1 300px',
-						minWidth: '250px',
-						maxWidth: '100%',
-						height: '90px',
-						borderRadius: '10px',
-						display: 'flex',
-						textAlign: 'center',
-						padding: '16px',
-						boxSizing: 'border-box',
-					}}
-				>
-					<Flex direction="column" justify="center" style={{ width: '100%' }}>
-						<Text
-							size="2"
-							style={{
-								marginBottom: '8px',
-								color: 'gray',
-							}}
-						>
-							Today Leads Captured
-						</Text>
-						<Text
-							size="6"
-							style={{
-								fontSize: '20px',
-								fontWeight: 'bold',
-							}}
-						>
-							{todayLeads.toLocaleString()}
-						</Text>
-					</Flex>
-				</Box>
+    const MessageIcon = () => (
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginLeft: '4px',
+            }}
+        >
+            <path
+                d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    )
 
-				{/* Overall Leads Converted */}
-				<Box
-					style={{
-						border: '1px solid #e5e7eb',
-						flex: '1 1 300px',
-						minWidth: '250px',
-						maxWidth: '100%',
-						height: '90px',
-						borderRadius: '10px',
-						display: 'flex',
-						textAlign: 'center',
-						padding: '16px',
-						boxSizing: 'border-box',
-					}}
-				>
-					<Flex direction="column" justify="center" style={{ width: '100%' }}>
-						<Text
-							size="2"
-							style={{
-								marginBottom: '8px',
-								color: 'gray',
-							}}
-						>
-							Overall Leads Converted
-						</Text>
-						<Text
-							size="6"
-							style={{
-								fontSize: '20px',
-								fontWeight: 'bold',
-							}}
-						>
-							{convertedLeads.toLocaleString()}
-						</Text>
-					</Flex>
-				</Box>
-			</Flex>
+    const UserIcon = () => (
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginRight: '4px',
+            }}
+        >
+            <path
+                d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <circle
+                cx="12"
+                cy="7"
+                r="4"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    )
 
-			{/* Search and Actions Bar - Responsive */}
-			<Flex
-				gap="3"
-				wrap="wrap"
-				align="center"
-				style={{
-					marginTop: '20px',
-					marginBottom: '15px',
-					width: '100%',
-					boxSizing: 'border-box',
-				}}
-			>
-				<TextField.Root
-					placeholder="Search..."
-					value={searchQuery}
-					onChange={(e) => handleSearchChange(e.target.value)}
-					style={{
-						flex: '1 1 300px',
-						minWidth: '200px',
-						maxWidth: '100%',
-					}}
-				>
-					<TextField.Slot>
-						<MagnifyingGlassIcon height="16" width="16" />
-					</TextField.Slot>
-			</TextField.Root>
+    // Contacted dropdown options - UPDATED
+    const contactedOptions = [
+        'New Enquiry',
+        'Call Not Pick',
+        'Contacted',
+        'Qualified',
+        'Plan and Quote Send',
+        'In Pipeline',
+        'Negotiating',
+        'Awaiting Payment',
+        'Booked',
+        'Lost & Closed',
+        'Future Prospect',
+    ]
 
-			<Flex gap="2" wrap="wrap">
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						<Box
-							style={{
-								border: '1px solid #e5e7eb',
-								borderRadius: '5px',
-								padding: '8px 16px',
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								cursor: 'pointer',
-								whiteSpace: 'nowrap',
-								backgroundColor: '#fff',
-							}}
-						>
-							Actions {selectedLeads.length > 0 && `(${selectedLeads.length})`}
-						</Box>
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content>
-						<DropdownMenu.Item disabled={selectedLeads.length === 0}>
-							Assign Selected ({selectedLeads.length})
-						</DropdownMenu.Item>
-						<DropdownMenu.Item disabled={selectedLeads.length === 0}>
-							Change Status ({selectedLeads.length})
-						</DropdownMenu.Item>
-						<DropdownMenu.Item disabled={selectedLeads.length === 0}>
-							Delete Selected ({selectedLeads.length})
-						</DropdownMenu.Item>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-				<Box
-					onClick={handleRefresh}
-					style={{
-						border: '1px solid #e5e7eb',
-						borderRadius: '5px',
-						padding: '8px 16px',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						gap: '6px',
-						cursor: 'pointer',
-						whiteSpace: 'nowrap',
-					}}
-				>
-					<ReloadIcon width="14" height="14" />
-					<Text size="2">Refresh</Text>
-				</Box>
-			</Flex>
-		</Flex>			{/* Filter Buttons - Responsive */}
+    // Handle contacted change
+    const handleContactedChange = (leadId: number, newContacted: string) => {
+        const updatedLeads = leadsData.map(lead => 
+            lead.id === leadId ? { ...lead, contacted: newContacted } : lead
+        )
+        setLeadsData(updatedLeads)
+    }
+
+    return (
+        <Box
+            style={{
+                width: '100%',
+                maxWidth: '100%',
+                padding: '24px',
+                boxSizing: 'border-box',
+                overflowX: 'hidden',
+                overflowY: 'visible',
+            }}
+        >
+            {/* Title */}
+            <Text size="8" weight="regular" style={{ color: 'var(--accent-12)', marginBottom: '24px', display: 'block' }}>
+                All Leads
+            </Text>
+
+            {/* Statistics Cards - Responsive Grid */}
+            <Flex
+                gap="4"
+                mb="4"
+                wrap="wrap"
+                style={{
+                    marginTop: '20px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                }}
+            >
+                {/* Overall Leads Captured */}
+                <Box
+                    style={{
+                        border: '1px solid #e5e7eb',
+                        flex: '1 1 300px',
+                        minWidth: '250px',
+                        maxWidth: '100%',
+                        height: '90px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        textAlign: 'center',
+                        padding: '16px',
+                        boxSizing: 'border-box',
+                    }}
+                >
+                    <Flex direction="column" justify="center" style={{ width: '100%' }}>
+                        <Text
+                            size="2"
+                            style={{
+                                marginBottom: '8px',
+                                color: 'gray',
+                            }}
+                        >
+                            Overall Leads Captured
+                        </Text>
+                        <Text
+                            size="6"
+                            style={{
+                                fontSize: '20px',
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            {totalLeads.toLocaleString()}
+                        </Text>
+                    </Flex>
+                </Box>
+
+                {/* Today's Leads */}
+                <Box
+                    style={{
+                        border: '1px solid #e5e7eb',
+                        flex: '1 1 300px',
+                        minWidth: '250px',
+                        maxWidth: '100%',
+                        height: '90px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        textAlign: 'center',
+                        padding: '16px',
+                        boxSizing: 'border-box',
+                    }}
+                >
+                    <Flex direction="column" justify="center" style={{ width: '100%' }}>
+                        <Text
+                            size="2"
+                            style={{
+                                marginBottom: '8px',
+                                color: 'gray',
+                            }}
+                        >
+                            Today Leads Captured
+                        </Text>
+                        <Text
+                            size="6"
+                            style={{
+                                fontSize: '20px',
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            {todayLeads.toLocaleString()}
+                        </Text>
+                    </Flex>
+                </Box>
+
+                {/* Overall Leads Converted */}
+                <Box
+                    style={{
+                        border: '1px solid #e5e7eb',
+                        flex: '1 1 300px',
+                        minWidth: '250px',
+                        maxWidth: '100%',
+                        height: '90px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        textAlign: 'center',
+                        padding: '16px',
+                        boxSizing: 'border-box',
+                    }}
+                >
+                    <Flex direction="column" justify="center" style={{ width: '100%' }}>
+                        <Text
+                            size="2"
+                            style={{
+                                marginBottom: '8px',
+                                color: 'gray',
+                            }}
+                        >
+                            Overall Leads Converted
+                        </Text>
+                        <Text
+                            size="6"
+                            style={{
+                                fontSize: '20px',
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            {convertedLeads.toLocaleString()}
+                        </Text>
+                    </Flex>
+                </Box>
+            </Flex>
+
+            {/* Search and Actions Bar - Responsive */}
+            <Flex
+                gap="3"
+                wrap="wrap"
+                align="center"
+                style={{
+                    marginTop: '20px',
+                    marginBottom: '15px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                }}
+            >
+                <TextField.Root
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    style={{
+                        flex: '1 1 300px',
+                        minWidth: '200px',
+                        maxWidth: '100%',
+                    }}
+                >
+                    <TextField.Slot>
+                        <MagnifyingGlassIcon height="16" width="16" />
+                    </TextField.Slot>
+            </TextField.Root>
+
+            <Flex gap="2" wrap="wrap">
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                        <Box
+                            style={{
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '5px',
+                                padding: '8px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                backgroundColor: '#fff',
+                            }}
+                        >
+                            Actions {selectedLeads.length > 0 && `(${selectedLeads.length})`}
+                        </Box>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content>
+                        <DropdownMenu.Item disabled={selectedLeads.length === 0}>
+                            Assign Selected ({selectedLeads.length})
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item disabled={selectedLeads.length === 0}>
+                            Change Status ({selectedLeads.length})
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item disabled={selectedLeads.length === 0}>
+                            Delete Selected ({selectedLeads.length})
+                        </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
+                <Box
+                    onClick={handleRefresh}
+                    style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '5px',
+                        padding: '8px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    <ReloadIcon width="14" height="14" />
+                    <Text size="2">Refresh</Text>
+                </Box>
+            </Flex>
+        </Flex>			{/* Filter Buttons - Responsive */}
 			<Flex
 				wrap="wrap"
 				gap="2"
@@ -1046,26 +1123,40 @@ const Leads: React.FC = () => {
 									))}
 								</Box>
 							)}
-							
-							<span
-								onClick={() => handleOpenRemarkModal(lead.id)}
-								style={{
-									cursor: 'pointer',
-									display: 'flex',
-									alignItems: 'center',
-								}}
-							>
-								<AddIcon />
-								<Text
-									style={{
-										textDecoration: 'underline',
-										fontSize: '11px', // Reduced from 13px
-									}}
-								>
-									Add Remark
-								</Text>
-							</span>
-						</Box>							{/* Quick Actions Column */}
+
+							{/* NEW: Display reminder below saved remarks */}
+							{lead.reminder && (
+                                <Box style={{ marginTop: '6px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <Text style={{ fontSize: '11px', color: '#b91c1c' }}>
+                                        Reminder: {(() => {
+                                            try { return new Date(lead.reminder!).toLocaleString() } catch (err) { return lead.reminder }
+                                        })()}
+                                    </Text>
+                                    <Text style={{ fontSize: '11px', cursor: 'pointer', color: '#3b82f6' }} onClick={() => handleRemoveReminder(lead.id)}>
+                                        Remove
+                                    </Text>
+                                </Box>
+                            )}
+                            
+                            <span
+                                onClick={() => handleOpenRemarkModal(lead.id)}
+                                style={{
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <AddIcon />
+                                <Text
+                                    style={{
+                                        textDecoration: 'underline',
+                                        fontSize: '11px', // Reduced from 13px
+                                    }}
+                                >
+                                    Add Remark
+                                </Text>
+                            </span>
+                        </Box>							{/* Quick Actions Column */}
 							<Box
 								style={{
 									width: '14%',
@@ -1086,8 +1177,8 @@ const Leads: React.FC = () => {
 									defaultValue=""
 									style={{
 										width: '100%',
-										maxWidth: '110px', // Reduced from 120px
-										height: '32px', // Reduced from 35px
+										maxWidth: '110px',
+										height: '32px',
 										border: '2px solid #e5e7eb',
 										borderRadius: '5px',
 										fontSize: '12px',
@@ -1109,28 +1200,31 @@ const Leads: React.FC = () => {
 								</select>
 								<select
 									id={`contact-${lead.id}`}
+									value={lead.contacted}
+									onChange={(e) => handleContactedChange(lead.id, e.target.value)}
 									style={{
 										width: '100%',
-										maxWidth: '110px', // Reduced from 120px
-										height: '32px', // Reduced from 35px
+										maxWidth: '110px',
+										height: '32px',
 										border: '2px solid #e5e7eb',
 										borderRadius: '5px',
 										fontSize: '12px',
 										padding: '4px 8px',
 									}}
 								>
-									<option value="Contacted" selected={lead.contacted === 'Contacted'}>
-										Contacted
-									</option>
-									<option value="Not Contacted" selected={lead.contacted === 'Not Contacted'}>
-										Not Contacted
-									</option>
+									{contactedOptions.map((option) => (
+										<option key={option} value={option}>
+											{option}
+										</option>
+									))}
 								</select>
 								<Text
+									onClick={() => setIsStagesModalOpen(true)}
 									style={{
 										fontWeight: 'bold',
-										fontSize: '11px', // Reduced from 12px
+										fontSize: '11px',
 										cursor: 'pointer',
+										textDecoration: 'underline',
 									}}
 								>
 									More
@@ -1196,16 +1290,16 @@ const Leads: React.FC = () => {
 								<Box
 									style={{
 										backgroundColor: 'black',
-										width: '100%',
-										maxWidth: '90px', // Reduced from 100px
-										height: '32px', // Reduced from 35px
-										border: '1px solid #e5e7eb',
-										borderRadius: '5px',
-										color: 'white',
-										display: 'flex',
-										justifyContent: 'center',
-										alignItems: 'center',
-										cursor: 'pointer',
+									 width: '100%',
+									 maxWidth: '90px', // Reduced from 100px
+									 height: '32px', // Reduced from 35px
+									 border: '1px solid #e5e7eb',
+									 borderRadius: '5px',
+									 color: 'white',
+									 display: 'flex',
+									 justifyContent: 'center',
+									 alignItems: 'center',
+									 cursor: 'pointer',
 									}}
 								>
 									<Text
@@ -1379,31 +1473,96 @@ const Leads: React.FC = () => {
 				</Flex>
 			</Flex>
 
-			{/* Add Remark Modal */}
-			<Dialog.Root open={isRemarkModalOpen} onOpenChange={setIsRemarkModalOpen}>
-				<Dialog.Content style={{ maxWidth: 600 }}>
-					<Dialog.Title>Add Remark</Dialog.Title>
-					<Dialog.Description size="2" mb="4">
-						Add a remark for Lead ID: {selectedLeadForRemark}
-					</Dialog.Description>
-					<TextArea
-						value={remarkText}
-						onChange={(e) => setRemarkText(e.target.value)}
-						placeholder="Enter your remark here..."
-						style={{ minHeight: '150px' }}
-					/>
-					<Flex gap="3" mt="4" justify="end">
-						<Dialog.Close>
-							<Button variant="soft" color="gray">
-								Cancel
-							</Button>
-						</Dialog.Close>
-						<Button onClick={handleSaveRemark}>
-							Save Remark
-						</Button>
-					</Flex>
-				</Dialog.Content>
-			</Dialog.Root>
+            {/* Add Remark Modal */}
+            <Dialog.Root open={isRemarkModalOpen} onOpenChange={setIsRemarkModalOpen}>
+                <Dialog.Content style={{ maxWidth: 600 }}>
+                    <Dialog.Title>Add Remark</Dialog.Title>
+                    <Dialog.Description size="2" mb="4">
+                        Add a remark for Lead ID: {selectedLeadForRemark}
+                    </Dialog.Description>
+                    <TextArea
+                        value={remarkText}
+                        onChange={(e) => setRemarkText(e.target.value)}
+                        placeholder="Enter your remark here..."
+                        style={{ minHeight: '150px' }}
+                    />
+
+                    {/* NEW: Set Reminder control */}
+                    <Flex gap="3" align="center" mt="3" style={{ marginTop: '12px' }}>
+                        <Checkbox checked={isReminderEnabled} onCheckedChange={(checked) => setIsReminderEnabled(Boolean(checked))} />
+                        <Text size="2">Set Reminder</Text>
+                        {isReminderEnabled && (
+                            <input
+                                type="datetime-local"
+                                value={reminderDateTime}
+                                onChange={(e) => setReminderDateTime(e.target.value)}
+                                style={{
+                                    marginLeft: '8px',
+                                    padding: '6px 8px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #e5e7eb',
+                                }}
+                            />
+                        )}
+                    </Flex>
+
+                    <Flex gap="3" mt="4" justify="end">
+                        <Dialog.Close>
+                            <Button variant="soft" color="gray">
+                                Cancel
+                            </Button>
+                        </Dialog.Close>
+                        <Button onClick={handleSaveRemark}>
+                            Save Remark
+                        </Button>
+                    </Flex>
+                </Dialog.Content>
+            </Dialog.Root>
+
+            {/* Lead Stages Modal */}
+            <Dialog.Root open={isStagesModalOpen} onOpenChange={setIsStagesModalOpen}>
+    <Dialog.Content style={{ maxWidth: 700 }}>
+        <Dialog.Title>Lead Stages</Dialog.Title>
+        <Dialog.Description size="2" mb="4">
+            Understanding what each stage signals
+        </Dialog.Description>
+        
+        <Box style={{ maxHeight: '500px', overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                    <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold', fontSize: '14px' }}>
+                            Stage Label
+                        </th>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold', fontSize: '14px' }}>
+                            What this signals?
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {leadStages.map((stage, index) => (
+                        <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                            <td style={{ padding: '12px', fontSize: '13px', fontWeight: '500' }}>
+                                {stage.label}
+                            </td>
+                            <td style={{ padding: '12px', fontSize: '13px', color: '#666' }}>
+                                {stage.description}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </Box>
+
+        <Flex gap="3" mt="4" justify="end">
+            <Dialog.Close>
+                <Button variant="soft">
+                    Close
+                </Button>
+            </Dialog.Close>
+        </Flex>
+    </Dialog.Content>
+</Dialog.Root>
 		</Box>
 	)
 }
