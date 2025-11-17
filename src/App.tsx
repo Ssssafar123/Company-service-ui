@@ -20,6 +20,8 @@ import LocalSupportPage from './pages/Dashboard/LocalSupport'
 import CoordinatorPage from './pages/Dashboard/Coordinator'
 import ActivitiesPage from './pages/Dashboard/Activities'
 import ReviewPage from './pages/Dashboard/Review' 
+import BookingsPage from './pages/Dashboard/Bookings'
+import ContentPage from './pages/Dashboard/Content'
 
 const App = () => {
   return (
@@ -63,6 +65,8 @@ const App = () => {
         <Route path='edit-category' element={<AddCategory />} />
         <Route path='add-location' element={<AddLocation />} />  
         <Route path='edit-location' element={<AddLocation />} />
+        <Route path='bookings' element={<BookingsPage />} />
+        <Route path='content' element={<ContentPage />} />
 
         </Route>
         

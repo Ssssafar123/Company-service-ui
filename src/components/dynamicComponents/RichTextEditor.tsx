@@ -149,8 +149,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						<Text size="1">1. List</Text>
 					</button>
 				</Box>
-
-				{/* Editor Content */}
+ 
+				
 				<Box
 					style={{
 						padding: '12px',

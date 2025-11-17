@@ -305,7 +305,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
           width: isCollapsed ? "70px" : "280px",
           backgroundColor: "var(--accent-1)",
           borderRight: "1px solid var(--accent-6)",
-          padding: "20px 0",
+          padding: "0px 0",
           transition: "width 0.25s ease, transform 0.25s ease",
           display: "flex",
           flexDirection: "column",
@@ -340,7 +340,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
 
         {/* Permissions Badges */}
         {!isCollapsed && user.permissions.length > 0 && (
-          <Flex gap="1" wrap="wrap" style={{ marginTop: "12px", padding: "0 12px" }}>
+          <Flex gap="1" wrap="wrap" style={{ marginTop: "0px", padding: "0 10px" }}>
             {user.permissions.map(permission => (
               <Badge 
                 key={permission} 
