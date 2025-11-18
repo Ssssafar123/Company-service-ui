@@ -109,8 +109,9 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
             <Button variant="ghost" size="2">
              Sign Up
             </Button>
-            <Button size="2">
-              Login
+            <Button onClick={()=>window.location.href=`/login`} size="2">
+             Login
+              
             </Button>
           </Flex>
 

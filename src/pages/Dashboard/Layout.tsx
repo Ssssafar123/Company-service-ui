@@ -191,7 +191,6 @@ const Layout = () => {
                                 { id: 'reviews', label: 'Reviews', path: '/dashboard/review', icon: <ReviewIcon /> },
                                 { id: 'bookings', label: 'Bookings', path: '/dashboard/bookings', icon: <BookingsIcon /> },
                                 { id: 'content', label: 'Content', path: '/dashboard/content', icon: <ContentIcon /> },
-                                { id: 'add-itinerary', label: 'Add Category', path: '/dashboard/category', icon: <CategoryIcon /> },
                             ],
                         },
                         {

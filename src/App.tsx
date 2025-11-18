@@ -22,6 +22,8 @@ import ActivitiesPage from './pages/Dashboard/Activities'
 import ReviewPage from './pages/Dashboard/Review' 
 import BookingsPage from './pages/Dashboard/Bookings'
 import ContentPage from './pages/Dashboard/Content'
+import PaymentPage from './pages/Dashboard/Payment.js'
+import Invoice from './pages/Dashboard/Invoice.js'
 
 const App = () => {
   return (
@@ -67,6 +69,10 @@ const App = () => {
         <Route path='edit-location' element={<AddLocation />} />
         <Route path='bookings' element={<BookingsPage />} />
         <Route path='content' element={<ContentPage />} />
+        <Route path='invoice' element={<Invoice />} />
+        <Route path='payment' element={<PaymentPage />} />
+
+
 
         </Route>
         
