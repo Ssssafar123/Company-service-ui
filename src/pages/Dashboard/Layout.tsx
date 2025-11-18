@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar/Navbar'
 import Sidebar from '../../components/Sidebar/Sidebar'
+
 import Dashboard from './Dashboard'
 
 const HomeIcon = (props: any) => {
@@ -199,7 +200,7 @@ const Layout = () => {
                             icon: <SalesIcon />,
                             children: [
                                 { id: 'invoice', label: "Invoice", path: '/dashboard/invoice' },
-                                { id: 'payment', label: "Payment", path: '/dashboard/payment' },
+                                { id: 'payment', label: "Payment", path: '/dashboard/payment'  },
                             ]
                         },
                         { id: 'home', label: 'Home', path: '/', icon: <HomeIcon /> },

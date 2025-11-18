@@ -46,7 +46,7 @@ const dummyItineraries: ItineraryData[] = [
 	{
 		id: '4',
 		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore',
-		city: 'Udaipur, Mount Abu',
+		city: 'Udaipur, Mount abu',
 		price: 15999,
 		priceDisplay: '₹15,999',
 		status: 'Active',
