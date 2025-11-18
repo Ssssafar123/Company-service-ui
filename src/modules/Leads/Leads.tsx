@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Box, Flex, Text, TextField, Checkbox, DropdownMenu, Button, Dialog, TextArea } from '@radix-ui/themes'
+import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea } from '@radix-ui/themes'
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } from '@radix-ui/react-icons'
 
 // Define Lead type
@@ -50,6 +50,21 @@ const Leads: React.FC = () => {
 
     // Add state for Lead Stages modal
     const [isStagesModalOpen, setIsStagesModalOpen] = useState(false)
+
+    // Add state for Add Enquiry modal
+    const [isAddEnquiryModalOpen, setIsAddEnquiryModalOpen] = useState(false)
+    const [newEnquiry, setNewEnquiry] = useState({
+        name: '',
+        badgeType: 'instalink',
+        leadId: '',
+        phone: '',
+        destination: '',
+        packageCode: '',
+        remarks: '',
+        status: 'Hot',
+        contacted: 'New Enquiry',
+        assignedTo: '',
+    })
 
     // Lead stages data
     const leadStages = [
@@ -379,6 +394,11 @@ const Leads: React.FC = () => {
         setIsRemarkModalOpen(true)
     }
 
+    const handleAssignedToChange = (leadId: number, newAssignee: string) => {
+        const updatedLeads = leadsData.map(lead => (lead.id === leadId ? { ...lead, assignedTo: newAssignee } : lead))
+        setLeadsData(updatedLeads)
+    }
+
     // NEW: Remove reminder
     const handleRemoveReminder = (leadId: number) => {
         const updatedLeads = leadsData.map(lead => (lead.id === leadId ? { ...lead, reminder: undefined } : lead))
@@ -440,6 +460,47 @@ const Leads: React.FC = () => {
         setRemarkText("")
         setIsReminderEnabled(false)
         setReminderDateTime("")
+    }
+
+    // Handle save new enquiry
+    const handleSaveEnquiry = () => {
+        if (!newEnquiry.name || !newEnquiry.phone || !newEnquiry.destination) {
+            alert('Please fill in all required fields')
+            return
+        }
+
+        const timestamp = new Date().toLocaleString()
+        const newLead: Lead = {
+            id: leadsData.length + 1,
+            name: newEnquiry.name,
+            badgeType: newEnquiry.badgeType,
+            leadId: newEnquiry.leadId || `${Math.floor(Math.random() * 9000000) + 1000000}`,
+            time: timestamp,
+            phone: newEnquiry.phone,
+            destination: newEnquiry.destination,
+            packageCode: newEnquiry.packageCode,
+            remarks: newEnquiry.remarks,
+            status: newEnquiry.status,
+            contacted: newEnquiry.contacted,
+            assignedTo: newEnquiry.assignedTo,
+            savedRemarks: [],
+            reminder: undefined,
+        }
+
+        setLeadsData([newLead, ...leadsData])
+        setIsAddEnquiryModalOpen(false)
+        setNewEnquiry({
+            name: '',
+            badgeType: 'instalink',
+            leadId: '',
+            phone: '',
+            destination: '',
+            packageCode: '',
+            remarks: '',
+            status: 'Hot',
+            contacted: 'New Enquiry',
+            assignedTo: '',
+        })
     }
 
     const WhatsAppIcon = () => (
@@ -752,36 +813,24 @@ const Leads: React.FC = () => {
             </TextField.Root>
 
             <Flex gap="2" wrap="wrap">
-                <DropdownMenu.Root>
-                    <DropdownMenu.Trigger>
-                        <Box
-                            style={{
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '5px',
-                                padding: '8px 16px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap',
-                                backgroundColor: '#fff',
-                            }}
-                        >
-                            Actions {selectedLeads.length > 0 && `(${selectedLeads.length})`}
-                        </Box>
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content>
-                        <DropdownMenu.Item disabled={selectedLeads.length === 0}>
-                            Assign Selected ({selectedLeads.length})
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item disabled={selectedLeads.length === 0}>
-                            Change Status ({selectedLeads.length})
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item disabled={selectedLeads.length === 0}>
-                            Delete Selected ({selectedLeads.length})
-                        </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                </DropdownMenu.Root>
+                <Box
+                    onClick={() => setIsAddEnquiryModalOpen(true)}
+                    style={{
+                        border: '1px solid #000',
+                        backgroundColor: '#000',
+                        color: '#fff',
+                        borderRadius: '5px',
+                        padding: '8px 20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    <Text size="2" weight="bold">Add Enquiry</Text>
+                </Box>
                 <Box
                     onClick={handleRefresh}
                     style={{
@@ -799,6 +848,7 @@ const Leads: React.FC = () => {
                     <ReloadIcon width="14" height="14" />
                     <Text size="2">Refresh</Text>
                 </Box>
+                  
             </Flex>
         </Flex>			{/* Filter Buttons - Responsive */}
 			<Flex
@@ -1247,28 +1297,24 @@ const Leads: React.FC = () => {
 									paddingRight: '8px',
 								}}
 							>
-								<select
-									id={`assign-${lead.id}`}
-									style={{
-										width: '100%',
-										maxWidth: '110px', // Reduced from 120px
-										height: '32px', // Reduced from 35px
-										border: '1px solid #e5e7eb',
-										borderRadius: '5px',
-										fontSize: '12px',
-										padding: '4px 8px',
-									}}
-								>
-									<option value="Rohit" selected={lead.assignedTo === 'Rohit'}>
-										Rohit
-									</option>
-									<option value="Shivam" selected={lead.assignedTo === 'Shivam'}>
-										Shivam
-									</option>
-									<option value="Sonia" selected={lead.assignedTo === 'Sonia'}>
-										Sonia
-									</option>
-								</select>
+                                <select
+                                    id={`assign-${lead.id}`}
+                                    value={lead.assignedTo}
+                                    onChange={(e) => handleAssignedToChange(lead.id, e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        maxWidth: '110px', // Reduced from 120px
+                                        height: '32px', // Reduced from 35px
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '5px',
+                                        fontSize: '12px',
+                                        padding: '4px 8px',
+                                    }}
+                                >
+                                    <option value="Rohit">Rohit</option>
+                                    <option value="Shivam">Shivam</option>
+                                    <option value="Sonia">Sonia</option>
+                                </select>
 							</Box>
 
 							{/* Actions Column */}
@@ -1507,11 +1553,9 @@ const Leads: React.FC = () => {
                     </Flex>
 
                     <Flex gap="3" mt="4" justify="end">
-                        <Dialog.Close>
-                            <Button variant="soft" color="gray">
-                                Cancel
-                            </Button>
-                        </Dialog.Close>
+                        <Button variant="soft" color="gray" onClick={() => setIsRemarkModalOpen(false)}>
+                            Cancel
+                        </Button>
                         <Button onClick={handleSaveRemark}>
                             Save Remark
                         </Button>
@@ -1555,12 +1599,214 @@ const Leads: React.FC = () => {
         </Box>
 
         <Flex gap="3" mt="4" justify="end">
-            <Dialog.Close>
-                <Button variant="soft">
-                    Close
-                </Button>
-            </Dialog.Close>
+            <Button variant="soft" onClick={() => setIsStagesModalOpen(false)}>
+                Close
+            </Button>
         </Flex>
+    </Dialog.Content>
+</Dialog.Root>
+
+{/* Add Enquiry Modal */}
+<Dialog.Root open={isAddEnquiryModalOpen} onOpenChange={setIsAddEnquiryModalOpen}>
+    <Dialog.Content style={{ maxWidth: 750 }}>
+        <Dialog.Title>Add New Enquiry</Dialog.Title>
+        <Dialog.Description size="2" mb="4">
+            Fill in the details to add a new lead enquiry
+        </Dialog.Description>
+
+        <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            {/* Name */}
+            <Box>
+                <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                    Name *
+                </Text>
+                <input
+                    type="text"
+                    value={newEnquiry.name}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, name: e.target.value })}
+                    placeholder="Enter name"
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                    }}
+                />
+            </Box>
+
+            {/* Phone */}
+            <Box style={{marginRight : '15px'}}>
+                <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' ,   }}>
+                    Phone *
+                </Text>
+                <input
+                    type="tel"
+                    value={newEnquiry.phone}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, phone: e.target.value })}
+                    placeholder="Enter phone number"
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                    }}
+                />
+            </Box>
+
+            {/* Destination */}
+            <Box >
+                <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                    Destination *
+                </Text>
+                <input
+                    type="text"
+                    value={newEnquiry.destination}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, destination: e.target.value })}
+                    placeholder="Enter destination"
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                    }}
+                />
+            </Box>
+
+            {/* Package Code */}
+            <Box style={{marginRight : '15px'}}>
+                <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                    Package Code
+                </Text>
+                <input
+                    type="text"
+                    value={newEnquiry.packageCode}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, packageCode: e.target.value })}
+                    placeholder="e.g., #RR17"
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                    }}
+                />
+            </Box>
+
+            {/* Badge Type */}
+            <Box>
+                <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                    Badge Type
+                </Text>
+                <select
+                    value={newEnquiry.badgeType}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, badgeType: e.target.value })}
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                    }}
+                >
+                    <option value="instalink">Instalink</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="website">Website</option>
+                    <option value="referral">Referral</option>
+                </select>
+            </Box>
+
+            {/* Status */}
+            <Box style={{marginRight : '15px'}}>
+                <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                    Status
+                </Text>
+                <select
+                    value={newEnquiry.status}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, status: e.target.value })}
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                    }}
+                >
+                    <option value="Hot">Hot</option>
+                    <option value="Warm">Warm</option>
+                    <option value="Cold">Cold</option>
+                </select>
+            </Box>
+
+            {/* Contacted */}
+            <Box>
+                <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                    Contact Status
+                </Text>
+                <select
+                    value={newEnquiry.contacted}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, contacted: e.target.value })}
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                    }}
+                >
+                    {contactedOptions.map((option) => (
+                        <option key={option} value={option}>
+                            {option}
+                        </option>
+                    ))}
+                </select>
+            </Box>
+
+            {/* Assigned To */}
+            <Box style={{marginRight : '15px'}}>
+                <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                    Assigned To
+                </Text>
+                <input
+                    type="text"
+                    value={newEnquiry.assignedTo}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, assignedTo: e.target.value })}
+                    placeholder="Enter assignee name"
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                    }}
+                />
+            </Box>
+        </Box>
+
+        {/* Remarks */}
+        <Box mt="3">
+            <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Remarks
+            </Text>
+            <TextArea
+                value={newEnquiry.remarks}
+                onChange={(e) => setNewEnquiry({ ...newEnquiry, remarks: e.target.value })}
+                placeholder="Enter any remarks or notes"
+                style={{ minHeight: '80px' }}
+            />
+        </Box>
+
+        <Flex gap="3" mt="4" justify="end">
+            <Button variant="soft" color="gray" onClick={() => setIsAddEnquiryModalOpen(false)}>
+                Cancel
+            </Button>
+            <Button onClick={handleSaveEnquiry}>
+                Add Enquiry
+            </Button>
+        </Flex>
+
     </Dialog.Content>
 </Dialog.Root>
 		</Box>
