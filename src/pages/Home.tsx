@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Box, Button, Card, Container, Flex, Grid, Heading, Text, Section } from "@radix-ui/themes";
 import { useNavigate } from "react-router-dom";
 import { DashboardIcon, PersonIcon, RocketIcon, BarChartIcon } from "@radix-ui/react-icons";
+import Sidebar from "../components/Sidebar/Sidebar";
+import Navbar from "../components/Navbar/Navbar";
 
 type Permission = "read" | "write" | "create" | "delete" | "admin";
 
@@ -25,7 +27,9 @@ export default function MyApp() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
+    <div>
     <Box style={{ minHeight: "100vh", background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
+      <Navbar/>
       {/* Hero Section */}
       <Section size="3" style={{ paddingTop: "80px", paddingBottom: "60px" }}>
         <Container size="4">
@@ -127,5 +131,7 @@ export default function MyApp() {
         </Container>
       </Box>
     </Box>
+    </div>
+
   );
 }
