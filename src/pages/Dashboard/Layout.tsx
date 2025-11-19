@@ -179,7 +179,21 @@ const Layout = () => {
                     }}
                     menuItems={[
                         { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-                        {
+                       
+                           {
+                            id: 'website',
+                            label: 'Website',
+                            icon: <WebsiteIcon />,
+                            children: [
+                                { id: 'itinerary', label: 'Itinerary', path: '/dashboard/itinerary', icon: <ItineraryIcon /> },
+                                { id: 'category', label: 'Category', path: '/dashboard/category', icon: <CategoryIcon /> },
+                                { id: 'location', label: 'Location', path: '/dashboard/location', icon: <LocationIcon /> },
+                                { id: 'reviews', label: 'Reviews', path: '/dashboard/review', icon: <ReviewIcon /> },
+                                { id: 'bookings', label: 'Bookings', path: '/dashboard/bookings', icon: <BookingsIcon /> },
+                                { id: 'content', label: 'Content', path: '/dashboard/content', icon: <ContentIcon /> },
+                            ],
+                        },
+                         {
                             id: 'leads',
                             label: 'Leads',
                             icon: <LeadsIcon />,
@@ -187,6 +201,15 @@ const Layout = () => {
                                 { id: 'all-leads', label: 'All Leads', path: '/dashboard/leads' },
                                 { id: 'customize-leads', label: 'Customize Leads', path: '/dashboard/customize-leads' },
                             ],
+                        },
+                         {
+                            id: "sales", 
+                            label: "Sales", 
+                            icon: <SalesIcon />,
+                            children: [
+                                { id: 'invoice', label: "Invoice", path: '/dashboard/invoice', icon: <InvoiceIcon /> },
+                                { id: 'payment', label: "Payment", path: '/dashboard/payment', icon: <PaymentIcon /> },
+                            ]
                         },
                         {
                             id: 'library',
@@ -200,28 +223,8 @@ const Layout = () => {
                                 { id: 'local-support', label: 'Local Support', path: '/dashboard/library/local-support' },
                             ],
                         },
-                        {
-                            id: 'website',
-                            label: 'Website',
-                            icon: <WebsiteIcon />,
-                            children: [
-                                { id: 'itinerary', label: 'Itinerary', path: '/dashboard/itinerary', icon: <ItineraryIcon /> },
-                                { id: 'category', label: 'Category', path: '/dashboard/category', icon: <CategoryIcon /> },
-                                { id: 'location', label: 'Location', path: '/dashboard/location', icon: <LocationIcon /> },
-                                { id: 'reviews', label: 'Reviews', path: '/dashboard/review', icon: <ReviewIcon /> },
-                                { id: 'bookings', label: 'Bookings', path: '/dashboard/bookings', icon: <BookingsIcon /> },
-                                { id: 'content', label: 'Content', path: '/dashboard/content', icon: <ContentIcon /> },
-                            ],
-                        },
-                        {
-                            id: "sales", 
-                            label: "Sales", 
-                            icon: <SalesIcon />,
-                            children: [
-                                { id: 'invoice', label: "Invoice", path: '/dashboard/invoice', icon: <InvoiceIcon /> },
-                                { id: 'payment', label: "Payment", path: '/dashboard/payment', icon: <PaymentIcon /> },
-                            ]
-                        },
+                     
+                       
                         { id: 'home', label: 'Home', path: '/', icon: <HomeIcon /> },
 
                     ]}
