@@ -143,6 +143,26 @@ const SalesIcon = () => {
     )
 }
 
+const InvoiceIcon = () => {
+    return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M7 7h10M7 11h10M7 15h6" />
+        </svg>
+    )
+}
+
+const PaymentIcon = () => {
+    return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2" />
+            <line x1="2" y1="10" x2="22" y2="10" />
+            <circle cx="7.5" cy="15.5" r="1" />
+            <circle cx="11.5" cy="15.5" r="1" />
+        </svg>
+    )
+}
+
 const Layout = () => {
     const [collapsed, setCollapsed] = useState(false)
     const navigate = useNavigate()
@@ -198,8 +218,8 @@ const Layout = () => {
                             label: "Sales", 
                             icon: <SalesIcon />,
                             children: [
-                                { id: 'invoice', label: "Invoice", path: '/dashboard/invoice' },
-                                { id: 'payment', label: "Payment", path: '/dashboard/payment'  },
+                                { id: 'invoice', label: "Invoice", path: '/dashboard/invoice', icon: <InvoiceIcon /> },
+                                { id: 'payment', label: "Payment", path: '/dashboard/payment', icon: <PaymentIcon /> },
                             ]
                         },
                         { id: 'home', label: 'Home', path: '/', icon: <HomeIcon /> },
