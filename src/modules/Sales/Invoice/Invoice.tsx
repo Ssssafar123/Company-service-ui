@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import  './invoice.css'
 import {
 	Box,
 	Flex,
@@ -15,6 +16,8 @@ import {
 } from '@radix-ui/themes'
 import { Search, ChevronDown, Plus, CreditCard, RefreshCw, Download, List, Filter, ChevronLeft, FileText, ChevronsLeft, BarChart3, X } from 'lucide-react'
 import Table from '../../../components/dynamicComponents/Table'
+
+
 
 type InvoiceData = {
 	id: string
@@ -609,7 +612,7 @@ const Invoice: React.FC = () => {
 			render: (row: InvoiceData) => (
 				<Text
 					style={{
-						color: 'var(--accent-11)',
+						color: 'blue',
 						cursor: 'pointer',
 						textDecoration: 'none',
 					}}
@@ -630,8 +633,14 @@ const Invoice: React.FC = () => {
 		},
 		{
 			key: 'totalTax',
-			label: 'Total Tax',
-			width: '130px',
+			label: (
+				<Text size="2"  style={{
+					width : "60px"
+				}}>
+					Total Tax
+				</Text>
+			),
+			width: '160px',
 			sortable: true,
 			render: (row: InvoiceData) => formatCurrency(row.totalTax),
 		},
@@ -649,7 +658,7 @@ const Invoice: React.FC = () => {
 			render: (row: InvoiceData) => (
 				<Text
 					style={{
-						color: 'var(--accent-11)',
+						color: 'blue',
 						cursor: 'pointer',
 						textDecoration: 'none',
 					}}
@@ -692,7 +701,13 @@ const Invoice: React.FC = () => {
 		},
 		{
 			key: 'tripStartingDate',
-			label: 'Trip Starting Date',
+			label: (
+				<Text size="2" style={{
+					width : "120px"
+				}}>
+					Trip Starting Date
+				</Text>
+			),
 			width: '150px',
 			sortable: true,
 		},
@@ -704,7 +719,13 @@ const Invoice: React.FC = () => {
 		},
 		{
 			key: 'b2bDeal',
-			label: 'B2B DEAL',
+			label: (
+				<Text size="2" style={{
+					width : "100px"
+				}} >
+					B2B DEAL
+				</Text>
+			),
 			width: '120px',
 			sortable: true,
 			render: (row: InvoiceData) => (
@@ -1156,7 +1177,7 @@ const Invoice: React.FC = () => {
 				</Flex>
 
 				{/* Table */}
-				<Box style={{ overflowX: 'auto' }}>
+				<Box className='invoice-table' style={{ overflowX: 'auto' }}>
 					<Table
 						columns={columns}
 						rows={tableRows}
