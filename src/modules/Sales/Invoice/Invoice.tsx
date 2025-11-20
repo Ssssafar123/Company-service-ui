@@ -775,27 +775,27 @@ const Invoice: React.FC = () => {
 
 					{/* Financial Overview Cards */}
 					<Flex gap="4" wrap="wrap" style={{ marginBottom: '24px' }}>
-						<Card style={{ flex: 1, minWidth: '200px', padding: '20px' }}>
+						<Card style={{ flex: 1, minWidth: '200px', padding: '20px'  }}>
 							<Text size="2" style={{ color: 'var(--gray-11)', marginBottom: '8px' }}>
-								Outstanding Invoices
+								Outstanding Invoices:
 							</Text>
-							<Text size="6" weight="bold" style={{ color: '#FF6B35' }}>
+							<Text size="3" weight="bold" style={{ color: '#FF6B35' , marginLeft : "40px" }}>
 								{formatCurrency(stats.outstandingAmount)}
 							</Text>
 						</Card>
 						<Card style={{ flex: 1, minWidth: '200px', padding: '20px' }}>
 							<Text size="2" style={{ color: 'var(--gray-11)', marginBottom: '8px' }}>
-								Past Due Invoices
+								Past Due Invoices:
 							</Text>
-							<Text size="6" weight="bold" style={{ color: 'var(--accent-11)' }}>
+							<Text size="3" weight="bold" style={{ color: 'var(--accent-11)' , marginLeft : "40px" }}>
 								{formatCurrency(stats.pastDueAmount)}
 							</Text>
 						</Card>
 						<Card style={{ flex: 1, minWidth: '200px', padding: '20px' }}>
 							<Text size="2" style={{ color: 'var(--gray-11)', marginBottom: '8px' }}>
-								Paid Invoices
+								Paid Invoices:
 							</Text>
-							<Text size="6" weight="bold" style={{ color: 'var(--green-11)' }}>
+							<Text size="3" weight="bold" style={{ color: 'var(--green-11)', marginLeft : "40px" }}>
 								{formatCurrency(stats.paidAmount)}
 							</Text>
 						</Card>
@@ -1056,7 +1056,7 @@ const Invoice: React.FC = () => {
 							size="3"
 							variant="ghost"
 							onClick={handleRecurringInvoices}
-							style={{ cursor: 'pointer' }}
+							style={{ cursor: 'pointer' , marginLeft : "3px" }}
 						>
 							<RefreshCw size={16} />
 							Recurring Invoices
