@@ -24,7 +24,7 @@ import BookingsPage from './pages/Dashboard/Bookings'
 import ContentPage from './pages/Dashboard/Content'
 import PaymentPage from './pages/Dashboard/Payment.js'
 import Invoice from './pages/Dashboard/Invoice.js'
-
+import AddInvoice from './pages/Dashboard/AddInvoice.js'
 const App = () => {
   return (
     <div>
@@ -47,6 +47,7 @@ const App = () => {
         <Route path='/login' element={<Login/>}/>
 
         <Route path='/dashboard' element={<Layout/>} >
+
         <Route index element={<Dashboard/>} />
         <Route path='test-form' element={<TestForm/>} />
         <Route path='table' element={<TableTest/>} />
@@ -71,7 +72,7 @@ const App = () => {
         <Route path='content' element={<ContentPage />} />
         <Route path='invoice' element={<Invoice />} />
         <Route path='payment' element={<PaymentPage />} />
-
+        <Route path='addInvoice' element={<AddInvoice/>}/>
 
 
         </Route>

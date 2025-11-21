@@ -1033,7 +1033,7 @@ const Invoice: React.FC = () => {
 						<Button
 							size="3"
 							variant="soft"
-							onClick={handleCreateNew}
+							onClick={()=>navigate(`/dashboard/addInvoice`)}
 							style={{ cursor: 'pointer' }}
 						>
 							<Plus size={16} />
