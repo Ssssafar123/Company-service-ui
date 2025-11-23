@@ -1,4 +1,4 @@
-import Add_Invoice from "../../modules/Sales/addInvoice/addInvoice";
+import Add_Invoice from "../../modules/Sales/Invoice/AddInvoice";
 
 import React from 'react'
 
