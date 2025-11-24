@@ -23,7 +23,7 @@ import SEOFields from '../../modules/Itinerary/SEOFields'
 type Field = {
   name: string;
   label: string;
-  type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch" | "richtext" | "file" | "number" | "multiselect" | "daywise" | "hotels" | "packages" | "batches" | "custom" | "seo";
+  type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch" | "richtext" | "file" | "number" | "multiselect" | "daywise" | "hotels" | "packages" | "batches" | "custom" | "seo" | "date";
   placeholder?: string;
   options?: string[] | { value: string; label: string }[];
   fullWidth?: boolean;
@@ -279,6 +279,50 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               error={undefined}
             />
           );
+
+      case "date":
+        return (
+          <Box style={{ position: 'relative' }}>
+            <TextField.Root
+              name={field.name}
+              type="date"
+              value={formValues[field.name] || ''}
+              onChange={(e) => handleChange(field.name, e.target.value)}
+              placeholder={field.placeholder}
+              required={field.required}
+              style={{
+                width: '100%',
+                paddingRight: '40px',
+              }}
+            />
+            <Box
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+                color: 'var(--accent-11)',
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 1V3M11 1V3M2 5H14M3 3H13C13.5523 3 14 3.44772 14 4V14C14 14.5523 13.5523 15 13 15H3C2.44772 15 2 14.5523 2 14V4C2 3.44772 2.44772 3 3 3Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Box>
+          </Box>
+        );
 
       default:
         return null;

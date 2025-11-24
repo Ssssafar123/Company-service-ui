@@ -457,17 +457,7 @@ const Payment: React.FC = () => {
 
 	return (
 		<Box style={{ padding: '24px' }}>
-			<Text
-				size="7"
-				weight="bold"
-				style={{
-					color: 'var(--accent-12)',
-					marginBottom: '24px',
-					display: 'block',
-				}}
-			>
-				Payment Management
-			</Text>
+			
 
 			<Flex gap="3" align="center" justify="between" style={{ marginBottom: '24px' }}>
 				<Flex gap="2" align="center">
