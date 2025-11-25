@@ -14,8 +14,9 @@ import {
 	Badge,
 	Select,
 } from '@radix-ui/themes'
-import { Search, ChevronDown, Plus, CreditCard, RefreshCw, Download, List, Filter, ChevronLeft, FileText, ChevronsLeft, BarChart3, X } from 'lucide-react'
+import { Search, ChevronDown, Plus, CreditCard, RefreshCw, Download, List, Filter, ChevronLeft, FileText, ChevronsLeft, BarChart3, X, Calendar } from 'lucide-react'
 import Table from '../../../components/dynamicComponents/Table'
+
 
 
 
@@ -200,12 +201,342 @@ const dummyInvoices: InvoiceData[] = [
 	},
 ]
 
+const PaymentRow = ({ invoice, customer, date, balance }) => {
+  const [paymentDate, setPaymentDate] = useState(date);
+  const [paymentMode, setPaymentMode] = useState('-');
+  const [transactionId, setTransactionId] = useState('');
+  const [amountReceived, setAmountReceived] = useState('');
+
+  return (
+    <tr className="border-b border-gray-200">
+      <td className="py-4 px-4">
+        <div className="text-blue-600 font-medium">{invoice}</div>
+        <div className="text-sm text-gray-600">{customer}</div>
+      </td>
+      <td className="py-4 px-4">
+        <div className="relative">
+          <input
+            type="text"
+            value={paymentDate}
+            onChange={(e) => setPaymentDate(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md pr-10"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        </div>
+      </td>
+      <td className="py-4 px-4">
+        <select
+          value={paymentMode}
+          onChange={(e) => setPaymentMode(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+        >
+          <option>-</option>
+          <option>Cash</option>
+          <option>Card</option>
+          <option>UPI</option>
+          <option>Bank Transfer</option>
+        </select>
+      </td>
+      <td className="py-4 px-4">
+        <input
+          type="text"
+          value={transactionId}
+          onChange={(e) => setTransactionId(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          placeholder=""
+        />
+      </td>
+      <td className="py-4 px-4">
+        <input
+          type="text"
+          value={amountReceived}
+          onChange={(e) => setAmountReceived(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          placeholder=""
+        />
+      </td>
+      <td className="py-4 px-4 text-right">
+        <span className="font-medium">{balance}</span>
+      </td>
+    </tr>
+  );
+};
+
+const AddPaymentsModal = ({ isBatch, setIsBatch }) => {
+  const [filterValue, setFilterValue] = useState('');
+
+  const invoices = [
+    { invoice: 'INVOICE002539/11/2025', customer: 'siddhant .', date: '25/11/2025', balance: '₹24,500.70' },
+    { invoice: 'INVOICE002538/11/2025', customer: 'Kunal Wadhwani', date: '25/11/2025', balance: '₹7,875.00' },
+    { invoice: 'INVOICE002537/11/2025', customer: 'Darshika Pal', date: '25/11/2025', balance: '₹13,750.00' },
+    { invoice: 'INVOICE002536/11/2025', customer: 'Shubham muchhal', date: '25/11/2025', balance: '₹33,000.00' },
+    { invoice: 'INVOICE002535/11/2025', customer: 'Manvendra Singh Gour', date: '25/11/2025', balance: '₹21,400.00' },
+    { invoice: 'INVOICE002534/11/2025', customer: 'Aman sharma', date: '25/11/2025', balance: '₹17,625.00' },
+    { invoice: 'INVOICE002533/11/2025', customer: 'Varsha Singh', date: '25/11/2025', balance: '₹48,680.00' },
+  ];
+
+  const filteredInvoices = invoices.filter(inv =>
+    inv.customer.toLowerCase().includes(filterValue.toLowerCase())
+  );
+
+  if (!isBatch) return null;
+
+  // Inline style for table header cells
+  const thStyle = {
+    padding: '14px 16px',
+    textAlign: 'left',
+    fontSize: 15,
+    fontWeight: 500,
+    color: '#374151',
+    borderBottom: '1px solid #e5e7eb',
+    background: '#f9fafb',
+	
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.25)',
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
+    >
+    <div
+  style={{
+    background: 'white',
+    borderRadius: 0,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+    width: '100vw',
+    height: '100vh',
+    maxWidth: '100vw',
+    maxHeight: '100vh',
+    overflow: 'auto',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: 0,
+  }}
+>
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '24px',
+            borderBottom: '1px solid #e5e7eb',
+          }}
+        >
+          <h2 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>Add Payments</h2>
+          <button
+            onClick={() => setIsBatch(false)}
+            style={{
+              padding: 6,
+              borderRadius: 6,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.background = '#f3f4f6')}
+            onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+            aria-label="Close add payments"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Filter */}
+        <div
+          style={{
+            padding: '24px',
+            borderBottom: '1px solid #e5e7eb',
+          }}
+        >
+          <div style={{ position: 'relative', maxWidth: 320 }}>
+            <input
+              type="text"
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+              placeholder="Filter invoices by customer"
+              style={{
+                width: '100%',
+                padding: '10px 32px 10px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: 6,
+                fontSize: 15,
+                outline: 'none',
+              }}
+            />
+            <svg
+              style={{
+                position: 'absolute',
+                right: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 18,
+                height: 18,
+                color: '#9ca3af',
+                pointerEvents: 'none',
+              }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div style={{ overflow: 'auto', maxHeight: 'calc(90vh - 180px)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1 }}>
+              <tr>
+                <th style={thStyle}>Invoice Number #</th>
+                <th style={thStyle}>Payment Date</th>
+                <th style={thStyle}>Payment Mode</th>
+                <th style={thStyle}>Transaction Id</th>
+                <th style={thStyle}>Amount received</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>Invoice Balance Due</th>
+              </tr>
+            </thead>
+            <tbody style={{ background: 'white' }}>
+              {filteredInvoices.map((inv, idx) => (
+                <PaymentRowInline key={idx} {...inv} />
+              ))}
+              {filteredInvoices.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#6b7280' }}>
+                    No invoices found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Inline style for PaymentRow
+const PaymentRowInline = ({ invoice, customer, date, balance }) => {
+  const [paymentDate, setPaymentDate] = useState(date);
+  const [paymentMode, setPaymentMode] = useState('-');
+  const [transactionId, setTransactionId] = useState('');
+  const [amountReceived, setAmountReceived] = useState('');
+
+  return (
+    <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+      <td style={{ padding: '16px' }}>
+        <div style={{ color: '#2563eb', fontWeight: 500 }}>{invoice}</div>
+        <div style={{ fontSize: 13, color: '#6b7280' }}>{customer}</div>
+      </td>
+      <td style={{ padding: '16px' }}>
+        <div style={{ position: 'relative' }}>
+          <input
+            type="text"
+            value={paymentDate}
+            onChange={(e) => setPaymentDate(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 32px 10px 12px',
+              border: '1px solid #d1d5db',
+              borderRadius: 6,
+              fontSize: 15,
+              outline: 'none',
+            }}
+          />
+          <Calendar
+            style={{
+              position: 'absolute',
+              right: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 18,
+              height: 18,
+              color: '#9ca3af',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
+      </td>
+      <td style={{ padding: '16px' }}>
+        <select
+          value={paymentMode}
+          onChange={(e) => setPaymentMode(e.target.value)}
+          style={{
+            width: '120px',
+            padding: '10px 12px',
+            border: '1px solid #d1d5db',
+            borderRadius: 6,
+            fontSize: 15,
+            background: 'white',
+            outline: 'none',
+			marginLeft : "20px"
+          }}
+        >
+          <option>-</option>
+          <option>Cash</option>
+          <option>Card</option>
+          <option>UPI</option>
+          <option>Bank Transfer</option>
+        </select>
+      </td>
+      <td style={{ padding: '16px' }}>
+        <input
+          type="text"
+          value={transactionId}
+          onChange={(e) => setTransactionId(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            border: '1px solid #d1d5db',
+            borderRadius: 6,
+            fontSize: 15,
+            outline: 'none',
+          }}
+          placeholder=""
+        />
+      </td>
+      <td style={{ padding: '16px' }}>
+        <input
+          type="text"
+          value={amountReceived}
+          onChange={(e) => setAmountReceived(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            border: '1px solid #d1d5db',
+            borderRadius: 6,
+            fontSize: 15,
+            outline: 'none',
+          }}
+          placeholder=""
+        />
+      </td>
+      <td style={{ padding: '16px', textAlign: 'right' }}>
+        <span style={{ fontWeight: 500 }}>{balance}</span>
+      </td>
+    </tr>
+  );
+};
+
 const Invoice: React.FC = () => {
 	const navigate = useNavigate()
 	const [searchQuery, setSearchQuery] = useState('')
 	const [invoices, setInvoices] = useState<InvoiceData[]>(dummyInvoices)
 	const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null } | null>(null)
 	const [currentPage, setCurrentPage] = useState(1)
+
+
+
 	const [itemsPerPage, setItemsPerPage] = useState(25)
 	const [showQuickStats, setShowQuickStats] = useState(false)
 	const [selectedYear, setSelectedYear] = useState('2025')
@@ -753,8 +1084,14 @@ const Invoice: React.FC = () => {
 		...invoice,
 	}))
 
+	const [isBatch , setIsBatch] = useState<boolean>(false);
+
 	return (
 		<Box style={{ padding: '24px', minHeight: '100vh', backgroundColor: 'var(--gray-2)' }}>
+
+		{isBatch && (
+  <AddPaymentsModal isBatch={isBatch} setIsBatch={setIsBatch} />
+)}
 			{/* Quick Stats Section - Toggleable */}
 			{showQuickStats && (
 				<Card style={{ marginBottom: '24px', padding: '24px' }}>
@@ -1042,7 +1379,7 @@ const Invoice: React.FC = () => {
 						<Button
 							size="3"
 							variant="soft"
-							onClick={handleBatchPayments}
+							onClick={()=>setIsBatch(true)}
 							style={{ cursor: 'pointer' }}
 						>
 							<CreditCard size={16} />
