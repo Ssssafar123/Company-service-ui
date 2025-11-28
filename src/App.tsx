@@ -25,6 +25,7 @@ import ContentPage from './pages/Dashboard/Content'
 import PaymentPage from './pages/Dashboard/Payment.js'
 import Invoice from './pages/Dashboard/Invoice.js'
 import AddInvoice from './pages/Dashboard/AddInvoice.js'
+import LedgerPage from './pages/Dashboard/Ledger'
 const App = () => {
   return (
     <div>
@@ -73,6 +74,7 @@ const App = () => {
         <Route path='invoice' element={<Invoice />} />
         <Route path='payment' element={<PaymentPage />} />
         <Route path='addInvoice' element={<AddInvoice/>}/>
+        <Route path='ledger' element={<LedgerPage />} />
 
 
         </Route>
