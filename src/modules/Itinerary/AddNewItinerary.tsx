@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Box, Text, Separator, Flex, Button, AlertDialog } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
+import axios from 'axios'
 
 
 // Dummy data for options
@@ -79,35 +80,73 @@ const AddNewItinerary: React.FC = () => {
 
 	
 
-	const handleSubmit = (values: Record<string, any>) => {
-		if (isEditMode) {
-			console.log('Itinerary updated with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Itinerary updated successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/itinerary')
-				},
-			})
-		} else {
-			console.log('Form submitted with values:', values)
-			setFormData(values)
+	const handleSubmit = async (values: Record<string, any>) => {
+		try {
+			// Map your form values to the API payload structure here
+			const sanitizeImages = (img: any) => {
+				if (!img) return [];
+				if (Array.isArray(img)) {
+					return img.filter((i) => typeof i === 'string' && i.trim() !== '');
+				}
+				if (typeof img === 'string' && img.trim() !== '') {
+					return [img];
+				}
+				return [];
+			};
+
+			const payload = {
+				name: values.iti_name,
+				city: dummyLocations.find(loc => loc.value === values.travel_location)?.label || '',
+				price: values.price || 12000,
+				priceDisplay: values.priceDisplay || "₹12,000",
+				status: values.status || "Active",
+				trending: values.trending || "Yes",
+				description: values.iti_desc,
+				shortDescription: values.iti_short_desc,
+				altitude: values.iti_altitude,
+				scenary: values.iti_scenary,
+				culturalSite: values.iti_cultural_site,
+				brochureBanner: values.iti_brochure_banner,
+				isCustomize: values.iti_is_customize,
+				notes: values.iti_notes,
+				images: sanitizeImages(values.iti_img),
+				daywiseActivities: values.day_details || [],
+				hotelDetails: values.hotels || [],
+				packages: values.package_details || {},
+				batches: values.batches || [],
+				seoFields: values.seo_fields || {},
+				duration: values.iti_duration,
+				inclusions: values.iti_inclusion ? [values.iti_inclusion] : [],
+				exclusions: values.iti_exclusion ? [values.iti_exclusion] : [],
+				termsAndConditions: values.termsAndConditions || "",
+				cancellationPolicy: values.cancellationPolicy || "",
+			};
+
+			const response = await axios.post('http://localhost:8000/api/itinerary', payload);
+
+			setFormData(values);
 			setDialogConfig({
 				title: 'Success',
 				description: 'Itinerary created successfully!',
 				actionText: 'OK',
 				color: 'green',
 				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/itinerary')
+					setDialogOpen(false);
+					navigate('/dashboard/itinerary');
 				},
-			})
+			});
+			setDialogOpen(true);
+		} catch (error) {
+			setDialogConfig({
+				title: 'Error',
+				description: 'Failed to create itinerary.',
+				actionText: 'OK',
+				color: 'red',
+				onConfirm: () => setDialogOpen(false),
+			});
+			setDialogOpen(true);
+			console.error('API error:', error);
 		}
-		setDialogOpen(true)
 	}
 
 	const formFields = [
