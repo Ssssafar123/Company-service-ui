@@ -571,6 +571,7 @@ const Bookings: React.FC = () => {
     					color: 'white',
     					backgroundColor: 'var(--accent-9)',
     					whiteSpace: 'nowrap',
+						
   					}}
 					>
   					Add Booking
