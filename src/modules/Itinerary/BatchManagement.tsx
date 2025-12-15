@@ -69,7 +69,7 @@ const BatchManagement: React.FC<BatchManagementProps> = ({
 	return (
 		<Box>
 			{label && (
-				<Flex justify="between" align="center" style={{ marginBottom: '16px' }}>
+				<Flex justify="between" align="center" style={{ marginBottom: '15px' }}>
 					<Text size="3" weight="medium" style={{ color: 'var(--accent-12)' }}>
 						{label}
 					</Text>

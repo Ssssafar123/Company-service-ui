@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Box, Text, Separator, Flex, Button, AlertDialog, Card, Checkbox } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
 
-// Define ItineraryData type locally
 type ItineraryData = {
 	id: string
 	name: string
@@ -14,7 +13,6 @@ type ItineraryData = {
 	trending: string
 }
 
-// Dummy itineraries data (same as Itinerary component)
 const dummyItineraries: ItineraryData[] = [
 	{
 		id: '1',
