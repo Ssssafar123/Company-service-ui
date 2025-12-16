@@ -72,7 +72,7 @@ const Payment: React.FC = () => {
 		actionText: string
 		cancelText?: string
 		onConfirm: () => void
-		color?: 'red' | 'blue' | 'green' | ' gray'
+		color?: 'red' | 'blue' | 'green' | '   gray'
 	} | null>(null)
 
 	const [columnVisibility, setColumnVisibility] = useState({

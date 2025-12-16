@@ -1616,7 +1616,7 @@ const Leads: React.FC = () => {
 
         <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {/* Name */}
-            <Box>
+            <Box style={{marginRight : '25px'}}>
                 <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
                     Name *
                 </Text>
@@ -1656,7 +1656,7 @@ const Leads: React.FC = () => {
             </Box>
 
             {/* Destination */}
-            <Box >
+            <Box  style={{marginRight : '25px'}}>
                 <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
                     Destination *
                 </Text>
