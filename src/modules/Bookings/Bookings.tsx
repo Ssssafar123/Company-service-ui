@@ -562,6 +562,22 @@ const Bookings: React.FC = () => {
 				</TextField.Root>
 
 				{/* Columns Menu */}
+				<Button variant="soft" size="2"
+  						onClick={() => {
+    					setEditingBooking(null)   // new booking
+    					setIsFormOpen(true)      // form open
+  					}}
+  						style={{
+    					color: 'white',
+    					backgroundColor: 'var(--accent-9)',
+    					whiteSpace: 'nowrap',
+						
+  					}}
+					>
+  					Add Booking
+				</Button>
+
+
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						<Button variant="soft" size="2">

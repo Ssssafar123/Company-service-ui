@@ -4,7 +4,7 @@ import { Box, Flex, Text, Card, Grid } from '@radix-ui/themes'
 const Dashboard = () => {
   // Sample data for KPIs
   const kpis = {
-    totalBookings: 142,           // number of bookings this month
+    totalBookings: 1420,           // number of bookings this month
     activeTrips: 8,                // number of trips currently underway
     deviceUsagePct: 78,            // maybe % of mobile vs desktop usage
     customerSatisfactionPct: 92,  // e.g., survey rating
