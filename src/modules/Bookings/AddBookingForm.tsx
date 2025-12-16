@@ -1,4 +1,7 @@
 import React, { useEffect } from 'react'
+import { useDispatch } from 'react-redux'
+import type { Booking } from '../../features/BookingSlice'
+
 import {
 	Box,
 	Flex,
@@ -7,25 +10,13 @@ import {
 	TextField,
 } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
-
+import { createBooking } from '../../features/BookingSlice'
+import type { AppDispatch } from '../../store'
 type AddBookingFormProps = {
 	isOpen: boolean
 	onClose: () => void
-	onSubmit: (values: Record<string, any>) => void
-	initialData?: {
-		id?: string
-		bookingId?: string
-		customerName?: string
-		customerEmail?: string
-		customerPhone?: string
-		itinerary?: string
-		bookingDate?: string
-		travelDate?: string
-		numberOfTravelers?: number
-		totalAmount?: number
-		status?: 'confirmed' | 'pending' | 'cancelled' | 'completed'
-		paymentStatus?: 'paid' | 'pending' | 'refunded'
-	} | null
+	onSubmit: (values: Omit<Booking, "id">) => void
+	initialData?: Partial<Booking> | null
 }
 
 // Dummy itineraries data for dropdown
@@ -69,6 +60,8 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({ isOpen, onClose, onSubm
 			document.body.style.overflow = 'unset'
 		}
 	}, [isOpen])
+
+	const dispatch = useDispatch<AppDispatch>()
 
 	// Form fields configuration
 	const formFields = [
@@ -170,8 +163,12 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({ isOpen, onClose, onSubm
 		},
 	]
 
+	
+
+
 	const handleFormSubmit = (values: Record<string, any>) => {
-		onSubmit(values)
+		dispatch(createBooking(values as Omit<Booking, 'id'>))
+		onSubmit(values as Omit<Booking, 'id'>)
 		onClose()
 	}
 
