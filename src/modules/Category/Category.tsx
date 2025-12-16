@@ -1,5 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../../store'
+import {
+	fetchCategories,
+	createCategory,
+	updateCategoryById,
+	deleteCategoryById,
+	type Category as CategoryType,
+} from '../../features/CategorySlice'
 import {
 	Box,
 	Flex,
@@ -20,56 +29,15 @@ type CategoryData = {
 	order?: number
 }
 
-const dummyCategories: CategoryData[] = [
-	{
-		id: '1',
-		name: 'Beaches',
-		image: '/images/categories/Goa_bg.webp.png',
-		tripCount: 32,
-		order: 1,
-	},
-	{
-		id: '2',
-		name: 'Mountains',
-		image: '/images/categories/hill.png',
-		tripCount: 16,
-		order: 2,
-	},
-	{
-		id: '3',
-		name: 'Adventure',
-		image: '/images/categories/modern.png',
-		tripCount: 25,
-		order: 3,
-	},
-	{
-		id: '4',
-		name: 'Honeymoon Trips',
-		image: '/images/categories/tourists.jpg',
-		tripCount: 48,
-		order: 4,
-	},
-	{
-		id: '5',
-		name: 'Adventure',
-		image: '/images/categories/turkey_bg.webp.jpg',
-		tripCount: 25,
-		order: 5,
-	},
-	{
-		id: '6',
-		name: 'Category',
-		image: '/images/categories/mountainss.jpg',
-		tripCount: 13,
-		order: 6,
-	},
-]
-
-// LocalStorage key for category order
-const CATEGORY_ORDER_KEY = 'category_order'
-
 const Category: React.FC = () => {
 	const navigate = useNavigate()
+	const dispatch = useDispatch<AppDispatch>()
+	
+	// Get data from Redux store
+	const categoriesFromStore = useSelector((state: RootState) => state.category.categories)
+	const loading = useSelector((state: RootState) => state.category.ui.loading)
+	const error = useSelector((state: RootState) => state.category.ui.error)
+
 	const [searchQuery, setSearchQuery] = useState('')
 	const [categories, setCategories] = useState<CategoryData[]>([])
 	const [draggedId, setDraggedId] = useState<string | null>(null)
@@ -86,29 +54,22 @@ const Category: React.FC = () => {
 		color?: 'red' | 'blue' | 'green' | 'gray'
 	} | null>(null)
 
-	// Load categories from localStorage on mount
+	// Fetch categories on mount
 	useEffect(() => {
-		const savedOrder = localStorage.getItem(CATEGORY_ORDER_KEY)
-		if (savedOrder) {
-			try {
-				const savedCategories: CategoryData[] = JSON.parse(savedOrder)
-				// Merge saved order with dummy data to ensure all categories exist
-				const mergedCategories = dummyCategories.map((dummy) => {
-					const saved = savedCategories.find((cat) => cat.id === dummy.id)
-					return saved ? { ...dummy, order: saved.order } : dummy
-				})
-				// Sort by order
-				const sorted = mergedCategories.sort((a, b) => (a.order || 0) - (b.order || 0))
-				setCategories(sorted)
-			} catch (error) {
-				// If parsing fails, use default order
-				setCategories(dummyCategories)
-			}
-		} else {
-			// First time - use default order
-			setCategories(dummyCategories)
-		}
-	}, [])
+		dispatch(fetchCategories())
+	}, [dispatch])
+
+	// Map Redux data to local format
+	useEffect(() => {
+		const mappedCategories = categoriesFromStore.map((item) => ({
+			id: item.id,
+			name: item.name,
+			image: item.image,
+			tripCount: item.tripCount || 0,
+			order: item.order || 0,
+		}))
+		setCategories(mappedCategories)
+	}, [categoriesFromStore])
 
 	const filteredCategories = useMemo(() => {
 		if (!searchQuery.trim()) {
@@ -164,9 +125,8 @@ const Category: React.FC = () => {
 		setDraggedId(null)
 	}
 
-	const handleUpdateCategory = () => {
+	const handleUpdateCategory = async () => {
 		if (!hasOrderChanged) {
-			// Show message that no changes were made
 			setDialogConfig({
 				title: 'No Changes',
 				description: 'No category order changes detected.',
@@ -178,25 +138,40 @@ const Category: React.FC = () => {
 			return
 		}
 
-		// Save to localStorage
 		try {
-			localStorage.setItem(CATEGORY_ORDER_KEY, JSON.stringify(categories))
-		} catch (error) {
-			console.error('Failed to save category order:', error)
-		}
+			// Update each category's order
+			for (const category of categories) {
+				const originalCategory = categoriesFromStore.find(c => c.id === category.id)
+				if (originalCategory && originalCategory.order !== category.order) {
+					await dispatch(updateCategoryById({
+						id: category.id,
+						data: { order: category.order }
+					})).unwrap()
+				}
+			}
 
-		// Show success message
-		setDialogConfig({
-			title: 'Success',
-			description: 'Category order updated successfully!',
-			actionText: 'OK',
-			color: 'green',
-			onConfirm: () => {
-				setDialogOpen(false)
-				setHasOrderChanged(false)
-			},
-		})
-		setDialogOpen(true)
+			setDialogConfig({
+				title: 'Success',
+				description: 'Category order updated successfully!',
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => {
+					setDialogOpen(false)
+					setHasOrderChanged(false)
+					dispatch(fetchCategories())
+				},
+			})
+			setDialogOpen(true)
+		} catch (error: any) {
+			setDialogConfig({
+				title: 'Error',
+				description: error.message || 'Failed to update category order.',
+				actionText: 'OK',
+				color: 'red',
+				onConfirm: () => setDialogOpen(false),
+			})
+			setDialogOpen(true)
+		}
 	}
 
 	const handleEdit = (category: CategoryData) => {
@@ -212,27 +187,29 @@ const Category: React.FC = () => {
 			actionText: 'Delete',
 			cancelText: 'Cancel',
 			color: 'red',
-			onConfirm: () => {
-				const updatedCategories = categories
-					.filter((item) => item.id !== category.id)
-					.map((cat, index) => ({ ...cat, order: index + 1 }))
-				setCategories(updatedCategories)
-				// Save updated order to localStorage
+			onConfirm: async () => {
 				try {
-					localStorage.setItem(CATEGORY_ORDER_KEY, JSON.stringify(updatedCategories))
-				} catch (error) {
-					console.error('Failed to save category order:', error)
+					await dispatch(deleteCategoryById(category.id)).unwrap()
+					setDialogOpen(false)
+					setDialogConfig({
+						title: 'Success',
+						description: `Category "${category.name}" deleted successfully!`,
+						actionText: 'OK',
+						color: 'green',
+						onConfirm: () => setDialogOpen(false),
+					})
+					setDialogOpen(true)
+				} catch (error: any) {
+					setDialogOpen(false)
+					setDialogConfig({
+						title: 'Error',
+						description: error.message || 'Failed to delete category.',
+						actionText: 'OK',
+						color: 'red',
+						onConfirm: () => setDialogOpen(false),
+					})
+					setDialogOpen(true)
 				}
-				setDialogOpen(false)
-				// Show success
-				setDialogConfig({
-					title: 'Success',
-					description: `Category "${category.name}" deleted successfully!`,
-					actionText: 'OK',
-					color: 'green',
-					onConfirm: () => setDialogOpen(false),
-				})
-				setDialogOpen(true)
 			},
 		})
 		setDialogOpen(true)
@@ -240,7 +217,6 @@ const Category: React.FC = () => {
 
 	return (
 		<Box style={{ padding: '24px' }}>
-			{/* Title */}
 			<Text
 				size="7"
 				weight="bold"
@@ -253,21 +229,18 @@ const Category: React.FC = () => {
 				Category Management
 			</Text>
 
-			{/* Search and Buttons Section */}
 			<Flex 
 				gap="3" 
 				align="center" 
 				justify="between"
 				style={{ marginBottom: '24px' }}
 				direction={{ initial: 'column', sm: 'row' }}
-				//className="category-search-buttons"
 			>
 				<TextField.Root
 					placeholder="Search"
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					style={{ flex: 1, maxWidth: '300px', width: '100%' }}
-					//className="category-search-field"
 				>
 					<TextField.Slot>
 						<svg
@@ -288,12 +261,7 @@ const Category: React.FC = () => {
 					</TextField.Slot>
 				</TextField.Root>
 
-				{/* Buttons on the right side */}
-				<Flex 
-					gap="2" 
-					align="center"
-					//className="category-buttons"
-				>
+				<Flex gap="2" align="center">
 					<Button
 						variant="soft"
 						size="2"
@@ -307,7 +275,6 @@ const Category: React.FC = () => {
 							whiteSpace: 'nowrap',
 							cursor: hasOrderChanged ? 'pointer' : 'not-allowed',
 						}}
-						className="category-update-btn"
 					>
 						Update Category
 					</Button>
@@ -322,7 +289,6 @@ const Category: React.FC = () => {
 							whiteSpace: 'nowrap',
 							flexShrink: 0,
 						}}
-						className="category-add-btn"
 					>
 						<svg
 							width="16"
@@ -344,7 +310,6 @@ const Category: React.FC = () => {
 				</Flex>
 			</Flex>
 
-			{/* Category Cards Grid */}
 			<Grid
 				columns={{ initial: '1', sm: '2', md: '3' }}
 				gap="4"
@@ -385,7 +350,6 @@ const Category: React.FC = () => {
 							}
 						}}
 					>
-						{/* Category Image - Rounded top corners only */}
 						<Box
 							style={{
 								width: '100%',
@@ -415,7 +379,6 @@ const Category: React.FC = () => {
 							/>
 						</Box>
 
-						{/* Category Content */}
 						<Box style={{ padding: '16px' }}>
 							<Flex justify="between" align="start" style={{ marginBottom: '8px' }}>
 								<Box style={{ flex: 1 }}>
@@ -440,7 +403,6 @@ const Category: React.FC = () => {
 									</Text>
 								</Box>
 
-								{/* Action Icons */}
 								<Flex gap="2" align="center">
 									<IconButton
 										variant="ghost"
@@ -508,7 +470,6 @@ const Category: React.FC = () => {
 				))}
 			</Grid>
 
-			{/* Empty State */}
 			{filteredCategories.length === 0 && (
 				<Box
 					style={{
@@ -521,7 +482,6 @@ const Category: React.FC = () => {
 				</Box>
 			)}
 
-			{/* Controlled AlertDialog */}
 			{dialogConfig && (
 				<AlertDialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
 					<AlertDialog.Content maxWidth="450px">

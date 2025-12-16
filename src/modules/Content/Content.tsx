@@ -1,4 +1,13 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../../store'
+import {
+	fetchContents,
+	createContent,
+	updateContentById,
+	deleteContentById,
+	type Content as ContentType,
+} from '../../features/ContentSlice'
 import {
 	Box,
 	Flex,
@@ -33,83 +42,16 @@ type OfferDetails = {
 	cancellationPolicy: string
 }
 
-// Dummy data for promotional offers
-const dummyOffers: OfferBannerData[] = [
-	{
-		id: '1',
-		offerName: 'Summer Special Discount',
-		categoryName: 'Seasonal',
-		expiredDate: '2024-06-30',
-		status: 'active',
-	},
-	{
-		id: '2',
-		offerName: 'Early Bird Booking',
-		categoryName: 'Booking',
-		expiredDate: '2024-05-15',
-		status: 'active',
-	},
-	{
-		id: '3',
-		offerName: 'Group Travel Offer',
-		categoryName: 'Group',
-		expiredDate: '2024-07-20',
-		status: 'inactive',
-	},
-	{
-		id: '4',
-		offerName: 'Weekend Getaway',
-		categoryName: 'Weekend',
-		expiredDate: '2024-06-10',
-		status: 'active',
-	},
-	{
-		id: '5',
-		offerName: 'Family Package Deal',
-		categoryName: 'Family',
-		expiredDate: '2024-08-15',
-		status: 'active',
-	},
-	{
-		id: '6',
-		offerName: 'Adventure Sports Special',
-		categoryName: 'Adventure',
-		expiredDate: '2024-05-30',
-		status: 'inactive',
-	},
-	{
-		id: '7',
-		offerName: 'Honeymoon Package',
-		categoryName: 'Romantic',
-		expiredDate: '2024-09-10',
-		status: 'active',
-	},
-	{
-		id: '8',
-		offerName: 'Senior Citizen Discount',
-		categoryName: 'Special',
-		expiredDate: '2024-12-31',
-		status: 'active',
-	},
-	{
-		id: '9',
-		offerName: 'Student Travel Offer',
-		categoryName: 'Student',
-		expiredDate: '2024-06-25',
-		status: 'inactive',
-	},
-	{
-		id: '10',
-		offerName: 'Last Minute Deals',
-		categoryName: 'Deals',
-		expiredDate: '2024-05-05',
-		status: 'active',
-	},
-]
-
 const Content: React.FC = () => {
-	const [offers, setOffers] = useState<OfferBannerData[]>(dummyOffers)
+	const dispatch = useDispatch<AppDispatch>()
+	
+	// Get data from Redux store
+	const contentsFromStore = useSelector((state: RootState) => state.content.contents)
+	const loading = useSelector((state: RootState) => state.content.ui.loading)
+	const error = useSelector((state: RootState) => state.content.ui.error)
+
 	const [searchQuery, setSearchQuery] = useState('')
+	const [offers, setOffers] = useState<OfferBannerData[]>([])
 	const [selectedOffer, setSelectedOffer] = useState<string>('Recent 10 Offers')
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 	const [offerToDelete, setOfferToDelete] = useState<string | null>(null)
@@ -133,6 +75,24 @@ const Content: React.FC = () => {
 	// Pagination
 	const [currentPage, setCurrentPage] = useState(1)
 	const itemsPerPage = 10
+
+	// Fetch contents on mount
+	useEffect(() => {
+		dispatch(fetchContents())
+	}, [dispatch])
+
+	// Map Redux data to local format
+	useEffect(() => {
+		const mappedOffers = contentsFromStore.map((item) => ({
+			id: item.id,
+			offerName: item.offerName || '',
+			categoryName: item.categoryName || '',
+			expiredDate: item.expiredDate || new Date().toISOString().split('T')[0],
+			status: item.status || 'active',
+			imageUrl: item.imageUrl,
+		}))
+		setOffers(mappedOffers)
+	}, [contentsFromStore])
 
 	// Calculate statistics
 	const stats = useMemo(() => {
@@ -235,11 +195,16 @@ const Content: React.FC = () => {
 		setDeleteDialogOpen(true)
 	}
 
-	const confirmDelete = () => {
+	const confirmDelete = async () => {
 		if (offerToDelete) {
-			setOffers((prev) => prev.filter((offer) => offer.id !== offerToDelete))
-			setDeleteDialogOpen(false)
-			setOfferToDelete(null)
+			try {
+				await dispatch(deleteContentById(offerToDelete)).unwrap()
+				setDeleteDialogOpen(false)
+				setOfferToDelete(null)
+				dispatch(fetchContents())
+			} catch (error: any) {
+				alert(error.message || 'Failed to delete offer')
+			}
 		}
 	}
 
@@ -247,9 +212,18 @@ const Content: React.FC = () => {
 		setEditingField(field)
 	}
 
-	const handleSaveField = (field: keyof OfferDetails, value: string) => {
-		setOfferDetails((prev) => ({ ...prev, [field]: value }))
-		setEditingField(null)
+	const handleSaveField = async (field: keyof OfferDetails, value: string) => {
+		try {
+			// Update content in Redux
+			// Note: You may need to fetch the content ID first or handle this differently
+			// This is a simplified version - adjust based on your API structure
+			setOfferDetails((prev) => ({ ...prev, [field]: value }))
+			setEditingField(null)
+			// If you have a content ID, you can update it:
+			// await dispatch(updateContentById({ id: contentId, data: { [field]: value } })).unwrap()
+		} catch (error: any) {
+			alert(error.message || 'Failed to save field')
+		}
 	}
 
 	const handleCancelEdit = () => {
@@ -368,7 +342,7 @@ const Content: React.FC = () => {
 									)}
 								</Box>
 								<Flex gap="2">
-                                <IconButton
+									<IconButton
 										variant="ghost"
 										size="2"
 										onClick={() => handleEditField('headlines')}
@@ -534,7 +508,7 @@ const Content: React.FC = () => {
 										onChange={handleFileUpload}
 									/>
 									<Box style={{ marginBottom: '16px' }}>
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--accent-11)' }}>
+										<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--accent-11)' }}>
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 											<polyline points="17 8 12 3 7 8" />
 											<line x1="12" y1="3" x2="12" y2="15" />
