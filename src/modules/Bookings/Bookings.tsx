@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../../store'
 import {
 	fetchBookings,
+	fetchBookingsByPage,
 	createBooking,
 	updateBookingById,
 	deleteBookingById,
@@ -28,6 +29,7 @@ import type { RootState } from '../../store'
 const Bookings: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>()
 	const bookings = useSelector((state: RootState) => state.booking.booking)
+	const pagination = useSelector((state: RootState) => state.booking.pagination)
 	const loading = useSelector((state: RootState) => state.booking.ui.loading)
 	const error = useSelector((state: RootState) => state.booking.ui.error)
 
@@ -60,6 +62,11 @@ const Bookings: React.FC = () => {
 	useEffect(() => {
 		dispatch(fetchBookings())
 	}, [dispatch])
+
+	// Fetch paginated data on mount and when page changes
+	useEffect(() => {
+		dispatch(fetchBookingsByPage({ page: currentPage, limit: itemsPerPage }))
+	}, [dispatch, currentPage, itemsPerPage])
 
 	// Filter and sort bookings
 	const filteredAndSortedBookings = useMemo(() => {
@@ -99,7 +106,7 @@ const Bookings: React.FC = () => {
 	}, [bookings, searchQuery, sortConfig])
 
 	// Pagination
-	const totalPages = Math.ceil(filteredAndSortedBookings.length / itemsPerPage)
+	const totalPages = pagination.totalPages
 	const startIndex = (currentPage - 1) * itemsPerPage
 	const endIndex = startIndex + itemsPerPage
 	const paginatedBookings = filteredAndSortedBookings.slice(startIndex, endIndex)
@@ -480,32 +487,26 @@ const Bookings: React.FC = () => {
 
 			{/* Pagination */}
 			{totalPages > 1 && (
-				<Flex justify="between" align="center" mt="4">
-					<Text size="2" style={{ color: 'var(--gray-11)' }}>
-						Showing {startIndex + 1} to {Math.min(endIndex, filteredAndSortedBookings.length)} of{' '}
-						{filteredAndSortedBookings.length} bookings
+				<Flex justify="end" align="center" gap="3" style={{ marginTop: '16px' }}>
+					<Text size="2" style={{ color: 'var(--accent-11)' }}>
+						Page {pagination.page} of {totalPages} (Total: {pagination.totalRecords} records)
 					</Text>
-					<Flex gap="2">
-						<Button
-							variant="soft"
-							size="2"
-							onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-							disabled={currentPage === 1}
-						>
-							Previous
-						</Button>
-						<Text size="2" style={{ alignSelf: 'center' }}>
-							Page {currentPage} of {totalPages}
-						</Text>
-						<Button
-							variant="soft"
-							size="2"
-							onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-							disabled={currentPage === totalPages}
-						>
-							Next
-						</Button>
-					</Flex>
+					<Button 
+						variant="soft" 
+						size="2" 
+						disabled={currentPage === 1} 
+						onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+					>
+						Previous
+					</Button>
+					<Button 
+						variant="soft" 
+						size="2" 
+						disabled={currentPage === totalPages} 
+						onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+					>
+						Next
+					</Button>
 				</Flex>
 			)}
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
+import { createItinerary, updateItineraryById } from '../../features/ItinerarySlice'
 import { Box, Text, Separator, Flex, Button, AlertDialog } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
-import axios from 'axios'
 
 
 // Dummy data for options
@@ -31,125 +33,169 @@ const dummyPackageTypes = [
 ]
 
 const AddNewItinerary: React.FC = () => {
-	const location = useLocation()
-	const navigate = useNavigate()
-	const [formData, setFormData] = useState<any>({})
-	const [initialValues, setInitialValues] = useState<any>({})
-	const [isEditMode, setIsEditMode] = useState(false)
+    const location = useLocation()
+    const navigate = useNavigate()
+    const dispatch = useDispatch<AppDispatch>()
+    
+    const [formData, setFormData] = useState<any>({})
+    const [initialValues, setInitialValues] = useState<any>({})
+    const [isEditMode, setIsEditMode] = useState(false)
+    const [editingId, setEditingId] = useState<string | null>(null)
 
-	// Add dialog state
-	const [dialogOpen, setDialogOpen] = useState(false)
-	const [dialogConfig, setDialogConfig] = useState<{
-		title: string
-		description: string
-		actionText: string
-		color?: 'red' | 'blue' | 'green' | 'gray'
-		onConfirm: () => void 
-	} | null>(null)
-  
+    // Add dialog state
+    const [dialogOpen, setDialogOpen] = useState(false)
+    const [dialogConfig, setDialogConfig] = useState<{
+        title: string
+        description: string
+        actionText: string
+        color?: 'red' | 'blue' | 'green' | 'gray'
+        onConfirm: () => void 
+    } | null>(null)
 
-	// Helper function to find location ID by city name
-	const findLocationIdByCity = (cityName: string): string => {
-		const location = dummyLocations.find(
-			loc => loc.label.toLowerCase() === cityName.toLowerCase() ||
-				   cityName.toLowerCase().includes(loc.label.toLowerCase())
-		)
-		return location?.value || ''
-	}
+    // Helper function to find location ID by city name
+    const findLocationIdByCity = (cityName: string): string => {
+        const location = dummyLocations.find(
+            loc => loc.label.toLowerCase() === cityName.toLowerCase()
+        )
+        return location?.value || ''
+    }
 
-	// Check if we're in edit mode based on location state
-	useEffect(() => {
-		const itineraryData = location.state?.itineraryData
-		if (itineraryData) {
-			setIsEditMode(true)
-			
-			// Map itinerary data to form initial values
-			// Adjust this mapping based on your actual backend data structure
-			const mappedValues = {
-				iti_name: itineraryData.name || '',
-				travel_location: findLocationIdByCity(itineraryData.city) || '',
-				categories: [], 
-			}
-			
-			setInitialValues(mappedValues)
-		} else {
-			setIsEditMode(false)
-			setInitialValues({})
-		}
-	}, [location.state])
+    // Check if we're in edit mode based on location state
+    useEffect(() => {
+        const itineraryData = location.state?.itineraryData
+        if (itineraryData) {
+            setIsEditMode(true)
+            setEditingId(itineraryData.id || null)
+            
+            // Map itinerary data to form initial values
+            const mappedValues = {
+                iti_name: itineraryData.name || '',
+                travel_location: findLocationIdByCity(itineraryData.city) || '',
+                categories: itineraryData.categories || [],
+                iti_desc: itineraryData.description || '',
+                iti_short_desc: itineraryData.shortDescription || '',
+                iti_duration: itineraryData.duration || '',
+                price: itineraryData.price || 0,
+                start_date: itineraryData.startDate ? itineraryData.startDate.split('T')[0] : '',
+                end_date: itineraryData.endDate ? itineraryData.endDate.split('T')[0] : '',
+                max_travelers: itineraryData.maxTravelers || 0,
+                available_seats: itineraryData.availableSeats || 0,
+                iti_inclusion: Array.isArray(itineraryData.inclusions) 
+                    ? itineraryData.inclusions.join('\n') 
+                    : '',
+                iti_exclusion: Array.isArray(itineraryData.exclusions) 
+                    ? itineraryData.exclusions.join('\n') 
+                    : '',
+                iti_notes: itineraryData.notes || '',
+                status: itineraryData.status || 'Active',
+                iti_img: itineraryData.brochureBanner || (itineraryData.images && itineraryData.images[0]) || '',
+                iti_altitude: itineraryData.altitude || '',
+                iti_scenary: itineraryData.scenary || '',
+                iti_cultural_site: itineraryData.culturalSite || '',
+                iti_brochure_banner: itineraryData.brochureBanner || '',
+                iti_is_customize: itineraryData.isCustomize || 'not_specified',
+                trending: itineraryData.trending || 'No',
+                // Map complex fields
+                day_details: itineraryData.daywiseActivities || [],
+                hotels: itineraryData.hotelDetails || [],
+                package_details: itineraryData.packages || {},
+                batches: itineraryData.batches || [],
+                seo_fields: itineraryData.seoFields || {},
+            }
+            
+            console.log('Mapped Initial Values:', mappedValues) // Debug log
+            setInitialValues(mappedValues)
+        } else {
+            setIsEditMode(false)
+            setEditingId(null)
+            setInitialValues({})
+        }
+    }, [location.state])
 
-	
+    const handleSubmit = async (values: Record<string, any>) => {
+        try {
+            // Map form values to match your backend schema
+            const payload = {
+                name: values.iti_name, // Backend uses 'name', not 'title'
+                city: dummyLocations.find(loc => loc.value === values.travel_location)?.label || '', // Backend uses 'city', not 'destination'
+                description: values.iti_desc,
+                shortDescription: values.iti_short_desc,
+                duration: values.iti_duration, // Keep as string like "5D 4N"
+                price: Number(values.price) || 0,
+                startDate: values.start_date || new Date().toISOString(),
+                endDate: values.end_date || new Date().toISOString(),
+                maxTravelers: Number(values.max_travelers) || 0,
+                availableSeats: Number(values.available_seats) || 0,
+                inclusions: values.iti_inclusion ? values.iti_inclusion.split('.').filter((s: string) => s.trim()) : [],
+                exclusions: values.iti_exclusion ? values.iti_exclusion.split('.').filter((s: string) => s.trim()) : [],
+                notes: values.iti_notes || '',
+                status: values.status || 'Active',
+                altitude: values.iti_altitude || '',
+                scenary: values.iti_scenary || '',
+                culturalSite: values.iti_cultural_site || '',
+                brochureBanner: values.iti_brochure_banner || '',
+                isCustomize: values.iti_is_customize || 'not_specified',
+                images: values.iti_img ? [values.iti_img] : [],
+                travelLocation: values.travel_location || '',
+                categories: values.categories || [],
+                trending: 'No', // Add if available in form
+                // Add other fields from your backend schema
+                daywiseActivities: values.day_details || [],
+                hotelDetails: values.hotels || [],
+                packages: values.package_details || {},
+                batches: values.batches || [],
+                seoFields: values.seo_fields || {},
+                termsAndConditions: '',
+                cancellationPolicy: '',
+            }
 
-	const handleSubmit = async (values: Record<string, any>) => {
-		try {
-			// Map your form values to the API payload structure here
-			const sanitizeImages = (img: any) => {
-				if (!img) return [];
-				if (Array.isArray(img)) {
-					return img.filter((i) => typeof i === 'string' && i.trim() !== '');
-				}
-				if (typeof img === 'string' && img.trim() !== '') {
-					return [img];
-				}
-				return [];
-			};
+            if (isEditMode && editingId) {
+                // Update existing itinerary
+                await dispatch(updateItineraryById({ id: editingId, data: payload })).unwrap()
+                
+                setDialogConfig({
+                    title: 'Success',
+                    description: 'Itinerary updated successfully!',
+                    actionText: 'OK',
+                    color: 'green',
+                    onConfirm: () => {
+                        setDialogOpen(false)
+                        navigate('/dashboard/itinerary')
+                    },
+                })
+            } else {
+                // Create new itinerary
+                await dispatch(createItinerary(payload)).unwrap()
+                
+                setDialogConfig({
+                    title: 'Success',
+                    description: 'Itinerary created successfully!',
+                    actionText: 'OK',
+                    color: 'green',
+                    onConfirm: () => {
+                        setDialogOpen(false)
+                        navigate('/dashboard/itinerary')
+                    },
+                })
+            }
+            
+            setDialogOpen(true)
+            setFormData(values)
+            
+        } catch (error: any) {
+            setDialogConfig({
+                title: 'Error',
+                description: error.message || 'Failed to save itinerary.',
+                actionText: 'OK',
+                color: 'red',
+                onConfirm: () => setDialogOpen(false),
+            })
+            setDialogOpen(true)
+            console.error('API error:', error)
+        }
+    }
 
-			const payload = {
-				name: values.iti_name,
-				city: dummyLocations.find(loc => loc.value === values.travel_location)?.label || '',
-				price: values.price || 12000,
-				priceDisplay: values.priceDisplay || "₹12,000",
-				status: values.status || "Active",
-				trending: values.trending || "Yes",
-				description: values.iti_desc,
-				shortDescription: values.iti_short_desc,
-				altitude: values.iti_altitude,
-				scenary: values.iti_scenary,
-				culturalSite: values.iti_cultural_site,
-				brochureBanner: values.iti_brochure_banner,
-				isCustomize: values.iti_is_customize,
-				notes: values.iti_notes,
-				images: sanitizeImages(values.iti_img),
-				daywiseActivities: values.day_details || [],
-				hotelDetails: values.hotels || [],
-				packages: values.package_details || {},
-				batches: values.batches || [],
-				seoFields: values.seo_fields || {},
-				duration: values.iti_duration,
-				inclusions: values.iti_inclusion ? [values.iti_inclusion] : [],
-				exclusions: values.iti_exclusion ? [values.iti_exclusion] : [],
-				termsAndConditions: values.termsAndConditions || "",
-				cancellationPolicy: values.cancellationPolicy || "",
-			};
-
-			const response = await axios.post('http://localhost:8000/api/itinerary', payload);
-
-			setFormData(values);
-			setDialogConfig({
-				title: 'Success',
-				description: 'Itinerary created successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false);
-					navigate('/dashboard/itinerary');
-				},
-			});
-			setDialogOpen(true);
-		} catch (error) {
-			setDialogConfig({
-				title: 'Error',
-				description: 'Failed to create itinerary.',
-				actionText: 'OK',
-				color: 'red',
-				onConfirm: () => setDialogOpen(false),
-			});
-			setDialogOpen(true);
-			console.error('API error:', error);
-		}
-	}
-
-	const formFields = [
+    const formFields = [
 		// Section 1: Basic Information - Add heading separator
 		{
 			name: '_section_1_header',
@@ -426,8 +472,10 @@ const AddNewItinerary: React.FC = () => {
 				buttonText={isEditMode ? 'Update Itinerary' : 'Create New Itinerary'}
 				onSubmit={handleSubmit}
 				initialValues={initialValues}
+				
 			/>
-			{/* Controlled AlertDialog - replaces alerts */}
+			
+			{/* Controlled AlertDialog */}
 			{dialogConfig && (
 				<AlertDialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
 					<AlertDialog.Content maxWidth="450px">

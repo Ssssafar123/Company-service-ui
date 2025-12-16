@@ -16,9 +16,22 @@ export interface Booking {
   paymentStatus?: 'paid' | 'pending' | 'refunded'
 }
 
+interface PaginationData {
+  data: Booking[]
+  page: number
+  limit: number
+  totalPages: number
+  totalRecords: number
+}
 
 interface AppState{
     booking : Booking[]
+    pagination: {
+      page: number
+      limit: number
+      totalPages: number
+      totalRecords: number
+    }
     ui:{
         loading : boolean
         error : string | null
@@ -27,6 +40,12 @@ interface AppState{
 
 const initialState: AppState = {
     booking : [],
+    pagination: {
+      page: 1,
+      limit: 10,
+      totalPages: 0,
+      totalRecords: 0
+    },
     ui : {
         loading : false,
         error : null
@@ -57,6 +76,27 @@ export const fetchBookings = createAsyncThunk(
       if (!res.ok) throw new Error('Failed to fetch bookings')
       const data = await res.json()
       return data.map(mapBooking)
+    } catch (err) {
+      return rejectWithValue((err as Error).message)
+    }
+  }
+)
+
+// New thunk for paginated bookings
+export const fetchBookingsByPage = createAsyncThunk(
+  'app/fetchBookingsByPage',
+  async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/booking/page?page=${page}&limit=${limit}`)
+      if (!res.ok) throw new Error('Failed to fetch bookings')
+      const response = await res.json()
+      return {
+        data: response.data.map(mapBooking),
+        page: response.page,
+        limit: response.limit,
+        totalPages: response.totalPages,
+        totalRecords: response.totalRecords
+      } as PaginationData
     } catch (err) {
       return rejectWithValue((err as Error).message)
     }
@@ -150,6 +190,26 @@ const bookingSlice = createSlice({
         state.ui.error = action.payload as string
     })
 
+    // Fetch bookings by page
+    .addCase(fetchBookingsByPage.pending, (state) => {
+        state.ui.loading = true
+        state.ui.error = null
+    })
+    .addCase(fetchBookingsByPage.fulfilled, (state, action) => {
+        state.ui.loading = false
+        state.booking = action.payload.data
+        state.pagination = {
+          page: action.payload.page,
+          limit: action.payload.limit,
+          totalPages: action.payload.totalPages,
+          totalRecords: action.payload.totalRecords
+        }
+    })
+    .addCase(fetchBookingsByPage.rejected, (state, action) => {
+        state.ui.loading = false
+        state.ui.error = action.payload as string
+    })
+
     .addCase(createBooking.pending , (state) => {
         state.ui.loading = true
         state.ui.error = null
@@ -157,6 +217,8 @@ const bookingSlice = createSlice({
     .addCase(createBooking.fulfilled, (state, action) => {
         state.ui.loading = false
         state.booking.push(action.payload)
+        state.pagination.totalRecords += 1
+        state.pagination.totalPages = Math.ceil(state.pagination.totalRecords / state.pagination.limit)
     })
     .addCase(createBooking.rejected, (state, action) => {
         state.ui.loading = false
@@ -170,7 +232,6 @@ const bookingSlice = createSlice({
       })
       .addCase(fetchBookingById.fulfilled, (state, action) => {
         state.ui.loading = false
-        // Optionally, you can add/update the booking in the array
         const idx = state.booking.findIndex(b => b.id === action.payload.id)
         if (idx !== -1) {
           state.booking[idx] = action.payload
@@ -208,6 +269,8 @@ const bookingSlice = createSlice({
       .addCase(deleteBookingById.fulfilled, (state, action) => {
         state.ui.loading = false
         state.booking = state.booking.filter(b => b.id !== action.payload)
+        state.pagination.totalRecords -= 1
+        state.pagination.totalPages = Math.ceil(state.pagination.totalRecords / state.pagination.limit)
       })
       .addCase(deleteBookingById.rejected, (state, action) => {
         state.ui.loading = false
