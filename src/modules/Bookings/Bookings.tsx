@@ -27,7 +27,7 @@ type BookingData = {
 	numberOfTravelers: number
 	totalAmount: number
 	status: 'confirmed' | 'pending' | 'cancelled' | 'completed'
-	paymentStatus?: 'paid' | 'pending' | 'refunded'
+	paymentStatus?: 'paid' | 'pending' |'  refunded'
 }
 
 // Dummy booking data - 10 entries
