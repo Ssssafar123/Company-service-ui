@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
+import { createReview } from '../../features/ReviewSlice'
 import {
 	Box,
 	Flex,
@@ -44,7 +47,8 @@ const dummyItineraries = [
 ]
 
 const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
-	const [rating, setRating] = useState<number>(initialData?.rating || 5)
+    const dispatch = useDispatch<AppDispatch>()
+    const [rating, setRating] = useState<number>(initialData?.rating || 5)
 
 	// Prevent body scroll when form is open
 	useEffect(() => {
@@ -139,12 +143,19 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 		},
 	]
 
-	const handleFormSubmit = (values: Record<string, any>) => {
-		// Add rating to values
+	const handleFormSubmit = async (values: Record<string, any>) => {
+		// Convert empty string to null for itineraryId
+		const itineraryId = values.itineraryId && values.itineraryId.trim() !== '' 
+			? values.itineraryId 
+			: null
+		
 		const formData = {
 			...values,
 			rating: rating,
+			itineraryId: itineraryId, // Pass null if empty
 		}
+		
+		// Don't dispatch here - parent handles it
 		onSubmit(formData)
 		onClose()
 	}

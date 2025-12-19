@@ -1,5 +1,13 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../../store'
+import {
+	fetchReviews,
+	createReview,
+	updateReviewById,
+	deleteReviewById,
+} from '../../features/ReviewSlice'
 import {
 	Box,
 	Flex,
@@ -28,115 +36,6 @@ type ReviewData = {
 	itineraryId?: string
 }
 
-// Dummy review data
-const dummyReviews: ReviewData[] = [
-	{
-		id: '1',
-		customerName: 'Rajesh Kumar',
-		rating: 5,
-		reviewText: 'Amazing experience! The tour was well organized and the guide was very knowledgeable.',
-		date: '2024-01-15',
-		status: 'Approved',
-		packageName: 'Manali & Kasol Tour',
-		packageCode: '#MKP02',
-		itineraryId: '11',
-	},
-	{
-		id: '2',
-		customerName: 'Priya Sharma',
-		rating: 4,
-		reviewText: 'Good trip overall, but hotel could have been better.',
-		date: '2024-01-14',
-		status: 'Approved',
-		packageName: 'Goa Beach Tour',
-		packageCode: '#GB01',
-		itineraryId: '12',
-	},
-	{
-		id: '3',
-		customerName: 'Amit Patel',
-		rating: 5,
-		reviewText: 'Excellent service and beautiful destinations. Highly recommended!',
-		date: '2024-01-13',
-		status: 'Pending',
-		packageName: 'Kerala Backwaters',
-		packageCode: '#KB03',
-		itineraryId: '13',
-	},
-	{
-		id: '4',
-		customerName: 'Sneha Reddy',
-		rating: 3,
-		reviewText: 'Average experience. Some activities were cancelled without notice.',
-		date: '2024-01-12',
-		status: 'Pending',
-		packageName: 'Ladakh Adventure',
-		packageCode: '#LA05',
-		itineraryId: '14',
-	},
-	{
-		id: '5',
-		customerName: 'Vikram Singh',
-		rating: 5,
-		reviewText: 'Best trip ever! Everything was perfect from start to finish.',
-		date: '2024-01-11',
-		status: 'Approved',
-		packageName: 'Rajasthan Heritage',
-		packageCode: '#RH07',
-		itineraryId: '15',
-	},
-	{
-		id: '6',
-		customerName: 'Ananya Verma',
-		rating: 2,
-		reviewText: 'Not satisfied with the service. Poor communication.',
-		date: '2024-01-10',
-		status: 'Rejected',
-		packageName: 'Shimla Manali',
-		packageCode: '#SM09',
-	},
-	{
-		id: '7',
-		customerName: 'Karan Mehta',
-		rating: 4,
-		reviewText: 'Great value for money. Would book again.',
-		date: '2024-01-09',
-		status: 'Approved',
-		packageName: 'Andaman Islands',
-		packageCode: '#AI11',
-	},
-	{
-		id: '8',
-		customerName: 'Divya Nair',
-		rating: 5,
-		reviewText: 'Outstanding experience! The team was very professional.',
-		date: '2024-01-08',
-		status: 'Approved',
-		packageName: 'Darjeeling Tea Gardens',
-		packageCode: '#DT13',
-	},
-	{
-		id: '9',
-		customerName: 'Arjun Gupta',
-		rating: 4,
-		reviewText: 'Good trip, enjoyed the activities. Food was excellent.',
-		date: '2024-01-07',
-		status: 'Pending',
-		packageName: 'Udaipur Palace Tour',
-		packageCode: '#UP15',
-	},
-	{
-		id: '10',
-		customerName: 'Riya Joshi',
-		rating: 5,
-		reviewText: 'Perfect honeymoon destination! Romantic and beautiful.',
-		date: '2024-01-06',
-		status: 'Approved',
-		packageName: 'Rishikesh Rafting',
-		packageCode: '#RR17',
-	},
-]
-
 // Dummy itineraries for mapping
 const dummyItineraries = [
 	{ id: '1', name: 'Pachmarhi | Ex- Indore' },
@@ -158,20 +57,19 @@ const dummyItineraries = [
 
 const Review: React.FC = () => {
 	const navigate = useNavigate()
+	const dispatch = useDispatch<AppDispatch>()
+	const reviews = useSelector((state: RootState) => state.review.reviews)
+	const loading = useSelector((state: RootState) => state.review.ui.loading)
+	const error = useSelector((state: RootState) => state.review.ui.error)
 	const [searchQuery, setSearchQuery] = useState('')
-	const [reviews, setReviews] = useState<ReviewData[]>(dummyReviews)
 	const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null } | null>(null)
 	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
 		new Set(['customerName', 'rating', 'reviewText', 'date', 'status', 'packageName', 'actions'])
 	)
 	const [currentPage, setCurrentPage] = useState(1)
 	const [itemsPerPage] = useState(10)
-
-	// Form panel state
 	const [isFormOpen, setIsFormOpen] = useState(false)
 	const [editingReview, setEditingReview] = useState<ReviewData | null>(null)
-
-	// Dialog state
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [dialogConfig, setDialogConfig] = useState<{
 		title: string
@@ -181,6 +79,10 @@ const Review: React.FC = () => {
 		onConfirm: () => void
 		color?: 'red' | 'blue' | 'green' | 'gray'
 	} | null>(null)
+
+	useEffect(() => {
+		dispatch(fetchReviews())
+	}, [dispatch])
 
 	// Filter and sort reviews
 	const filteredAndSortedReviews = useMemo(() => {
@@ -251,66 +153,72 @@ const Review: React.FC = () => {
 		setIsFormOpen(true)
 	}
 
-	const handleFormSubmit = (values: Record<string, any>) => {
-		console.log('Form submitted with values:', values)
+	const handleFormSubmit = async (values: Record<string, any>) => {
+		// Get selected itinerary name (only if itineraryId is provided)
+		const itineraryId = values.itineraryId && values.itineraryId.trim() !== '' 
+			? values.itineraryId 
+			: null
 		
-		// Get selected itinerary name
-		const selectedItinerary = dummyItineraries.find((it) => it.id === values.itineraryId)
-		const packageName = selectedItinerary?.name || ''
-
-		// Get current date
+		const selectedItinerary = itineraryId 
+			? dummyItineraries.find((it) => it.id === itineraryId)
+			: null
+		
+		const packageName = selectedItinerary?.name || null
 		const today = new Date()
 		const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
-		if (editingReview) {
-			// Update existing review
-			const updatedReview: ReviewData = {
-				...editingReview,
-				customerName: values.reviewerName || '',
-				reviewerImageUrl: values.reviewerImageUrl || '',
-				reviewText: values.reviewText || '',
-				rating: values.rating || 5,
-				itineraryId: values.itineraryId || '',
-				packageName: packageName,
+		try {
+			if (editingReview) {
+				await dispatch(updateReviewById({
+					id: editingReview.id,
+					data: {
+						customerName: values.reviewerName || '',
+						reviewerImageUrl: values.reviewerImageUrl || '',
+						reviewText: values.reviewText || '',
+						rating: values.rating || 5,
+						itineraryId: itineraryId, // Pass null if not selected
+						packageName: packageName, // Pass null if no itinerary
+					},
+				})).unwrap()
+				setDialogConfig({
+					title: 'Success',
+					description: `Review updated successfully!`,
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => setDialogOpen(false),
+				})
+			} else {
+				await dispatch(createReview({
+					customerName: values.reviewerName || '',
+					reviewerImageUrl: values.reviewerImageUrl || '',
+					reviewText: values.reviewText || '',
+					rating: values.rating || 5,
+					date: date,
+					status: 'Pending',
+					packageName: packageName, // Pass null if no itinerary
+					itineraryId: itineraryId, // Pass null if not selected
+				})).unwrap()
+				setDialogConfig({
+					title: 'Success',
+					description: `Review added successfully!`,
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => setDialogOpen(false),
+				})
 			}
-
-			setReviews(reviews.map((r) => (r.id === editingReview.id ? updatedReview : r)))
-
+			setDialogOpen(true)
+			setIsFormOpen(false)
+			setEditingReview(null)
+		} catch (error: any) {
 			setDialogConfig({
-				title: 'Success',
-				description: `Review updated successfully!`,
+				title: 'Error',
+				description: error?.message || 'Failed to save review',
 				actionText: 'OK',
-				color: 'green',
+				color: 'red',
 				onConfirm: () => setDialogOpen(false),
 			})
-		} else {
-			// Create new review
-			const newReview: ReviewData = {
-				id: String(reviews.length + 1),
-				customerName: values.reviewerName || '',
-				reviewerImageUrl: values.reviewerImageUrl || '',
-				reviewText: values.reviewText || '',
-				rating: values.rating || 5,
-				date: date,
-				status: 'Pending',
-				packageName: packageName,
-				itineraryId: values.itineraryId || '',
-			}
-
-			setReviews([...reviews, newReview])
-
-			setDialogConfig({
-				title: 'Success',
-				description: `Review "${newReview.customerName}" added successfully!`,
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => setDialogOpen(false),
-			})
+			setDialogOpen(true)
 		}
-
-		setDialogOpen(true)
-		setIsFormOpen(false)
-		setEditingReview(null)
 	}
 
 	const handleDelete = (review: ReviewData) => {
@@ -320,32 +228,58 @@ const Review: React.FC = () => {
 			actionText: 'Delete',
 			cancelText: 'Cancel',
 			color: 'red',
-			onConfirm: () => {
-				setReviews(reviews.filter((r) => r.id !== review.id))
-				setDialogOpen(false)
-				setDialogConfig({
-					title: 'Success',
-					description: `Review deleted successfully!`,
-					actionText: 'OK',
-					color: 'green',
-					onConfirm: () => setDialogOpen(false),
-				})
-				setDialogOpen(true)
+			onConfirm: async () => {
+				try {
+					await dispatch(deleteReviewById(review.id)).unwrap()
+					setDialogOpen(false)
+					setDialogConfig({
+						title: 'Success',
+						description: `Review deleted successfully!`,
+						actionText: 'OK',
+						color: 'green',
+						onConfirm: () => setDialogOpen(false),
+					})
+					setDialogOpen(true)
+				} catch (error: any) {
+					setDialogOpen(false)
+					setDialogConfig({
+						title: 'Error',
+						description: error?.message || 'Failed to delete review',
+						actionText: 'OK',
+						color: 'red',
+						onConfirm: () => setDialogOpen(false),
+					})
+					setDialogOpen(true)
+				}
 			},
 		})
 		setDialogOpen(true)
 	}
 
-	const handleStatusChange = (review: ReviewData, newStatus: 'Approved' | 'Pending' | 'Rejected') => {
-		setReviews(reviews.map((r) => (r.id === review.id ? { ...r, status: newStatus } : r)))
-		setDialogConfig({
-			title: 'Success',
-			description: `Review status updated to "${newStatus}"!`,
-			actionText: 'OK',
-			color: 'green',
-			onConfirm: () => setDialogOpen(false),
-		})
-		setDialogOpen(true)
+	const handleStatusChange = async (review: ReviewData, newStatus: 'Approved' | 'Pending' | 'Rejected') => {
+		try {
+			await dispatch(updateReviewById({
+				id: review.id,
+				data: { status: newStatus },
+			})).unwrap()
+			setDialogConfig({
+				title: 'Success',
+				description: `Review status updated to "${newStatus}"!`,
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => setDialogOpen(false),
+			})
+			setDialogOpen(true)
+		} catch (error: any) {
+			setDialogConfig({
+				title: 'Error',
+				description: error?.message || 'Failed to update status',
+				actionText: 'OK',
+				color: 'red',
+				onConfirm: () => setDialogOpen(false),
+			})
+			setDialogOpen(true)
+		}
 	}
 
 	// Render rating with stars

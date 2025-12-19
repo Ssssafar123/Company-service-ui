@@ -64,7 +64,12 @@ const Location: React.FC = () => {
 		const mappedLocations = locationsFromStore.map((item) => ({
 			id: item.id,
 			name: item.name,
-			image: item.image,
+			// Use feature_images[0] if image is empty, otherwise use image
+			image: item.image && item.image.trim() !== '' 
+				? item.image 
+				: (item.feature_images && item.feature_images.length > 0 
+					? item.feature_images[0] 
+					: ''),
 			tripCount: item.tripCount || 0,
 			order: item.order || 0,
 		}))
@@ -173,11 +178,35 @@ const Location: React.FC = () => {
 		}
 	}
 
-	const handleEdit = (location: LocationData) => {
+
+const handleEdit = (location: LocationData) => {
+	// Find the full location data from Redux store
+	const fullLocation = locationsFromStore.find(l => l.id === location.id)
+	
+	if (fullLocation) {
+		// Pass the full Location object with all fields properly mapped
+		navigate('/dashboard/add-location', {
+			state: { 
+				locationData: {
+					...fullLocation,
+					// Map to the format AddLocation expects
+					shortDescription: fullLocation.short_description,
+					longDescription: fullLocation.long_description,
+					images: fullLocation.feature_images && fullLocation.feature_images.length > 0 
+						? fullLocation.feature_images 
+						: (fullLocation.image ? [fullLocation.image] : []),
+					itineraryIds: [], // Location type doesn't have this, but form expects it
+					seoData: fullLocation.seo_fields,
+				}
+			},
+		})
+	} else {
+		// Fallback: pass what we have
 		navigate('/dashboard/add-location', {
 			state: { locationData: location },
 		})
 	}
+}
 
 	const handleDelete = (location: LocationData) => {
 		setDialogConfig({
@@ -362,20 +391,35 @@ const Location: React.FC = () => {
 								borderBottomRightRadius: '10px',
 							}}
 						>
-							<img
-								src={location.image}
-								alt={location.name}
-								style={{
-									width: '100%',
-									height: '100%',
-									objectFit: 'cover',
-									pointerEvents: 'none',
-								}}
-								onError={(e) => {
-									const target = e.target as HTMLImageElement
-									target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200"%3E%3Crect fill="%23ddd" width="400" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E'
-								}}
-							/>
+							{location.image && location.image.trim() !== '' ? (
+								<img
+									src={location.image}
+									alt={location.name}
+									style={{
+										width: '100%',
+										height: '100%',
+										objectFit: 'cover',
+										pointerEvents: 'none',
+									}}
+									onError={(e) => {
+										const target = e.target as HTMLImageElement
+										target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200"%3E%3Crect fill="%23ddd" width="400" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E'
+									}}
+								/>
+							) : (
+								<Box
+									style={{
+										width: '100%',
+										height: '100%',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										color: 'var(--accent-11)',
+									}}
+								>
+									<Text size="2">No Image</Text>
+								</Box>
+							)}
 						</Box>
 
 						<Box style={{ padding: '16px' }}>

@@ -87,17 +87,57 @@ export const fetchBookingsByPage = createAsyncThunk(
   'app/fetchBookingsByPage',
   async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/booking/page?page=${page}&limit=${limit}`)
-      if (!res.ok) throw new Error('Failed to fetch bookings')
+      // Use query parameters on base endpoint instead of /page route
+      // This avoids conflict with /api/booking/:id route
+      const res = await fetch(`http://localhost:8000/api/booking?page=${page}&limit=${limit}`)
+      
+      if (!res.ok) {
+        // Try to get error message from response
+        let errorMessage = 'Failed to fetch bookings'
+        try {
+          const errorData = await res.json()
+          errorMessage = errorData.message || errorData.error || errorMessage
+        } catch {
+          errorMessage = `HTTP ${res.status}: ${res.statusText}`
+        }
+        throw new Error(errorMessage)
+      }
+      
       const response = await res.json()
+      
+      // Handle different response formats
+      if (Array.isArray(response)) {
+        // If API returns array directly, wrap it
+        return {
+          data: response.map(mapBooking),
+          page: page,
+          limit: limit,
+          totalPages: Math.ceil(response.length / limit),
+          totalRecords: response.length
+        } as PaginationData
+      }
+      
+      // Handle paginated response format
+      if (response.data && Array.isArray(response.data)) {
+        return {
+          data: response.data.map(mapBooking),
+          page: response.page || page,
+          limit: response.limit || limit,
+          totalPages: response.totalPages || Math.ceil((response.totalRecords || response.data.length) / (response.limit || limit)),
+          totalRecords: response.totalRecords || response.data.length
+        } as PaginationData
+      }
+      
+      // Fallback: empty data
       return {
-        data: response.data.map(mapBooking),
-        page: response.page,
-        limit: response.limit,
-        totalPages: response.totalPages,
-        totalRecords: response.totalRecords
+        data: [],
+        page: page,
+        limit: limit,
+        totalPages: 0,
+        totalRecords: 0
       } as PaginationData
     } catch (err) {
+      console.error('Error fetching bookings:', err)
       return rejectWithValue((err as Error).message)
     }
   }

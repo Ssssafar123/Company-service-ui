@@ -175,9 +175,20 @@ const Category: React.FC = () => {
 	}
 
 	const handleEdit = (category: CategoryData) => {
-		navigate('/dashboard/add-category', {
-			state: { categoryData: category },
-		})
+		// Find the full category data from Redux store
+		const fullCategory = categoriesFromStore.find(c => c.id === category.id)
+		
+		if (fullCategory) {
+			// Pass the full Category object with all fields
+			navigate('/dashboard/add-category', {
+				state: { categoryData: fullCategory },
+			})
+		} else {
+			// Fallback: pass what we have
+			navigate('/dashboard/add-category', {
+				state: { categoryData: category },
+			})
+		}
 	}
 
 	const handleDelete = (category: CategoryData) => {

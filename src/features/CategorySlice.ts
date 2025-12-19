@@ -17,8 +17,9 @@ export interface Category {
   long_description?: string
   tripCount?: number
   order?: number
-  status: 'active' | 'inactive'
-  seo_fields?: SEOFields
+  status: 'active' | 'inactive'           // <-- add this
+  seo_fields?: SEOFields                  // <-- add this
+  itineraries?: string[]                  // <-- add this
 }
 
 interface CategoryState {
@@ -48,6 +49,7 @@ const mapCategory = (category: any): Category => ({
   order: category.order || 0,
   status: category.status || 'active',
   seo_fields: category.seo_fields,
+  itineraries: category.itineraries || [],
 })
 
 export const fetchCategories = createAsyncThunk(

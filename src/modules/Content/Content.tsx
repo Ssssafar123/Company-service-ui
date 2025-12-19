@@ -43,14 +43,14 @@ type OfferDetails = {
 }
 
 const Content: React.FC = () => {
-	const dispatch = useDispatch<AppDispatch>()
-	
-	// Get data from Redux store
-	const contentsFromStore = useSelector((state: RootState) => state.content.contents)
-	const loading = useSelector((state: RootState) => state.content.ui.loading)
-	const error = useSelector((state: RootState) => state.content.ui.error)
+    const dispatch = useDispatch<AppDispatch>()
+    
+    // Get data from Redux store
+    const contentsFromStore = useSelector((state: RootState) => state.content.contents)
+    const loading = useSelector((state: RootState) => state.content.ui.loading)
+    const error = useSelector((state: RootState) => state.content.ui.error)
 
-	const [searchQuery, setSearchQuery] = useState('')
+    const [searchQuery, setSearchQuery] = useState('')
 	const [offers, setOffers] = useState<OfferBannerData[]>([])
 	const [selectedOffer, setSelectedOffer] = useState<string>('Recent 10 Offers')
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -75,6 +75,26 @@ const Content: React.FC = () => {
 	// Pagination
 	const [currentPage, setCurrentPage] = useState(1)
 	const itemsPerPage = 10
+
+	// Add Content Form State
+    const [addForm, setAddForm] = useState<Omit<ContentType, 'id'>>({
+        offerName: '',
+        categoryName: '',
+        expiredDate: '',
+        status: 'active',
+        imageUrl: '',
+        images: [],
+        headlines: '',
+        termsCondition: '',
+        cancellationPolicy: '',
+        description: '',
+        discountPercentage: 0,
+        discountAmount: 0,
+        applicableCategories: [],
+        applicableLocations: [],
+        clicks: 0,
+    })
+    const [addDialogOpen, setAddDialogOpen] = useState(false)
 
 	// Fetch contents on mount
 	useEffect(() => {
@@ -190,6 +210,34 @@ const Content: React.FC = () => {
 		setImageError('')
 	}
 
+    // Add new content (example, you can expand this as needed)
+    const handleAddContent = async () => {
+        try {
+            await dispatch(createContent(addForm)).unwrap()
+            setAddDialogOpen(false)
+            setAddForm({
+                offerName: '',
+                categoryName: '',
+                expiredDate: '',
+                status: 'active',
+                imageUrl: '',
+                images: [],
+                headlines: '',
+                termsCondition: '',
+                cancellationPolicy: '',
+                description: '',
+                discountPercentage: 0,
+                discountAmount: 0,
+                applicableCategories: [],
+                applicableLocations: [],
+                clicks: 0,
+            })
+            dispatch(fetchContents())
+        } catch (error: any) {
+            alert(error.message || 'Failed to add content')
+        }
+    }
+
 	const handleDelete = (id: string) => {
 		setOfferToDelete(id)
 		setDeleteDialogOpen(true)
@@ -284,6 +332,100 @@ const Content: React.FC = () => {
 
 	return (
 		<Box style={{ padding: '24px', width: '100%', boxSizing: 'border-box' }}>
+			{/* Add Content Dialog */}
+			<AlertDialog.Root open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                <AlertDialog.Content maxWidth="500px">
+                    <AlertDialog.Title>Add New Content</AlertDialog.Title>
+                    <AlertDialog.Description>
+                        Fill in the details to add a new content/offer.
+                    </AlertDialog.Description>
+                    <Box mt="3">
+                        <TextField.Root
+                            placeholder="Offer Name"
+                            value={addForm.offerName}
+                            onChange={e => setAddForm(f => ({ ...f, offerName: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextField.Root
+                            placeholder="Category Name"
+                            value={addForm.categoryName}
+                            onChange={e => setAddForm(f => ({ ...f, categoryName: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextField.Root
+                            placeholder="Expired Date (YYYY-MM-DD)"
+                            value={addForm.expiredDate}
+                            onChange={e => setAddForm(f => ({ ...f, expiredDate: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <Select.Root
+                            value={addForm.status}
+                            onValueChange={v => setAddForm(f => ({ ...f, status: v as 'active' | 'inactive' }))}
+                        >
+                            <Select.Trigger style={{ width: '100%', marginBottom: 12 }} />
+                            <Select.Content>
+                                <Select.Item value="active">Active</Select.Item>
+                                <Select.Item value="inactive">Inactive</Select.Item>
+                            </Select.Content>
+                        </Select.Root>
+                        <TextField.Root
+                            placeholder="Image URL"
+                            value={addForm.imageUrl}
+                            onChange={e => setAddForm(f => ({ ...f, imageUrl: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextArea
+                            placeholder="Headlines"
+                            value={addForm.headlines}
+                            onChange={e => setAddForm(f => ({ ...f, headlines: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextArea
+                            placeholder="Terms & Conditions"
+                            value={addForm.termsCondition}
+                            onChange={e => setAddForm(f => ({ ...f, termsCondition: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextArea
+                            placeholder="Cancellation Policy"
+                            value={addForm.cancellationPolicy}
+                            onChange={e => setAddForm(f => ({ ...f, cancellationPolicy: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextArea
+                            placeholder="Description"
+                            value={addForm.description}
+                            onChange={e => setAddForm(f => ({ ...f, description: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextField.Root
+                            placeholder="Discount Percentage"
+                            type="number"
+                            value={addForm.discountPercentage?.toString() || ''}
+                            onChange={e => setAddForm(f => ({ ...f, discountPercentage: Number(e.target.value) }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextField.Root
+                            placeholder="Discount Amount"
+                            type="number"
+                            value={addForm.discountAmount?.toString() || ''}
+                            onChange={e => setAddForm(f => ({ ...f, discountAmount: Number(e.target.value) }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                    </Box>
+                    <Flex gap="3" mt="4" justify="end">
+                        <AlertDialog.Cancel>
+                            <Button variant="soft" color="gray">
+                                Cancel
+                            </Button>
+                        </AlertDialog.Cancel>
+                        <Button color="green" onClick={handleAddContent}>
+                            Add
+                        </Button>
+                    </Flex>
+                </AlertDialog.Content>
+            </AlertDialog.Root>
+
 			{/* Header */}
 			<Flex justify="between" align="center" mb="6">
 				<Box>
@@ -297,9 +439,9 @@ const Content: React.FC = () => {
 				<Button
 					size="3"
 					variant="soft"
-					onClick={() => setIsHeroSectionOpen(true)}
+					onClick={() => setAddDialogOpen(true)}
 				>
-					Edit Hero Section
+					Add Content
 				</Button>
 			</Flex>
 

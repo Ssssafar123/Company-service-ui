@@ -1,5 +1,13 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../../store'
+import {
+    fetchActivities,
+    createActivity,
+    updateActivityById,
+    deleteActivityById,
+} from '../../features/ActivitySlice'
 import {
 	Box,
 	Flex,
@@ -24,84 +32,14 @@ type ActivityData = {
 	fullDescription?: string // Optional
 }
 
-// Dummy activity data
-const dummyActivities: ActivityData[] = [
-	{
-		id: '1',
-		name: 'Paragliding Adventure',
-		location: 'Manali',
-		duration: 2,
-		price: 3500,
-	},
-	{
-		id: '2',
-		name: 'River Rafting',
-		location: 'Rishikesh',
-		duration: 3,
-		price: 2500,
-	},
-	{
-		id: '3',
-		name: 'Desert Safari',
-		location: 'Jaisalmer',
-		duration: 4,
-		price: 4000,
-	},
-	{
-		id: '4',
-		name: 'Scuba Diving',
-		location: 'Goa',
-		duration: 2,
-		price: 4500,
-	},
-	{
-		id: '5',
-		name: 'Trekking Expedition',
-		location: 'Himachal Pradesh',
-		duration: 8,
-		price: 5000,
-	},
-	{
-		id: '6',
-		name: 'Wildlife Safari',
-		location: 'Ranthambore',
-		duration: 6,
-		price: 3500,
-	},
-	{
-		id: '7',
-		name: 'Hot Air Balloon Ride',
-		location: 'Pushkar',
-		duration: 1,
-		price: 6000,
-	},
-	{
-		id: '8',
-		name: 'Rock Climbing',
-		location: 'Mumbai',
-		duration: 3,
-		price: 2000,
-	},
-	{
-		id: '9',
-		name: 'Bungee Jumping',
-		location: 'Rishikesh',
-		duration: 1,
-		price: 3500,
-	},
-	{
-		id: '10',
-		name: 'Camel Safari',
-		location: 'Jaisalmer',
-		duration: 5,
-		price: 3000,
-	},
-]
-
 const Activities: React.FC = () => {
-	const navigate = useNavigate()
+    const navigate = useNavigate()
+    const dispatch = useDispatch<AppDispatch>()
+    const activitiesFromStore = useSelector((state: RootState) => state.activity.activities)
+    const loading = useSelector((state: RootState) => state.activity.ui.loading)
+    const error = useSelector((state: RootState) => state.activity.ui.error)
+
 	const [searchQuery, setSearchQuery] = useState('')
-	const [activities, setActivities] = useState<ActivityData[]>(dummyActivities)
 	const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null } | null>(null)
 	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(['name', 'location', 'duration', 'price', 'actions']))
 	const [currentPage, setCurrentPage] = useState(1)
@@ -122,14 +60,19 @@ const Activities: React.FC = () => {
 		color?: 'red' | 'blue' | 'green' | 'gray'
 	} | null>(null)
 
+	// Fetch activities from Redux on mount
+	useEffect(() => {
+		dispatch(fetchActivities())
+	}, [dispatch])
+
 	// Filter and sort activities
 	const filteredAndSortedActivities = useMemo(() => {
-		let filtered = activities
+		let filtered = activitiesFromStore
 
 		// Apply search filter
 		if (searchQuery.trim()) {
 			const query = searchQuery.toLowerCase()
-			filtered = activities.filter(
+			filtered = activitiesFromStore.filter(
 				(activity) =>
 					activity.name.toLowerCase().includes(query) ||
 					activity.location.toLowerCase().includes(query) ||
@@ -157,7 +100,7 @@ const Activities: React.FC = () => {
 		}
 
 		return filtered
-	}, [activities, searchQuery, sortConfig])
+	}, [activitiesFromStore, searchQuery, sortConfig])
 
 	// Pagination
 	const totalPages = Math.ceil(filteredAndSortedActivities.length / itemsPerPage)
@@ -190,8 +133,8 @@ const Activities: React.FC = () => {
 			actionText: 'Delete',
 			cancelText: 'Cancel',
 			color: 'red',
-			onConfirm: () => {
-				setActivities(activities.filter((a) => a.id !== activity.id))
+			onConfirm: async () => {
+				await dispatch(deleteActivityById(activity.id))
 				setDialogOpen(false)
 				setDialogConfig({
 					title: 'Success',
@@ -211,47 +154,41 @@ const Activities: React.FC = () => {
 		setIsFormOpen(true)
 	}
 
-	const handleFormSubmit = (values: Record<string, any>) => {
-		console.log('Form submitted with values:', values)
-		
+	const handleFormSubmit = async (values: Record<string, any>) => {
 		if (editingActivity) {
 			// Update existing activity
-			const updatedActivity: ActivityData = {
-				...editingActivity,
-				name: values.name || '',
-				location: values.location || '',
-				duration: parseInt(values.duration) || 1,
-				price: parseFloat(values.price) || 0,
-				shortDescription: values.shortDescription || '',
-				fullDescription: values.fullDescription || '',
-			}
-
-			setActivities(activities.map((a) => (a.id === editingActivity.id ? updatedActivity : a)))
-
+			await dispatch(updateActivityById({
+				id: editingActivity.id,
+				data: {
+					name: values.name || '',
+					location: values.location || '',
+					duration: Number(values.duration) || 1,
+					price: Number(values.price) || 0,
+					shortDescription: values.shortDescription || '',
+					fullDescription: values.fullDescription || '',
+				}
+			}))
 			setDialogConfig({
 				title: 'Success',
-				description: `Activity "${updatedActivity.name}" updated successfully!`,
+				description: `Activity "${values.name}" updated successfully!`,
 				actionText: 'OK',
 				color: 'green',
 				onConfirm: () => setDialogOpen(false),
 			})
 		} else {
 			// Create new activity
-			const newActivity: ActivityData = {
-				id: String(activities.length + 1),
+			await dispatch(createActivity({
 				name: values.name || '',
 				location: values.location || '',
-				duration: parseInt(values.duration) || 1,
-				price: parseFloat(values.price) || 0,
+				duration: Number(values.duration) || 1,
+				price: Number(values.price) || 0,
 				shortDescription: values.shortDescription || '',
 				fullDescription: values.fullDescription || '',
-			}
-
-			setActivities([...activities, newActivity])
-
+				status: 'active',
+			}))
 			setDialogConfig({
 				title: 'Success',
-				description: `Activity "${newActivity.name}" added successfully!`,
+				description: `Activity "${values.name}" added successfully!`,
 				actionText: 'OK',
 				color: 'green',
 				onConfirm: () => setDialogOpen(false),
@@ -482,38 +419,39 @@ const Activities: React.FC = () => {
 									</Button>
 								</DropdownMenu.Trigger>
 								<DropdownMenu.Content>
-									{[
-										{ key: 'name', label: 'Name' },
-										{ key: 'location', label: 'Location' },
-										{ key: 'duration', label: 'Duration (hrs)' },
-										{ key: 'price', label: 'Price' },
-									].map((col) => (
-										<DropdownMenu.Item
-											key={col.key}
-											onSelect={(e) => {
-												e.preventDefault()
-												setVisibleColumns((prev) => {
-													const newSet = new Set(prev)
-													if (newSet.has(col.key)) {
-														newSet.delete(col.key)
-													} else {
-														newSet.add(col.key)
-													}
-													return newSet
-												})
-											}}
-										>
-											<Flex align="center" gap="2">
-												<input
-													type="checkbox"
-													checked={visibleColumns.has(col.key)}
-													onChange={() => {}}
-													style={{ cursor: 'pointer' }}
-												/>
-												<Text size="2">{col.label}</Text>
-											</Flex>
-										</DropdownMenu.Item>
-									))}
+									{
+										[
+											{ key: 'name', label: 'Name' },
+											{ key: 'location', label: 'Location' },
+											{ key: 'duration', label: 'Duration (hrs)' },
+											{ key: 'price', label: 'Price' },
+										].map((col) => (
+											<DropdownMenu.Item
+												key={col.key}
+												onSelect={(e) => {
+													e.preventDefault()
+													setVisibleColumns((prev) => {
+														const newSet = new Set(prev)
+														if (newSet.has(col.key)) {
+															newSet.delete(col.key)
+														} else {
+															newSet.add(col.key)
+														}
+														return newSet
+													})
+												}}
+											>
+												<Flex align="center" gap="2">
+													<input
+														type="checkbox"
+														checked={visibleColumns.has(col.key)}
+														onChange={() => {}}
+														style={{ cursor: 'pointer' }}
+													/>
+													<Text size="2">{col.label}</Text>
+												</Flex>
+											</DropdownMenu.Item>
+										))}
 								</DropdownMenu.Content>
 							</DropdownMenu.Root>
 

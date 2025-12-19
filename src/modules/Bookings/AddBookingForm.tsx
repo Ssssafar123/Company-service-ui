@@ -61,7 +61,8 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({ isOpen, onClose, onSubm
 		}
 	}, [isOpen])
 
-	const dispatch = useDispatch<AppDispatch>()
+	// Remove dispatch - parent handles it!
+	// const dispatch = useDispatch<AppDispatch>()
 
 	// Form fields configuration
 	const formFields = [
@@ -167,7 +168,8 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({ isOpen, onClose, onSubm
 
 
 	const handleFormSubmit = (values: Record<string, any>) => {
-		dispatch(createBooking(values as Omit<Booking, 'id'>))
+		// Don't dispatch here - parent handles it!
+		// Just call parent's onSubmit callback
 		onSubmit(values as Omit<Booking, 'id'>)
 		onClose()
 	}

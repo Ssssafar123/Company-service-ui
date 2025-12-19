@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Box, Text, Separator, Flex, Button, AlertDialog, Card, Checkbox } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
+import { createCategory, updateCategoryById } from '../../features/CategorySlice'
 
 type ItineraryData = {
 	id: string
@@ -112,6 +115,7 @@ const AddCategory: React.FC = () => {
 	const [formData, setFormData] = useState<any>({})
 	const [initialValues, setInitialValues] = useState<any>({})
 	const [isEditMode, setIsEditMode] = useState(false)
+	const dispatch = useDispatch<AppDispatch>() // <-- use the typed dispatch
 
 	// Dialog state
 	const [dialogOpen, setDialogOpen] = useState(false)
@@ -129,12 +133,16 @@ const AddCategory: React.FC = () => {
 		if (categoryData) {
 			setIsEditMode(true)
 			
+			// Map the full Category object to form initial values
 			const mappedValues = {
 				category_name: categoryData.name || '',
-				short_description: categoryData.shortDescription || '',
-				long_description: categoryData.longDescription || '',
-				feature_images: categoryData.images || [''],
-				itineraries: categoryData.itineraryIds || [],
+				short_description: categoryData.short_description || '',
+				long_description: categoryData.long_description || '',
+				feature_images: categoryData.feature_images && categoryData.feature_images.length > 0 
+					? categoryData.feature_images 
+					: (categoryData.image ? [categoryData.image] : ['']), // Use image if feature_images is empty
+				itineraries: categoryData.itineraries || [],
+				seo_fields: categoryData.seo_fields || null, // Add SEO fields
 			}
 			
 			setInitialValues(mappedValues)
@@ -147,33 +155,91 @@ const AddCategory: React.FC = () => {
 		}
 	}, [location.state])
 
-	const handleSubmit = (values: Record<string, any>) => {
+	const handleSubmit = async (values: Record<string, any>) => {
+		// Ensure feature_images is an array of strings
+		let featureImages: string[] = [];
+		if (Array.isArray(values.feature_images)) {
+			featureImages = values.feature_images.map((img: any) => {
+				if (typeof img === 'string') return img;
+				if (img && typeof img === 'object') {
+					// Use .url or .name depending on your upload logic
+					return img.url || img.name || '';
+				}
+				return '';
+			}).filter(Boolean);
+		}
+
+		// Use the first image as the main image string
+		const image = featureImages.length > 0 ? featureImages[0] : '';
+
 		if (isEditMode) {
-			console.log('Category updated with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Category updated successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/category')
-				},
-			})
+			// Update category
+			try {
+				const id = location.state?.categoryData?.id
+				await dispatch(updateCategoryById({
+					id,
+					data: {
+						name: values.category_name,
+						short_description: values.short_description,
+						long_description: values.long_description,
+						feature_images: featureImages,
+						image, // <-- must be a string
+						itineraries: values.itineraries,
+						seo_fields: values.seo_fields,
+						status: 'active',
+					}
+				})).unwrap()
+				setDialogConfig({
+					title: 'Success',
+					description: 'Category updated successfully!',
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => {
+						setDialogOpen(false)
+						navigate('/dashboard/category')
+					},
+				})
+			} catch (error: any) {
+				setDialogConfig({
+					title: 'Error',
+					description: error?.message || 'Failed to update category',
+					actionText: 'OK',
+					color: 'red',
+					onConfirm: () => setDialogOpen(false),
+				})
+			}
 		} else {
-			console.log('Category created with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Category created successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/category')
-				},
-			})
+			// Create category
+			try {
+				await dispatch(createCategory({
+					name: values.category_name,
+					short_description: values.short_description,
+					long_description: values.long_description,
+					feature_images: featureImages,
+					image, // <-- keep this one
+					itineraries: values.itineraries,
+					seo_fields: values.seo_fields,
+					status: 'active',
+				})).unwrap()
+				setDialogConfig({
+					title: 'Success',
+					description: 'Category created successfully!',
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => {
+						setDialogOpen(false)
+						navigate('/dashboard/category')
+					},
+				})
+			} catch (error: any) {
+				setDialogConfig({
+					title: 'Error',
+					description: error?.message || 'Failed to create category',
+					actionText: 'OK',
+					color: 'red',
+					onConfirm: () => setDialogOpen(false),
+				})
+			}
 		}
 		setDialogOpen(true)
 	}
@@ -356,6 +422,7 @@ const AddCategory: React.FC = () => {
 			</Text>
 
 			<DynamicForm
+				key={isEditMode ? `edit-${location.state?.categoryData?.id}` : 'new'} // Add key to force re-render
 				fields={formFields}
 				buttonText={isEditMode ? 'Update Category' : 'Create Category'}
 				onSubmit={handleSubmit}

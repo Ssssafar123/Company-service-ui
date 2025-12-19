@@ -1,4 +1,7 @@
 import React, { useEffect } from 'react'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
+import { createActivity, updateActivityById } from '../../features/ActivitySlice'
 import {
 	Box,
 	Flex,
@@ -24,6 +27,8 @@ type AddActivityFormProps = {
 }
 
 const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
+    const dispatch = useDispatch<AppDispatch>()
+
 	// Prevent body scroll when form is open
 	useEffect(() => {
 		if (isOpen) {
@@ -82,10 +87,28 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 		},
 	]
 
-	const handleFormSubmit = (values: Record<string, any>) => {
-		onSubmit(values)
-		onClose()
-	}
+	const handleFormSubmit = async (values: Record<string, any>) => {
+    // if (initialData && initialData.id) {
+    //     // Edit mode
+    //     await dispatch(updateActivityById({
+    //         id: initialData.id,
+    //         data: values,
+    //     })).unwrap()
+    // } else {
+    //     // Add mode
+    //     await dispatch(createActivity({
+    //         name: values.name,
+    //         location: values.location,
+    //         duration: Number(values.duration),
+    //         price: Number(values.price),
+    //         shortDescription: values.shortDescription || '',
+    //         fullDescription: values.fullDescription || '',
+    //         status: 'active',
+    //     })).unwrap()
+    // }
+    onSubmit(values)
+    onClose()
+}
 
 	if (!isOpen) return null
 

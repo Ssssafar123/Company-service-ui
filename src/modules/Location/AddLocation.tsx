@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
+import { createLocation, updateLocationById } from '../../features/LocationSlice'
 import { Box, Text, Separator, Flex, Button, AlertDialog, Card, Checkbox } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
 
@@ -111,7 +114,8 @@ const dummyItineraries: ItineraryData[] = [
 const AddLocation: React.FC = () => {
 	const location = useLocation()
 	const navigate = useNavigate()
-	const [formData, setFormData] = useState<any>({})
+	const dispatch = useDispatch<AppDispatch>()
+	// Removed unused formData state
 	const [initialValues, setInitialValues] = useState<any>({})
 	const [isEditMode, setIsEditMode] = useState(false)
 
@@ -131,13 +135,18 @@ const AddLocation: React.FC = () => {
 		if (locationData) {
 			setIsEditMode(true)
 			
+			// Map the full Location object to form initial values
 			const mappedValues = {
 				location_name: locationData.name || '',
-				short_description: locationData.shortDescription || '',
-				long_description: locationData.longDescription || '',
-				feature_images: locationData.images || [''],
-				itineraries: locationData.itineraryIds || [],
-				seo_fields: locationData.seoData || null,
+				short_description: locationData.short_description || locationData.shortDescription || '',
+				long_description: locationData.long_description || locationData.longDescription || '',
+				feature_images: (locationData.feature_images && locationData.feature_images.length > 0)
+					? locationData.feature_images 
+					: (locationData.images && locationData.images.length > 0)
+						? locationData.images
+						: (locationData.image ? [locationData.image] : ['']),
+				itineraries: locationData.itineraries || locationData.itineraryIds || [],
+				seo_fields: locationData.seo_fields || locationData.seoData || null,
 			}
 			
 			setInitialValues(mappedValues)
@@ -151,33 +160,91 @@ const AddLocation: React.FC = () => {
 		}
 	}, [location.state])
 
-	const handleSubmit = (values: Record<string, any>) => {
+	const handleSubmit = async (values: Record<string, any>) => {
+		// Ensure feature_images is an array of strings
+		let featureImages: string[] = [];
+		if (Array.isArray(values.feature_images)) {
+			featureImages = values.feature_images.map((img: any) => {
+				if (typeof img === 'string') return img;
+				if (img && typeof img === 'object') {
+					return img.url || img.name || '';
+				}
+				return '';
+			}).filter(Boolean);
+		}
+
+		// Use the first image as the main image string
+		const image = featureImages.length > 0 ? featureImages[0] : '';
+
 		if (isEditMode) {
-			console.log('Location updated with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Location updated successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/location')
-				},
-			})
+			// Update location
+			try {
+				const id = location.state?.locationData?.id
+				await dispatch(updateLocationById({
+					id,
+					data: {
+						name: values.location_name,
+						short_description: values.short_description,
+						long_description: values.long_description,
+						feature_images: featureImages,
+						image, // Main image
+						seo_fields: values.seo_fields,
+						status: 'active',
+					}
+				})).unwrap()
+				setDialogConfig({
+					title: 'Success',
+					description: 'Location updated successfully!',
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => {
+						setDialogOpen(false)
+						navigate('/dashboard/location')
+					},
+				})
+			} catch (error: any) {
+				setDialogConfig({
+					title: 'Error',
+					description: error?.message || 'Failed to update location',
+					actionText: 'OK',
+					color: 'red',
+					onConfirm: () => setDialogOpen(false),
+				})
+			}
 		} else {
-			console.log('Location created with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Location created successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/location')
-				},
-			})
+			// Create location
+			try {
+				const payload = {
+					name: values.location_name,
+					short_description: values.short_description,
+					long_description: values.long_description,
+					feature_images: featureImages,
+					itineraryIds: values.itineraries,
+					seo_fields: values.seo_fields,
+					image: image,
+					status: 'active' as 'active',
+					country: 'India',
+				};
+				await dispatch(createLocation(payload)).unwrap();
+				setDialogConfig({
+					title: 'Success',
+					description: 'Location created successfully!',
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => {
+						setDialogOpen(false);
+						navigate('/dashboard/location');
+					},
+				});
+			} catch (error: any) {
+				setDialogConfig({
+					title: 'Error',
+					description: error?.message || 'Failed to create location',
+					actionText: 'OK',
+					color: 'red',
+					onConfirm: () => setDialogOpen(false),
+				});
+			}
 		}
 		setDialogOpen(true)
 	}
@@ -360,6 +427,7 @@ const AddLocation: React.FC = () => {
 			</Text>
 
 			<DynamicForm
+				key={isEditMode ? `edit-${location.state?.locationData?.id}` : 'new'} // Add key to force re-render
 				fields={formFields}
 				buttonText={isEditMode ? 'Update Location' : 'Create Location'}
 				onSubmit={handleSubmit}
