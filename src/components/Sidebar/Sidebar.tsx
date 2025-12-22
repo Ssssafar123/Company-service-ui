@@ -16,7 +16,7 @@ type User = {
   name: string;
   email: string;
   permissions: Permission[];
-  avatar?: string;
+  // avatar?: string;
 };
 
 type MenuItem = {
@@ -316,7 +316,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
       >
         {/* User Section */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, marginTop: 32, padding: "0 12px" }}>
-          <Avatar
+          {/* <Avatar
             size="3"
             src={user.avatar}
             fallback={user.name.charAt(0).toUpperCase()}
@@ -324,14 +324,15 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
               borderRadius: "10px",
               border: "2px solid var(--accent-6)"
             }}
-          />
+          /> */}
 
           {!isCollapsed && (
             <div style={{ flex: 1, minWidth: 0 }}>
               <Text size="2" weight="bold" style={{ color: "var(--accent-12)" }} truncate>
                 {user.name}
               </Text>
-              <Text size="1" style={{ color: "var(--accent-11)" }} truncate>
+              
+              <Text  as="div" size="1" style={{ color: "var(--accent-11)" }} truncate>
                 {user.email}
               </Text>
             </div>
@@ -339,7 +340,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
         </div>
 
         {/* Permissions Badges */}
-        {!isCollapsed && user.permissions.length > 0 && (
+        {/* {!isCollapsed && user.permissions.length > 0 && (
           <Flex gap="1" wrap="wrap" style={{ marginTop: "0px", padding: "0 10px" }}>
             {user.permissions.map(permission => (
               <Badge 
@@ -352,7 +353,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
               </Badge>
             ))}
           </Flex>
-        )}
+        )} */}
 
         <Separator size="4" style={{ margin: "0 0px" }} />
 
