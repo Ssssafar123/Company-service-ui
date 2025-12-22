@@ -18,98 +18,101 @@ type ItineraryData = {
 }
 
 // Dummy itineraries data (same as Itinerary component)
-const dummyItineraries: ItineraryData[] = [
-	{
-		id: '1',
-		name: 'Pachmarhi | Ex- Indore',
-		city: 'Pachmarhi',
-		price: 4499,
-		priceDisplay: '₹4,499',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '2',
-		name: 'Kerala 7D 6N',
-		city: 'Kerala',
-		price: 16499,
-		priceDisplay: '₹16,499',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '3',
-		name: 'Spiti Valley Full Circuit',
-		city: 'Spiti Valley',
-		price: 5599,
-		priceDisplay: '₹5,599',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '4',
-		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore',
-		city: 'Udaipur, Mount abu',
-		price: 15999,
-		priceDisplay: '₹15,999',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '5',
-		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Delhi',
-		city: 'Udaipur, Mount Abu',
-		price: 15999,
-		priceDisplay: '₹15,999',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '6',
-		name: 'Goa Beach Paradise 4D 3N',
-		city: 'Goa',
-		price: 8999,
-		priceDisplay: '₹8,999',
-		status: 'Inactive',
-		trending: 'No',
-	},
-	{
-		id: '7',
-		name: 'Rajasthan Cultural Tour 6D 5N',
-		city: 'Rajasthan',
-		price: 12499,
-		priceDisplay: '₹12,499',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '8',
-		name: 'Himachal Adventure 5D 4N',
-		city: 'Himachal Pradesh',
-		price: 9999,
-		priceDisplay: '₹9,999',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '9',
-		name: 'North East Explorer 8D 7N',
-		city: 'North East',
-		price: 18999,
-		priceDisplay: '₹18,999',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '10',
-		name: 'Ladakh Motorcycle Trip 10D 9N',
-		city: 'Ladakh',
-		price: 25999,
-		priceDisplay: '₹25,999',
-		status: 'Inactive',
-		trending: 'No',
-	},
-]
+// const dummyItineraries: ItineraryData[] = [
+// 	{
+// 		id: '1',
+// 		name: 'Pachmarhi | Ex- Indore',
+// 		city: 'Pachmarhi',
+// 		price: 4499,
+// 		priceDisplay: '₹4,499',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '2',
+// 		name: 'Kerala 7D 6N',
+// 		city: 'Kerala',
+// 		price: 16499,
+// 		priceDisplay: '₹16,499',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '3',
+// 		name: 'Spiti Valley Full Circuit',
+// 		city: 'Spiti Valley',
+// 		price: 5599,
+// 		priceDisplay: '₹5,599',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '4',
+// 		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore',
+// 		city: 'Udaipur, Mount abu',
+// 		price: 15999,
+// 		priceDisplay: '₹15,999',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '5',
+// 		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Delhi',
+// 		city: 'Udaipur, Mount Abu',
+// 		price: 15999,
+// 		priceDisplay: '₹15,999',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '6',
+// 		name: 'Goa Beach Paradise 4D 3N',
+// 		city: 'Goa',
+// 		price: 8999,
+// 		priceDisplay: '₹8,999',
+// 		status: 'Inactive',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '7',
+// 		name: 'Rajasthan Cultural Tour 6D 5N',
+// 		city: 'Rajasthan',
+// 		price: 12499,
+// 		priceDisplay: '₹12,499',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '8',
+// 		name: 'Himachal Adventure 5D 4N',
+// 		city: 'Himachal Pradesh',
+// 		price: 9999,
+// 		priceDisplay: '₹9,999',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '9',
+// 		name: 'North East Explorer 8D 7N',
+// 		city: 'North East',
+// 		price: 18999,
+// 		priceDisplay: '₹18,999',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '10',
+// 		name: 'Ladakh Motorcycle Trip 10D 9N',
+// 		city: 'Ladakh',
+// 		price: 25999,
+// 		priceDisplay: '₹25,999',
+// 		status: 'Inactive',
+// 		trending: 'No',
+// 	},
+// ]
+
+const dummyItineraries: ItineraryData[] = []
+
 
 const AddLocation: React.FC = () => {
 	const location = useLocation()
@@ -264,7 +267,7 @@ const AddLocation: React.FC = () => {
 						display: 'block',
 					}}
 				>
-					Total Itineraries ({dummyItineraries.length})
+					 Total Itineraries{/*({dummyItineraries.length})*/}
 				</Text>
 				<Box
 					style={{

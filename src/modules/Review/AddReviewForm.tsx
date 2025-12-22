@@ -28,23 +28,23 @@ type AddReviewFormProps = {
 }
 
 // Dummy itineraries data for dropdown
-const dummyItineraries = [
-	{ value: '1', label: 'Pachmarhi | Ex- Indore' },
-	{ value: '2', label: 'Kerala 7D 6N' },
-	{ value: '3', label: 'Spiti Valley Full Circuit' },
-	{ value: '4', label: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore' },
-	{ value: '5', label: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Delhi' },
-	{ value: '6', label: 'Goa Beach Paradise 4D 3N' },
-	{ value: '7', label: 'Rajasthan Cultural Tour 6D 5N' },
-	{ value: '8', label: 'Himachal Adventure 5D 4N' },
-	{ value: '9', label: 'North East Explorer 8D 7N' },
-	{ value: '10', label: 'Ladakh Motorcycle Trip 10D 9N' },
-	{ value: '11', label: 'Manali & Kasol Tour' },
-	{ value: '12', label: 'Goa Beach Tour' },
-	{ value: '13', label: 'Kerala Backwaters' },
-	{ value: '14', label: 'Ladakh Adventure' },
-	{ value: '15', label: 'Rajasthan Heritage' },
-]
+// const dummyItineraries = [
+// 	{ value: '1', label: 'Pachmarhi | Ex- Indore' },
+// 	{ value: '2', label: 'Kerala 7D 6N' },
+// 	{ value: '3', label: 'Spiti Valley Full Circuit' },
+// 	{ value: '4', label: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore' },
+// 	{ value: '5', label: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Delhi' },
+// 	{ value: '6', label: 'Goa Beach Paradise 4D 3N' },
+// 	{ value: '7', label: 'Rajasthan Cultural Tour 6D 5N' },
+// 	{ value: '8', label: 'Himachal Adventure 5D 4N' },
+// 	{ value: '9', label: 'North East Explorer 8D 7N' },
+// 	{ value: '10', label: 'Ladakh Motorcycle Trip 10D 9N' },
+// 	{ value: '11', label: 'Manali & Kasol Tour' },
+// 	{ value: '12', label: 'Goa Beach Tour' },
+// 	{ value: '13', label: 'Kerala Backwaters' },
+// 	{ value: '14', label: 'Ladakh Adventure' },
+// 	{ value: '15', label: 'Rajasthan Heritage' },
+// ]
 
 const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
     const dispatch = useDispatch<AppDispatch>()
@@ -138,7 +138,7 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 			label: 'Select Itinerary',
 			type: 'select' as const,
 			placeholder: 'Select itinerary',
-			options: dummyItineraries,
+			options: [],//dummyItineraries,
 			fullWidth: true,
 		},
 	]
