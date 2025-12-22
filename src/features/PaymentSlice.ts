@@ -80,7 +80,9 @@ export const fetchPayments = createAsyncThunk(
   'payment/fetchPayments',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/payment')
+      const res = await fetch('http://localhost:8000/api/payment', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch payments')
       const data = await res.json()
       return data.map(mapPayment)
@@ -94,7 +96,9 @@ export const fetchPaymentsByPage = createAsyncThunk(
   'payment/fetchPaymentsByPage',
   async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/payment/page?page=${page}&limit=${limit}`)
+      const res = await fetch(`http://localhost:8000/api/payment/page?page=${page}&limit=${limit}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch payments')
       const response = await res.json()
       return {
@@ -116,6 +120,7 @@ export const createPayment = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/payment', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payment),
       })
@@ -132,7 +137,9 @@ export const fetchPaymentById = createAsyncThunk(
   'payment/fetchPaymentById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/payment/${id}`)
+      const res = await fetch(`http://localhost:8000/api/payment/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch payment')
       const data = await res.json()
       return mapPayment(data)
@@ -148,6 +155,7 @@ export const updatePaymentById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/payment/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -168,7 +176,8 @@ export const deletePaymentById = createAsyncThunk(
         throw new Error('Invalid payment ID')
       }
       const res = await fetch(`http://localhost:8000/api/payment/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete payment')
       return id

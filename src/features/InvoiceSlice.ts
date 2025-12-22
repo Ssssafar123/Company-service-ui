@@ -130,7 +130,9 @@ export const fetchInvoices = createAsyncThunk(
   'invoice/fetchInvoices',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/invoice')
+      const res = await fetch('http://localhost:8000/api/invoice', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch invoices')
       const data = await res.json()
       return data.map(mapInvoice)
@@ -144,7 +146,9 @@ export const fetchInvoicesByPage = createAsyncThunk(
   'invoice/fetchInvoicesByPage',
   async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/invoice/page?page=${page}&limit=${limit}`)
+      const res = await fetch(`http://localhost:8000/api/invoice/page?page=${page}&limit=${limit}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch invoices')
       const response = await res.json()
       return {
@@ -166,6 +170,7 @@ export const createInvoice = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/invoice', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(invoice),
       })
@@ -182,7 +187,9 @@ export const fetchInvoiceById = createAsyncThunk(
   'invoice/fetchInvoiceById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/invoice/${id}`)
+      const res = await fetch(`http://localhost:8000/api/invoice/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch invoice')
       const data = await res.json()
       return mapInvoice(data)
@@ -198,6 +205,7 @@ export const updateInvoiceById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/invoice/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -218,7 +226,8 @@ export const deleteInvoiceById = createAsyncThunk(
         throw new Error('Invalid invoice ID')
       }
       const res = await fetch(`http://localhost:8000/api/invoice/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete invoice')
       return id

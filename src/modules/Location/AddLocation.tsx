@@ -161,20 +161,11 @@ const AddLocation: React.FC = () => {
 	}, [location.state])
 
 	const handleSubmit = async (values: Record<string, any>) => {
-		// Ensure feature_images is an array of strings
-		let featureImages: string[] = [];
+		// Extract File objects from feature_images
+		let featureImageFiles: File[] = [];
 		if (Array.isArray(values.feature_images)) {
-			featureImages = values.feature_images.map((img: any) => {
-				if (typeof img === 'string') return img;
-				if (img && typeof img === 'object') {
-					return img.url || img.name || '';
-				}
-				return '';
-			}).filter(Boolean);
+			featureImageFiles = values.feature_images.filter((img: any) => img instanceof File);
 		}
-
-		// Use the first image as the main image string
-		const image = featureImages.length > 0 ? featureImages[0] : '';
 
 		if (isEditMode) {
 			// Update location
@@ -186,10 +177,11 @@ const AddLocation: React.FC = () => {
 						name: values.location_name,
 						short_description: values.short_description,
 						long_description: values.long_description,
-						feature_images: featureImages,
-						image, // Main image
 						seo_fields: values.seo_fields,
 						status: 'active',
+						// Pass File objects if they exist
+						imageFile: featureImageFiles[0],
+						featureImageFiles: featureImageFiles,
 					}
 				})).unwrap()
 				setDialogConfig({
@@ -218,12 +210,13 @@ const AddLocation: React.FC = () => {
 					name: values.location_name,
 					short_description: values.short_description,
 					long_description: values.long_description,
-					feature_images: featureImages,
-					itineraryIds: values.itineraries,
 					seo_fields: values.seo_fields,
-					image: image,
+					image: '', // Will be replaced by backend with actual binary data
 					status: 'active' as 'active',
 					country: 'India',
+					// Pass File objects
+					imageFile: featureImageFiles[0],
+					featureImageFiles: featureImageFiles,
 				};
 				await dispatch(createLocation(payload)).unwrap();
 				setDialogConfig({

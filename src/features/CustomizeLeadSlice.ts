@@ -50,7 +50,9 @@ export const fetchCustomizeLeads = createAsyncThunk(
   'customizeLead/fetchCustomizeLeads',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/customizelead')
+      const res = await fetch('http://localhost:8000/api/customizelead', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch customize leads')
       const data = await res.json()
       return data.map(mapCustomizeLead)
@@ -66,6 +68,7 @@ export const createCustomizeLead = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/customizelead', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(customizeLead),
       })
@@ -82,7 +85,9 @@ export const fetchCustomizeLeadById = createAsyncThunk(
   'customizeLead/fetchCustomizeLeadById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/customizelead/${id}`)
+      const res = await fetch(`http://localhost:8000/api/customizelead/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch customize lead')
       const data = await res.json()
       return mapCustomizeLead(data)
@@ -98,6 +103,7 @@ export const updateCustomizeLeadById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/customizelead/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -119,6 +125,7 @@ export const deleteCustomizeLeadById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/customizelead/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete customize lead')
       return id

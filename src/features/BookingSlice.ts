@@ -72,7 +72,9 @@ export const fetchBookings = createAsyncThunk(
   'app/fetchBookings',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/booking')
+      const res = await fetch('http://localhost:8000/api/booking', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch bookings')
       const data = await res.json()
       return data.map(mapBooking)
@@ -89,7 +91,9 @@ export const fetchBookingsByPage = createAsyncThunk(
     try {
       // Use query parameters on base endpoint instead of /page route
       // This avoids conflict with /api/booking/:id route
-      const res = await fetch(`http://localhost:8000/api/booking?page=${page}&limit=${limit}`)
+      const res = await fetch(`http://localhost:8000/api/booking?page=${page}&limit=${limit}`, {
+        credentials: 'include',
+      })
       
       if (!res.ok) {
         // Try to get error message from response
@@ -149,6 +153,7 @@ export const createBooking = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/booking', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(booking),
       })
@@ -165,7 +170,9 @@ export const fetchBookingById = createAsyncThunk(
   'app/fetchBookingById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/booking/${id}`)
+      const res = await fetch(`http://localhost:8000/api/booking/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch booking')
       const data = await res.json()
       return mapBooking(data)
@@ -181,6 +188,7 @@ export const updateBookingById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/booking/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -201,7 +209,8 @@ export const deleteBookingById = createAsyncThunk(
         throw new Error('Invalid booking ID')
       }
       const res = await fetch(`http://localhost:8000/api/booking/${id}`, { 
-        method: 'DELETE' 
+        method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete booking')
       return id

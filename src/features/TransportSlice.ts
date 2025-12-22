@@ -62,7 +62,9 @@ export const fetchTransports = createAsyncThunk(
   'transport/fetchTransports',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/transport')
+      const res = await fetch('http://localhost:8000/api/transport', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch transports')
       const data = await res.json()
       return data.map(mapTransport)
@@ -78,6 +80,7 @@ export const createTransport = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/transport', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transport),
       })
@@ -94,7 +97,9 @@ export const fetchTransportById = createAsyncThunk(
   'transport/fetchTransportById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/transport/${id}`)
+      const res = await fetch(`http://localhost:8000/api/transport/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch transport')
       const data = await res.json()
       return mapTransport(data)
@@ -110,6 +115,7 @@ export const updateTransportById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/transport/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -131,6 +137,7 @@ export const deleteTransportById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/transport/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete transport')
       return id

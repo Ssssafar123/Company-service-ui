@@ -64,7 +64,7 @@ const Category: React.FC = () => {
 		const mappedCategories = categoriesFromStore.map((item) => ({
 			id: item.id,
 			name: item.name,
-			image: item.image,
+			image: 'binary', // Always use binary endpoint
 			tripCount: item.tripCount || 0,
 			order: item.order || 0,
 		}))
@@ -375,7 +375,7 @@ const Category: React.FC = () => {
 							}}
 						>
 							<img
-								src={category.image}
+								src={`http://localhost:8000/api/category/${category.id}/image?t=${Date.now()}`}
 								alt={category.name}
 								style={{
 									width: '100%',

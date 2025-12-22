@@ -50,7 +50,9 @@ export const fetchLedgers = createAsyncThunk(
   'ledger/fetchLedgers',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/ledger')
+      const res = await fetch('http://localhost:8000/api/ledger', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch ledgers')
       const data = await res.json()
       return data.map(mapLedger)
@@ -66,6 +68,7 @@ export const createLedger = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/ledger', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ledger),
       })
@@ -82,7 +85,9 @@ export const fetchLedgerById = createAsyncThunk(
   'ledger/fetchLedgerById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/ledger/${id}`)
+      const res = await fetch(`http://localhost:8000/api/ledger/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch ledger')
       const data = await res.json()
       return mapLedger(data)
@@ -98,6 +103,7 @@ export const updateLedgerById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/ledger/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -119,6 +125,7 @@ export const deleteLedgerById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/ledger/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete ledger')
       return id

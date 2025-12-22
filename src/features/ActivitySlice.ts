@@ -59,7 +59,7 @@ export const fetchActivities = createAsyncThunk(
   'activity/fetchActivities',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/activity')
+      const res = await fetch('http://localhost:8000/api/activity' , {method : "GET" , credentials : "include"})
       if (!res.ok) throw new Error('Failed to fetch activities')
       const data = await res.json()
       return data.map(mapActivity)
@@ -75,6 +75,7 @@ export const createActivity = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/activity', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(activity),
       })
@@ -91,7 +92,9 @@ export const fetchActivityById = createAsyncThunk(
   'activity/fetchActivityById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/activity/${id}`)
+      const res = await fetch(`http://localhost:8000/api/activity/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch activity')
       const data = await res.json()
       return mapActivity(data)
@@ -107,6 +110,7 @@ export const updateActivityById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/activity/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -128,6 +132,7 @@ export const deleteActivityById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/activity/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete activity')
       return id

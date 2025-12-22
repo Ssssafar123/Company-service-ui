@@ -112,7 +112,6 @@ const dummyItineraries: ItineraryData[] = [
 const AddCategory: React.FC = () => {
 	const location = useLocation()
 	const navigate = useNavigate()
-	const [formData, setFormData] = useState<any>({})
 	const [initialValues, setInitialValues] = useState<any>({})
 	const [isEditMode, setIsEditMode] = useState(false)
 	const dispatch = useDispatch<AppDispatch>() // <-- use the typed dispatch
@@ -156,21 +155,11 @@ const AddCategory: React.FC = () => {
 	}, [location.state])
 
 	const handleSubmit = async (values: Record<string, any>) => {
-		// Ensure feature_images is an array of strings
-		let featureImages: string[] = [];
+		// Extract File objects from feature_images
+		let featureImageFiles: File[] = [];
 		if (Array.isArray(values.feature_images)) {
-			featureImages = values.feature_images.map((img: any) => {
-				if (typeof img === 'string') return img;
-				if (img && typeof img === 'object') {
-					// Use .url or .name depending on your upload logic
-					return img.url || img.name || '';
-				}
-				return '';
-			}).filter(Boolean);
+			featureImageFiles = values.feature_images.filter((img: any) => img instanceof File);
 		}
-
-		// Use the first image as the main image string
-		const image = featureImages.length > 0 ? featureImages[0] : '';
 
 		if (isEditMode) {
 			// Update category
@@ -182,11 +171,12 @@ const AddCategory: React.FC = () => {
 						name: values.category_name,
 						short_description: values.short_description,
 						long_description: values.long_description,
-						feature_images: featureImages,
-						image, // <-- must be a string
 						itineraries: values.itineraries,
 						seo_fields: values.seo_fields,
 						status: 'active',
+						// Pass File objects if they exist
+						imageFile: featureImageFiles[0],
+						featureImageFiles: featureImageFiles,
 					}
 				})).unwrap()
 				setDialogConfig({
@@ -215,11 +205,13 @@ const AddCategory: React.FC = () => {
 					name: values.category_name,
 					short_description: values.short_description,
 					long_description: values.long_description,
-					feature_images: featureImages,
-					image, // <-- keep this one
 					itineraries: values.itineraries,
 					seo_fields: values.seo_fields,
 					status: 'active',
+					image: '', // Will be replaced by backend with actual binary data
+					// Pass File objects
+					imageFile: featureImageFiles[0],
+					featureImageFiles: featureImageFiles,
 				})).unwrap()
 				setDialogConfig({
 					title: 'Success',

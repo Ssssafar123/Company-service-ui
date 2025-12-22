@@ -60,7 +60,9 @@ export const fetchLocations = createAsyncThunk(
   'location/fetchLocations',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/location')
+      const res = await fetch('http://localhost:8000/api/location', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch locations')
       const data = await res.json()
       return data.map(mapLocation)
@@ -72,12 +74,41 @@ export const fetchLocations = createAsyncThunk(
 
 export const createLocation = createAsyncThunk(
   'location/createLocation',
-  async (location: Omit<Location, 'id'>, { rejectWithValue }) => {
+  async (location: Omit<Location, 'id'> & { imageFile?: File, featureImageFiles?: File[] }, { rejectWithValue }) => {
     try {
+      const formData = new FormData()
+      
+      // Add basic fields
+      formData.append('name', location.name)
+      formData.append('status', location.status)
+      if (location.short_description) formData.append('short_description', location.short_description)
+      if (location.long_description) formData.append('long_description', location.long_description)
+      if (location.description) formData.append('description', location.description)
+      if (location.state) formData.append('state', location.state)
+      if (location.country) formData.append('country', location.country)
+      if (location.order) formData.append('order', location.order.toString())
+      
+      // Add SEO fields as JSON
+      if (location.seo_fields) {
+        formData.append('seo_fields', JSON.stringify(location.seo_fields))
+      }
+      
+      // Add image file if present
+      if (location.imageFile) {
+        formData.append('image', location.imageFile)
+      }
+      
+      // Add feature image files if present
+      if (location.featureImageFiles && location.featureImageFiles.length > 0) {
+        location.featureImageFiles.forEach((file) => {
+          formData.append('feature_images', file)
+        })
+      }
+      
       const res = await fetch('http://localhost:8000/api/location', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(location),
+        credentials: 'include',
+        body: formData,
       })
       if (!res.ok) throw new Error('Failed to create location')
       const data = await res.json()
@@ -92,7 +123,9 @@ export const fetchLocationById = createAsyncThunk(
   'location/fetchLocationById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/location/${id}`)
+      const res = await fetch(`http://localhost:8000/api/location/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch location')
       const data = await res.json()
       return mapLocation(data)
@@ -104,12 +137,41 @@ export const fetchLocationById = createAsyncThunk(
 
 export const updateLocationById = createAsyncThunk(
   'location/updateLocationById',
-  async ({ id, data }: { id: string; data: Partial<Location> }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: Partial<Location> & { imageFile?: File, featureImageFiles?: File[] } }, { rejectWithValue }) => {
     try {
+      const formData = new FormData()
+      
+      // Add basic fields if present
+      if (data.name) formData.append('name', data.name)
+      if (data.status) formData.append('status', data.status)
+      if (data.short_description !== undefined) formData.append('short_description', data.short_description)
+      if (data.long_description !== undefined) formData.append('long_description', data.long_description)
+      if (data.description !== undefined) formData.append('description', data.description)
+      if (data.state !== undefined) formData.append('state', data.state)
+      if (data.country !== undefined) formData.append('country', data.country)
+      if (data.order !== undefined) formData.append('order', data.order.toString())
+      
+      // Add SEO fields as JSON
+      if (data.seo_fields !== undefined) {
+        formData.append('seo_fields', JSON.stringify(data.seo_fields))
+      }
+      
+      // Add image file if present
+      if (data.imageFile) {
+        formData.append('image', data.imageFile)
+      }
+      
+      // Add feature image files if present
+      if (data.featureImageFiles && data.featureImageFiles.length > 0) {
+        data.featureImageFiles.forEach((file) => {
+          formData.append('feature_images', file)
+        })
+      }
+      
       const res = await fetch(`http://localhost:8000/api/location/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        credentials: 'include',
+        body: formData,
       })
       if (!res.ok) throw new Error('Failed to update location')
       const responseData = await res.json()
@@ -129,6 +191,7 @@ export const deleteLocationById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/location/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete location')
       return id

@@ -56,7 +56,9 @@ export const fetchCategories = createAsyncThunk(
   'category/fetchCategories',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/category')
+      const res = await fetch('http://localhost:8000/api/category', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch categories')
       const data = await res.json()
       return data.map(mapCategory)
@@ -68,12 +70,43 @@ export const fetchCategories = createAsyncThunk(
 
 export const createCategory = createAsyncThunk(
   'category/createCategory',
-  async (category: Omit<Category, 'id'>, { rejectWithValue }) => {
+  async (category: Omit<Category, 'id'> & { imageFile?: File, featureImageFiles?: File[] }, { rejectWithValue }) => {
     try {
+      const formData = new FormData()
+      
+      // Add basic fields
+      formData.append('name', category.name)
+      formData.append('status', category.status)
+      if (category.short_description) formData.append('short_description', category.short_description)
+      if (category.long_description) formData.append('long_description', category.long_description)
+      if (category.order) formData.append('order', category.order.toString())
+      
+      // Add itineraries as JSON
+      if (category.itineraries && category.itineraries.length > 0) {
+        formData.append('itineraries', JSON.stringify(category.itineraries))
+      }
+      
+      // Add SEO fields as JSON
+      if (category.seo_fields) {
+        formData.append('seo_fields', JSON.stringify(category.seo_fields))
+      }
+      
+      // Add image file if present
+      if (category.imageFile) {
+        formData.append('image', category.imageFile)
+      }
+      
+      // Add feature image files if present
+      if (category.featureImageFiles && category.featureImageFiles.length > 0) {
+        category.featureImageFiles.forEach((file) => {
+          formData.append('feature_images', file)
+        })
+      }
+      
       const res = await fetch('http://localhost:8000/api/category', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(category),
+        credentials: 'include',
+        body: formData,
       })
       if (!res.ok) throw new Error('Failed to create category')
       const data = await res.json()
@@ -88,7 +121,9 @@ export const fetchCategoryById = createAsyncThunk(
   'category/fetchCategoryById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/category/${id}`)
+      const res = await fetch(`http://localhost:8000/api/category/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch category')
       const data = await res.json()
       return mapCategory(data)
@@ -100,12 +135,43 @@ export const fetchCategoryById = createAsyncThunk(
 
 export const updateCategoryById = createAsyncThunk(
   'category/updateCategoryById',
-  async ({ id, data }: { id: string; data: Partial<Category> }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: Partial<Category> & { imageFile?: File, featureImageFiles?: File[] } }, { rejectWithValue }) => {
     try {
+      const formData = new FormData()
+      
+      // Add basic fields if present
+      if (data.name) formData.append('name', data.name)
+      if (data.status) formData.append('status', data.status)
+      if (data.short_description !== undefined) formData.append('short_description', data.short_description)
+      if (data.long_description !== undefined) formData.append('long_description', data.long_description)
+      if (data.order !== undefined) formData.append('order', data.order.toString())
+      
+      // Add itineraries as JSON
+      if (data.itineraries !== undefined) {
+        formData.append('itineraries', JSON.stringify(data.itineraries))
+      }
+      
+      // Add SEO fields as JSON
+      if (data.seo_fields !== undefined) {
+        formData.append('seo_fields', JSON.stringify(data.seo_fields))
+      }
+      
+      // Add image file if present
+      if (data.imageFile) {
+        formData.append('image', data.imageFile)
+      }
+      
+      // Add feature image files if present
+      if (data.featureImageFiles && data.featureImageFiles.length > 0) {
+        data.featureImageFiles.forEach((file) => {
+          formData.append('feature_images', file)
+        })
+      }
+      
       const res = await fetch(`http://localhost:8000/api/category/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        credentials: 'include',
+        body: formData,
       })
       if (!res.ok) throw new Error('Failed to update category')
       const responseData = await res.json()
@@ -125,6 +191,7 @@ export const deleteCategoryById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/category/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete category')
       return id

@@ -48,7 +48,9 @@ export const fetchReviews = createAsyncThunk(
   'review/fetchReviews',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/review')
+      const res = await fetch('http://localhost:8000/api/review', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch reviews')
       const data = await res.json()
       return data.map(mapReview)
@@ -64,6 +66,7 @@ export const createReview = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/review', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(review),
       })
@@ -80,7 +83,9 @@ export const fetchReviewById = createAsyncThunk(
   'review/fetchReviewById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/review/${id}`)
+      const res = await fetch(`http://localhost:8000/api/review/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch review')
       const data = await res.json()
       return mapReview(data)
@@ -96,6 +101,7 @@ export const updateReviewById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/review/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -117,6 +123,7 @@ export const deleteReviewById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/review/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete review')
       return id

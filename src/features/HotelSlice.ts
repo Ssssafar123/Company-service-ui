@@ -74,7 +74,9 @@ export const fetchHotels = createAsyncThunk(
   'hotel/fetchHotels',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/hotel')
+      const res = await fetch('http://localhost:8000/api/hotel', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch hotels')
       const data = await res.json()
       return data.map(mapHotel)
@@ -90,6 +92,7 @@ export const createHotel = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/hotel', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(hotel),
       })
@@ -106,7 +109,9 @@ export const fetchHotelById = createAsyncThunk(
   'hotel/fetchHotelById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/hotel/${id}`)
+      const res = await fetch(`http://localhost:8000/api/hotel/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch hotel')
       const data = await res.json()
       return mapHotel(data)
@@ -122,6 +127,7 @@ export const updateHotelById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/hotel/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -143,6 +149,7 @@ export const deleteHotelById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/hotel/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete hotel')
       return id

@@ -54,7 +54,9 @@ export const fetchCoordinators = createAsyncThunk(
   'coordinator/fetchCoordinators',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/coordinator')
+      const res = await fetch('http://localhost:8000/api/coordinator', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch coordinators')
       const data = await res.json()
       return data.map(mapCoordinator)
@@ -70,6 +72,7 @@ export const createCoordinator = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/coordinator', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(coordinator),
       })
@@ -86,7 +89,9 @@ export const fetchCoordinatorById = createAsyncThunk(
   'coordinator/fetchCoordinatorById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/coordinator/${id}`)
+      const res = await fetch(`http://localhost:8000/api/coordinator/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch coordinator')
       const data = await res.json()
       return mapCoordinator(data)
@@ -102,6 +107,7 @@ export const updateCoordinatorById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/coordinator/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -123,6 +129,7 @@ export const deleteCoordinatorById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/coordinator/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete coordinator')
       return id

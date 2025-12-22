@@ -64,12 +64,8 @@ const Location: React.FC = () => {
 		const mappedLocations = locationsFromStore.map((item) => ({
 			id: item.id,
 			name: item.name,
-			// Use feature_images[0] if image is empty, otherwise use image
-			image: item.image && item.image.trim() !== '' 
-				? item.image 
-				: (item.feature_images && item.feature_images.length > 0 
-					? item.feature_images[0] 
-					: ''),
+			// Set image to 'has-image' if binary data exists, empty otherwise
+			image: 'binary', // Always use binary endpoint
 			tripCount: item.tripCount || 0,
 			order: item.order || 0,
 		}))
@@ -391,35 +387,23 @@ const handleEdit = (location: LocationData) => {
 								borderBottomRightRadius: '10px',
 							}}
 						>
-							{location.image && location.image.trim() !== '' ? (
-								<img
-									src={location.image}
-									alt={location.name}
-									style={{
-										width: '100%',
-										height: '100%',
-										objectFit: 'cover',
-										pointerEvents: 'none',
-									}}
-									onError={(e) => {
-										const target = e.target as HTMLImageElement
+							<img
+								src={`http://localhost:8000/api/location/${location.id}/image?t=${Date.now()}`}
+								alt={location.name}
+								style={{
+									width: '100%',
+									height: '100%',
+									objectFit: 'cover',
+									pointerEvents: 'none',
+								}}
+								onError={(e) => {
+									const target = e.target as HTMLImageElement
+									// Prevent infinite error loop
+									if (!target.src.includes('data:image')) {
 										target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200"%3E%3Crect fill="%23ddd" width="400" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E'
-									}}
-								/>
-							) : (
-								<Box
-									style={{
-										width: '100%',
-										height: '100%',
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-										color: 'var(--accent-11)',
-									}}
-								>
-									<Text size="2">No Image</Text>
-								</Box>
-							)}
+									}
+								}}
+							/>
 						</Box>
 
 						<Box style={{ padding: '16px' }}>

@@ -78,7 +78,9 @@ export const fetchLocalSupports = createAsyncThunk(
   'localSupport/fetchLocalSupports',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/localsupport')
+      const res = await fetch('http://localhost:8000/api/localsupport', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch local supports')
       const data = await res.json()
       return data.map(mapLocalSupport)
@@ -92,7 +94,9 @@ export const fetchLocalSupportsByPage = createAsyncThunk(
   'localSupport/fetchLocalSupportsByPage',
   async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/localsupport/paginate?page=${page}&limit=${limit}`)
+      const res = await fetch(`http://localhost:8000/api/localsupport/paginate?page=${page}&limit=${limit}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch local supports')
       const response = await res.json()
       return {
@@ -114,6 +118,7 @@ export const createLocalSupport = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/localsupport', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(localSupport),
       })
@@ -130,7 +135,9 @@ export const fetchLocalSupportById = createAsyncThunk(
   'localSupport/fetchLocalSupportById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/localsupport/${id}`)
+      const res = await fetch(`http://localhost:8000/api/localsupport/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch local support')
       const data = await res.json()
       return mapLocalSupport(data)
@@ -146,6 +153,7 @@ export const updateLocalSupportById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/localsupport/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -167,6 +175,7 @@ export const deleteLocalSupportById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/localsupport/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete local support')
       return id
