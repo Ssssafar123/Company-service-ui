@@ -1,4 +1,7 @@
 import React, { useEffect } from 'react'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
+import { createHotel, updateHotelById } from '../../features/HotelSlice'
 import {
 	Box,
 	Flex,
@@ -31,6 +34,8 @@ type AddHotelFormProps = {
 }
 
 const AddHotelForm: React.FC<AddHotelFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
+    const dispatch = useDispatch<AppDispatch>()
+
 	// Prevent body scroll when form is open
 	useEffect(() => {
 		if (isOpen) {
@@ -147,7 +152,9 @@ const AddHotelForm: React.FC<AddHotelFormProps> = ({ isOpen, onClose, onSubmit, 
 		},
 	]
 
-	const handleFormSubmit = (values: Record<string, any>) => {
+	const handleFormSubmit = async (values: Record<string, any>) => {
+		// Don't dispatch here - parent handles it
+		// Just call parent's onSubmit callback
 		onSubmit(values)
 		onClose()
 	}

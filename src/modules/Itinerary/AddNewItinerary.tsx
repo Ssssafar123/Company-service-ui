@@ -64,47 +64,97 @@ const AddNewItinerary: React.FC = () => {
     useEffect(() => {
         const itineraryData = location.state?.itineraryData
         if (itineraryData) {
-            setIsEditMode(true)
-            setEditingId(itineraryData.id || null)
-            
-            // Map itinerary data to form initial values
-            const mappedValues = {
-                iti_name: itineraryData.name || '',
-                travel_location: findLocationIdByCity(itineraryData.city) || '',
-                categories: itineraryData.categories || [],
-                iti_desc: itineraryData.description || '',
-                iti_short_desc: itineraryData.shortDescription || '',
-                iti_duration: itineraryData.duration || '',
-                price: itineraryData.price || 0,
-                start_date: itineraryData.startDate ? itineraryData.startDate.split('T')[0] : '',
-                end_date: itineraryData.endDate ? itineraryData.endDate.split('T')[0] : '',
-                max_travelers: itineraryData.maxTravelers || 0,
-                available_seats: itineraryData.availableSeats || 0,
-                iti_inclusion: Array.isArray(itineraryData.inclusions) 
-                    ? itineraryData.inclusions.join('\n') 
-                    : '',
-                iti_exclusion: Array.isArray(itineraryData.exclusions) 
-                    ? itineraryData.exclusions.join('\n') 
-                    : '',
-                iti_notes: itineraryData.notes || '',
-                status: itineraryData.status || 'Active',
-                iti_img: itineraryData.brochureBanner || (itineraryData.images && itineraryData.images[0]) || '',
-                iti_altitude: itineraryData.altitude || '',
-                iti_scenary: itineraryData.scenary || '',
-                iti_cultural_site: itineraryData.culturalSite || '',
-                iti_brochure_banner: itineraryData.brochureBanner || '',
-                iti_is_customize: itineraryData.isCustomize || 'not_specified',
-                trending: itineraryData.trending || 'No',
-                // Map complex fields
-                day_details: itineraryData.daywiseActivities || [],
-                hotels: itineraryData.hotelDetails || [],
-                package_details: itineraryData.packages || {},
-                batches: itineraryData.batches || [],
-                seo_fields: itineraryData.seoFields || {},
+            try {
+                setIsEditMode(true)
+                setEditingId(itineraryData.id || null)
+                
+                // Safely map itinerary data to form initial values with proper null checks
+                const mappedValues: any = {
+                    iti_name: itineraryData.name || '',
+                    travel_location: findLocationIdByCity(itineraryData.city || '') || '',
+                    categories: Array.isArray(itineraryData.categories) ? itineraryData.categories : [],
+                    iti_desc: itineraryData.description || '',
+                    iti_short_desc: (itineraryData as any).shortDescription || (itineraryData as any).short_description || '',
+                    iti_duration: itineraryData.duration || '',
+                    price: typeof itineraryData.price === 'number' ? itineraryData.price : 0,
+                    start_date: itineraryData.startDate 
+                        ? (typeof itineraryData.startDate === 'string' && itineraryData.startDate.includes('T')
+                            ? itineraryData.startDate.split('T')[0] 
+                            : (typeof itineraryData.startDate === 'string' ? itineraryData.startDate.split(' ')[0] : ''))
+                        : '',
+                    end_date: itineraryData.endDate 
+                        ? (typeof itineraryData.endDate === 'string' && itineraryData.endDate.includes('T')
+                            ? itineraryData.endDate.split('T')[0] 
+                            : (typeof itineraryData.endDate === 'string' ? itineraryData.endDate.split(' ')[0] : ''))
+                        : '',
+                    max_travelers: typeof itineraryData.maxTravelers === 'number' ? itineraryData.maxTravelers : 0,
+                    available_seats: typeof itineraryData.availableSeats === 'number' ? itineraryData.availableSeats : 0,
+                    iti_inclusion: Array.isArray(itineraryData.inclusions) 
+                        ? itineraryData.inclusions.join('\n') 
+                        : (typeof itineraryData.inclusions === 'string' ? itineraryData.inclusions : ''),
+                    iti_exclusion: Array.isArray(itineraryData.exclusions) 
+                        ? itineraryData.exclusions.join('\n') 
+                        : (typeof itineraryData.exclusions === 'string' ? itineraryData.exclusions : ''),
+                    iti_notes: (itineraryData as any).notes || '',
+                    status: (itineraryData.status === 'active' || itineraryData.status === 'Active') ? 'Active' : 'Inactive',
+                    iti_img: (itineraryData as any).brochureBanner 
+                        || (itineraryData as any).brochure_banner 
+                        || (Array.isArray((itineraryData as any).images) && (itineraryData as any).images.length > 0 
+                            ? (itineraryData as any).images[0] : '')
+                        || itineraryData.imageUrl 
+                        || '',
+                    iti_altitude: (itineraryData as any).altitude || '',
+                    iti_scenary: (itineraryData as any).scenary || '',
+                    iti_cultural_site: (itineraryData as any).culturalSite || (itineraryData as any).cultural_site || '',
+                    iti_brochure_banner: (itineraryData as any).brochureBanner || (itineraryData as any).brochure_banner || '',
+                    iti_is_customize: (itineraryData as any).isCustomize || (itineraryData as any).is_customize || 'not_specified',
+                    trending: itineraryData.trending || 'No',
+                    // Map complex fields - safely handle undefined
+                    day_details: Array.isArray((itineraryData as any).daywiseActivities) 
+                        ? (itineraryData as any).daywiseActivities 
+                        : (Array.isArray((itineraryData as any).daywise_activities) 
+                            ? (itineraryData as any).daywise_activities 
+                            : []),
+                    hotels: Array.isArray((itineraryData as any).hotelDetails) 
+                        ? (itineraryData as any).hotelDetails 
+                        : (Array.isArray((itineraryData as any).hotel_details) 
+                            ? (itineraryData as any).hotel_details 
+                            : []),
+                    package_details: (() => {
+                        const pkgData = (itineraryData as any).packages 
+                            || (itineraryData as any).package_details 
+                            || {};
+                        
+                        return {
+                            base_packages: Array.isArray(pkgData.base_packages) 
+                                ? pkgData.base_packages 
+                                : [],
+                            pickup_point: Array.isArray(pkgData.pickup_point) 
+                                ? pkgData.pickup_point 
+                                : [],
+                            drop_point: Array.isArray(pkgData.drop_point) 
+                                ? pkgData.drop_point 
+                                : [],
+                        };
+                    })(),
+                    batches: Array.isArray((itineraryData as any).batches) ? (itineraryData as any).batches : [],
+                    seo_fields: (itineraryData as any).seoFields 
+                        || (itineraryData as any).seo_fields 
+                        || {},
+                }
+                
+                console.log('Mapped Initial Values:', mappedValues) // Debug log
+                setInitialValues(mappedValues)
+            } catch (error) {
+                console.error('Error mapping itinerary data:', error)
+                // If mapping fails, still set edit mode but with empty values
+                setIsEditMode(true)
+                setEditingId(itineraryData.id || null)
+                setInitialValues({
+                    iti_name: itineraryData.name || '',
+                    travel_location: findLocationIdByCity(itineraryData.city || '') || '',
+                })
             }
-            
-            console.log('Mapped Initial Values:', mappedValues) // Debug log
-            setInitialValues(mappedValues)
         } else {
             setIsEditMode(false)
             setEditingId(null)
@@ -467,12 +517,27 @@ const AddNewItinerary: React.FC = () => {
 				)}
 			</Flex>
 
+			{/* Show loading or error state if needed */}
+			{isEditMode && !location.state?.itineraryData && (
+				<Box style={{ padding: '24px', textAlign: 'center' }}>
+					<Text size="3" color="red">No itinerary data found. Please go back and try again.</Text>
+					<Button 
+						variant="soft" 
+						size="2" 
+						onClick={() => navigate('/dashboard/itinerary')}
+						style={{ marginTop: '16px' }}
+					>
+						Back to List
+					</Button>
+				</Box>
+			)}
+
 			<DynamicForm
+				key={isEditMode ? `edit-${editingId || 'unknown'}` : 'new'} // Add key to force re-render
 				fields={formFields}
 				buttonText={isEditMode ? 'Update Itinerary' : 'Create New Itinerary'}
 				onSubmit={handleSubmit}
 				initialValues={initialValues}
-				
 			/>
 			
 			{/* Controlled AlertDialog */}

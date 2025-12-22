@@ -23,10 +23,30 @@ import SEOFields from '../../modules/Itinerary/SEOFields'
 type Field = {
   name: string;
   label: string;
-  type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch" | "richtext" | "file" | "number" | "multiselect" | "daywise" | "hotels" | "packages" | "batches" | "custom" | "seo" | "date";
+  type:
+    | "text"
+    | "email"
+    | "password"
+    | "textarea"
+    | "checkbox"
+    | "radio"
+    | "select"
+    | "switch"
+    | "richtext"
+    | "file"
+    | "number"
+    | "multiselect"
+    | "daywise"
+    | "hotels"
+    | "packages"
+    | "batches"
+    | "custom"
+    | "seo"
+    | "date";
   placeholder?: string;
   options?: string[] | { value: string; label: string }[];
   fullWidth?: boolean;
+  required?: boolean;   
   customRender?: (value: any, onChange: (value: any) => void) => React.ReactNode;
 };
 

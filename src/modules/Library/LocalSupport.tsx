@@ -1,5 +1,14 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../../store'
+import {
+    fetchLocalSupportsByPage,
+    createLocalSupport,
+    updateLocalSupportById,
+    deleteLocalSupportById,
+    type LocalSupport as LocalSupportType,
+} from '../../features/LocalSupportSlice'
 import {
 	Box,
 	Flex,
@@ -15,161 +24,101 @@ import Table from '../../components/dynamicComponents/Table'
 import AddLocalSupportForm from './AddLocalSupportForm'
 
 type LocalSupportData = {
-	id: string
-	name: string
-	contact: string
-	location: string
-	supportType: string
-	rating: number
+    id: string
+    name: string
+    contact: string
+    location: string
+    supportType: string
+    rating: number
 }
 
 // Dummy local support data
-const dummyLocalSupports: LocalSupportData[] = [
-	{
-		id: '1',
-		name: 'Nameeesss',
-		contact: '45246266',
-		location: 'mumbai',
-		supportType: 'Guide',
-		rating: 9,
-	},
-	{
-		id: '2',
-		name: 'Rajesh Kumar',
-		contact: '9876543210',
-		location: 'Delhi',
-		supportType: 'Driver',
-		rating: 8,
-	},
-	{
-		id: '3',
-		name: 'Priya Sharma',
-		contact: '8765432109',
-		location: 'Goa',
-		supportType: 'Guide',
-		rating: 9,
-	},
-	{
-		id: '4',
-		name: 'Amit Patel',
-		contact: '7654321098',
-		location: 'Rajasthan',
-		supportType: 'Translator',
-		rating: 7,
-	},
-	{
-		id: '5',
-		name: 'Sneha Reddy',
-		contact: '6543210987',
-		location: 'Kerala',
-		supportType: 'Guide',
-		rating: 9,
-	},
-	{
-		id: '6',
-		name: 'Vikram Singh',
-		contact: '5432109876',
-		location: 'Himachal Pradesh',
-		supportType: 'Driver',
-		rating: 8,
-	},
-	{
-		id: '7',
-		name: 'Ananya Verma',
-		contact: '4321098765',
-		location: 'Uttarakhand',
-		supportType: 'Guide',
-		rating: 9,
-	},
-	{
-		id: '8',
-		name: 'Karan Mehta',
-		contact: '3210987654',
-		location: 'Ladakh',
-		supportType: 'Translator',
-		rating: 8,
-	},
-	{
-		id: '9',
-		name: 'Divya Nair',
-		contact: '2109876543',
-		location: 'Tamil Nadu',
-		supportType: 'Guide',
-		rating: 9,
-	},
-	{
-		id: '10',
-		name: 'Arjun Gupta',
-		contact: '1098765432',
-		location: 'Karnataka',
-		supportType: 'Driver',
-		rating: 7,
-	},
-]
+
 
 const LocalSupport: React.FC = () => {
-	const navigate = useNavigate()
-	const [searchQuery, setSearchQuery] = useState('')
-	const [localSupports, setLocalSupports] = useState<LocalSupportData[]>(dummyLocalSupports)
-	const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null } | null>(null)
-	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(['name', 'contact', 'location', 'supportType', 'rating', 'actions']))
-	const [currentPage, setCurrentPage] = useState(1)
-	const [itemsPerPage] = useState(10)
-	const [editingSupport, setEditingSupport] = useState<LocalSupportData | null>(null)
+    const navigate = useNavigate()
+    const dispatch = useDispatch<AppDispatch>()
+    
+    // Redux selectors
+    const { localSupports: reduxLocalSupports, pagination, ui } = useSelector(
+        (state: RootState) => state.localSupport
+    )
 
-	// Form panel state
-	const [isFormOpen, setIsFormOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null } | null>(null)
+    const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(['name', 'contact', 'location', 'supportType', 'rating', 'actions']))
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage] = useState(10)
+    const [editingSupport, setEditingSupport] = useState<LocalSupportData | null>(null)
 
-	// Dialog state
-	const [dialogOpen, setDialogOpen] = useState(false)
-	const [dialogConfig, setDialogConfig] = useState<{
-		title: string
-		description: string
-		actionText: string
-		cancelText?: string
-		onConfirm: () => void
-		color?: 'red' | 'blue' | 'green' | 'gray'
-	} | null>(null)
+    // Form panel state
+    const [isFormOpen, setIsFormOpen] = useState(false)
 
-	// Filter and sort local supports
-	const filteredAndSortedLocalSupports = useMemo(() => {
-		let filtered = localSupports
+    // Dialog state
+    const [dialogOpen, setDialogOpen] = useState(false)
+    const [dialogConfig, setDialogConfig] = useState<{
+        title: string
+        description: string
+        actionText: string
+        cancelText?: string
+        onConfirm: () => void
+        color?: 'red' | 'blue' | 'green' | 'gray'
+    } | null>(null)
 
-		// Apply search filter
-		if (searchQuery.trim()) {
-			const query = searchQuery.toLowerCase()
-			filtered = localSupports.filter(
-				(support) =>
-					support.name.toLowerCase().includes(query) ||
-					support.contact.includes(query) ||
-					support.location.toLowerCase().includes(query) ||
-					support.supportType.toLowerCase().includes(query) ||
-					support.rating.toString().includes(query)
-			)
-		}
+    // Fetch local supports on component mount and when page changes
+    useEffect(() => {
+        dispatch(fetchLocalSupportsByPage({ page: currentPage, limit: itemsPerPage }))
+    }, [dispatch, currentPage, itemsPerPage])
 
-		// Apply sorting
-		if (sortConfig && sortConfig.direction) {
-			filtered = [...filtered].sort((a, b) => {
-				const aValue = a[sortConfig.key as keyof LocalSupportData]
-				const bValue = b[sortConfig.key as keyof LocalSupportData]
+    // Map Redux data to component format
+    const localSupports: LocalSupportData[] = useMemo(() => {
+        return reduxLocalSupports.map((support) => ({
+            id: support.id,
+            name: support.name,
+            contact: support.contact,
+            location: support.location,
+            supportType: support.supportType,
+            rating: support.rating || 0,
+        }))
+    }, [reduxLocalSupports])
 
-				if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
-				if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
-				return 0
-			})
-		}
+    // Filter and sort local supports
+    const filteredAndSortedLocalSupports = useMemo(() => {
+        let filtered = localSupports
 
-		return filtered
-	}, [localSupports, searchQuery, sortConfig])
+        // Apply search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase()
+            filtered = localSupports.filter(
+                (support) =>
+                    support.name.toLowerCase().includes(query) ||
+                    support.contact.includes(query) ||
+                    support.location.toLowerCase().includes(query) ||
+                    support.supportType.toLowerCase().includes(query) ||
+                    support.rating.toString().includes(query)
+            )
+        }
 
-	// Pagination
-	const totalPages = Math.ceil(filteredAndSortedLocalSupports.length / itemsPerPage)
-	const startIndex = (currentPage - 1) * itemsPerPage
-	const endIndex = startIndex + itemsPerPage
-	const paginatedLocalSupports = filteredAndSortedLocalSupports.slice(startIndex, endIndex)
+        // Apply sorting
+        if (sortConfig && sortConfig.direction) {
+            filtered = [...filtered].sort((a, b) => {
+                const aValue = a[sortConfig.key as keyof LocalSupportData]
+                const bValue = b[sortConfig.key as keyof LocalSupportData]
 
-	const handleSort = (columnKey: string, direction: 'asc' | 'desc' | null) => {
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
+                return 0
+            })
+        }
+
+        return filtered
+    }, [localSupports, searchQuery, sortConfig])
+
+    // Use pagination from Redux state
+    const totalPages = pagination.totalPages
+    const paginatedLocalSupports = filteredAndSortedLocalSupports
+
+    const handleSort = (columnKey: string, direction: 'asc' | 'desc' | null) => {
 		setSortConfig(direction ? { key: columnKey, direction } : null)
 		setCurrentPage(1) // Reset to first page on sort
 	}
@@ -183,87 +132,113 @@ const LocalSupport: React.FC = () => {
 	}
 
 	const handleEdit = (support: LocalSupportData) => {
-		setEditingSupport(support)
-		setIsFormOpen(true)
-	}
+        setEditingSupport(support)
+        setIsFormOpen(true)
+    }
 
-	const handleDelete = (support: LocalSupportData) => {
-		setDialogConfig({
-			title: 'Delete Local Support',
-			description: `Are you sure you want to delete "${support.name}"? This action cannot be undone.`,
-			actionText: 'Delete',
-			cancelText: 'Cancel',
-			color: 'red',
-			onConfirm: () => {
-				setLocalSupports(localSupports.filter((s) => s.id !== support.id))
-				setDialogOpen(false)
-				setDialogConfig({
-					title: 'Success',
-					description: `Local Support "${support.name}" deleted successfully!`,
-					actionText: 'OK',
-					color: 'green',
-					onConfirm: () => setDialogOpen(false),
-				})
-				setDialogOpen(true)
-			},
-		})
-		setDialogOpen(true)
-	}
+    const handleDelete = (support: LocalSupportData) => {
+        setDialogConfig({
+            title: 'Delete Local Support',
+            description: `Are you sure you want to delete "${support.name}"? This action cannot be undone.`,
+            actionText: 'Delete',
+            cancelText: 'Cancel',
+            color: 'red',
+            onConfirm: async () => {
+                try {
+                    await dispatch(deleteLocalSupportById(support.id)).unwrap()
+                    setDialogOpen(false)
+                    setDialogConfig({
+                        title: 'Success',
+                        description: `Local Support "${support.name}" deleted successfully!`,
+                        actionText: 'OK',
+                        color: 'green',
+                        onConfirm: () => setDialogOpen(false),
+                    })
+                    setDialogOpen(true)
+                } catch (error) {
+                    setDialogOpen(false)
+                    setDialogConfig({
+                        title: 'Error',
+                        description: `Failed to delete local support: ${error}`,
+                        actionText: 'OK',
+                        color: 'red',
+                        onConfirm: () => setDialogOpen(false),
+                    })
+                    setDialogOpen(true)
+                }
+            },
+        })
+        setDialogOpen(true)
+    }
 
-	const handleAddNew = () => {
-		setEditingSupport(null)
-		setIsFormOpen(true)
-	}
+    const handleAddNew = () => {
+        setEditingSupport(null)
+        setIsFormOpen(true)
+    }
 
-	const handleFormSubmit = (values: Record<string, any>) => {
-		console.log('Form submitted with values:', values)
-		
-		if (editingSupport) {
-			// Update existing local support
-			const updatedSupport: LocalSupportData = {
-				...editingSupport,
-				name: values.name || '',
-				contact: values.contact || '',
-				location: values.location || '',
-				supportType: values.supportType || '',
-				rating: parseInt(values.rating) || 0,
-			}
+    const handleFormSubmit = async (values: Record<string, any>) => {
+        console.log('Form submitted with values:', values)
+        
+        try {
+            if (editingSupport) {
+                // Update existing local support
+                const updateData: Partial<LocalSupportType> = {
+                    name: values.name || '',
+                    contact: values.contact || '',
+                    location: values.location || '',
+                    supportType: values.supportType as any || 'Guide',
+                    rating: parseInt(values.rating) || 0,
+                }
 
-			setLocalSupports(localSupports.map((s) => (s.id === editingSupport.id ? updatedSupport : s)))
+                await dispatch(updateLocalSupportById({ 
+                    id: editingSupport.id, 
+                    data: updateData 
+                })).unwrap()
 
-			setDialogConfig({
-				title: 'Success',
-				description: `Local Support "${updatedSupport.name}" updated successfully!`,
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => setDialogOpen(false),
-			})
-		} else {
-			// Create new local support
-			const newLocalSupport: LocalSupportData = {
-				id: String(localSupports.length + 1),
-				name: values.name || '',
-				contact: values.contact || '',
-				location: values.location || '',
-				supportType: values.supportType || '',
-				rating: parseInt(values.rating) || 0,
-			}
+                setDialogConfig({
+                    title: 'Success',
+                    description: `Local Support "${values.name}" updated successfully!`,
+                    actionText: 'OK',
+                    color: 'green',
+                    onConfirm: () => setDialogOpen(false),
+                })
+            } else {
+                // Create new local support
+                const newLocalSupport: Omit<LocalSupportType, 'id'> = {
+                    name: values.name || '',
+                    contact: values.contact || '',
+                    location: values.location || '',
+                    supportType: values.supportType as any || 'Guide',
+                    rating: parseInt(values.rating) || 0,
+                    availability: 'available',
+                    status: 'active',
+                }
 
-			setLocalSupports([...localSupports, newLocalSupport])
+                await dispatch(createLocalSupport(newLocalSupport)).unwrap()
 
-			setDialogConfig({
-				title: 'Success',
-				description: `Local Support "${newLocalSupport.name}" added successfully!`,
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => setDialogOpen(false),
-			})
-		}
+                setDialogConfig({
+                    title: 'Success',
+                    description: `Local Support "${values.name}" added successfully!`,
+                    actionText: 'OK',
+                    color: 'green',
+                    onConfirm: () => setDialogOpen(false),
+                })
+            }
 
-		setDialogOpen(true)
-		setIsFormOpen(false)
-		setEditingSupport(null)
-	}
+            setDialogOpen(true)
+            setIsFormOpen(false)
+            setEditingSupport(null)
+        } catch (error) {
+            setDialogConfig({
+                title: 'Error',
+                description: `Failed to ${editingSupport ? 'update' : 'create'} local support: ${error}`,
+                actionText: 'OK',
+                color: 'red',
+                onConfirm: () => setDialogOpen(false),
+            })
+            setDialogOpen(true)
+        }
+    }
 
 	// Render rating
 	const renderRating = (rating: number) => {
@@ -388,6 +363,13 @@ const LocalSupport: React.FC = () => {
 
 	return (
 		<Box style={{ padding: '24px', position: 'relative', width: '100%' }}>
+			{/* Loading indicator */}
+			{ui.loading && (
+				<Box style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.1)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+					<Text>Loading...</Text>
+				</Box>
+			)}
+
 			{/* Add Local Support Form Component */}
 			<AddLocalSupportForm
 				isOpen={isFormOpen}

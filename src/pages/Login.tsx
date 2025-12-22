@@ -13,8 +13,8 @@ import {
 } from '@radix-ui/themes';
 
 const Login = () => {
- const [username, setUsername] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
+ const [role, setRole] = useState<string>('');
+  const [companyId, setCompnayId] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -22,16 +22,16 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const res = await fetch('', {
+      const res = await fetch('http://localhost:8000/api/login', {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email })
+        body: JSON.stringify({ companyId, role })
       });
       
       if (res.ok) {
-        setUsername('');
-        setEmail('');
+        setCompnayId('');
+        setRole('');
         window.location.href = "/dashboard";
       }
     } catch (error) {
@@ -104,13 +104,13 @@ const Login = () => {
             {/* Username Field */}
             <Flex direction="column" gap="2">
               <Text as="label" size="2" weight="medium" style={{ color: 'var(--accent-12)' }}>
-                Username
+               Company ID
               </Text>
               <TextField.Root
                 size="3"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your Company ID"
+                value={companyId}
+                onChange={(e) => setCompnayId(e.target.value)}
                 required
                 style={{ 
                   padding: '12px 16px',
@@ -126,14 +126,14 @@ const Login = () => {
             {/* Email Field */}
             <Flex direction="column" gap="2">
               <Text as="label" size="2" weight="medium" style={{ color: 'var(--accent-12)' }}>
-                Email Address
+                Role
               </Text>
               <TextField.Root
                 size="3"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Enter your Role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
                 required
                 style={{ 
                   padding: '12px 16px',
@@ -141,7 +141,7 @@ const Login = () => {
                 }}
               >
                 <TextField.Slot>
-                  <EmailIcon />
+                  <UserIcon />
                 </TextField.Slot>
               </TextField.Root>
             </Flex>
@@ -149,7 +149,7 @@ const Login = () => {
             {/* Forgot Password */}
             <Flex justify="end" align="center">
               <Link size="2" style={{ color: 'var(--accent-11)', textDecoration: 'none' }}>
-                Forgot password?
+                Forgot Company ID?
               </Link>
             </Flex>
 

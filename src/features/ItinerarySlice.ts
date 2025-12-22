@@ -62,7 +62,9 @@ export const fetchItineraries = createAsyncThunk(
   'itinerary/fetchItineraries',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/itinerary')
+      const res = await fetch('http://localhost:8000/api/itinerary', {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch itineraries')
       const data = await res.json()
       return data.map(mapItinerary)
@@ -79,6 +81,7 @@ export const createItinerary = createAsyncThunk(
     try {
       const res = await fetch('http://localhost:8000/api/itinerary', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(itinerary),
       })
@@ -96,7 +99,9 @@ export const fetchItineraryById = createAsyncThunk(
   'itinerary/fetchItineraryById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/itinerary/${id}`)
+      const res = await fetch(`http://localhost:8000/api/itinerary/${id}`, {
+        credentials: 'include',
+      })
       if (!res.ok) throw new Error('Failed to fetch itinerary')
       const data = await res.json()
       return mapItinerary(data)
@@ -113,6 +118,7 @@ export const updateItineraryById = createAsyncThunk(
     try {
       const res = await fetch(`http://localhost:8000/api/itinerary/${id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -135,6 +141,7 @@ export const deleteItineraryById = createAsyncThunk(
       }
       const res = await fetch(`http://localhost:8000/api/itinerary/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete itinerary')
       return id

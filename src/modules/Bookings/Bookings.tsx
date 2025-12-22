@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import type { AppDispatch } from '../../store'
+import type { AppDispatch, RootState } from '../../store'
 import {
 	fetchBookings,
 	fetchBookingsByPage,
@@ -24,7 +24,6 @@ import {
 } from '@radix-ui/themes'
 import Table from '../../components/dynamicComponents/Table'
 import AddBookingForm from './AddBookingForm'
-import type { RootState } from '../../store'
 
 const Bookings: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>()
@@ -58,14 +57,17 @@ const Bookings: React.FC = () => {
 		color?: 'red' | 'blue' | 'green' | 'gray'
 	} | null>(null)
 
-	// Fetch bookings on mount
-	useEffect(() => {
-		dispatch(fetchBookings())
-	}, [dispatch])
-
 	// Fetch paginated data on mount and when page changes
 	useEffect(() => {
-		dispatch(fetchBookingsByPage({ page: currentPage, limit: itemsPerPage }))
+		const loadBookings = async () => {
+			try {
+				await dispatch(fetchBookingsByPage({ page: currentPage, limit: itemsPerPage })).unwrap()
+			} catch (error) {
+				console.error('Failed to load bookings:', error)
+				// Error is already set in Redux state, so it will show in the error display
+			}
+		}
+		loadBookings()
 	}, [dispatch, currentPage, itemsPerPage])
 
 	// Filter and sort bookings
@@ -105,11 +107,9 @@ const Bookings: React.FC = () => {
 		return filtered
 	}, [bookings, searchQuery, sortConfig])
 
-	// Pagination
-	const totalPages = pagination.totalPages
-	const startIndex = (currentPage - 1) * itemsPerPage
-	const endIndex = startIndex + itemsPerPage
-	const paginatedBookings = filteredAndSortedBookings.slice(startIndex, endIndex)
+	// Use pagination from Redux state
+	const totalPages = pagination.totalPages || 1
+	const paginatedBookings = filteredAndSortedBookings
 
 	const handleSort = (columnKey: string, direction: 'asc' | 'desc' | null) => {
 		setSortConfig(direction ? { key: columnKey, direction } : null)
@@ -129,36 +129,58 @@ const Bookings: React.FC = () => {
 		setIsFormOpen(true)
 	}
 
-	const handleFormSubmit = (values: Omit<BookingType, 'id'>) => {
-		if (editingBooking) {
-			// Update existing booking
-			dispatch(
-				updateBookingById({
-					id: editingBooking.id,
-					data: values,
-				})
-			)
-			setDialogConfig({
-				title: 'Success',
-				description: `Booking "${values.bookingId}" updated successfully!`,
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => setDialogOpen(false),
-			})
-		} else {
-			// Add new booking
-			dispatch(createBooking(values))
-			setDialogConfig({
-				title: 'Success',
-				description: `Booking "${values.bookingId}" added successfully!`,
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => setDialogOpen(false),
-			})
-		}
-		setDialogOpen(true)
-		setIsFormOpen(false)
+	const handleAddNew = () => {
 		setEditingBooking(null)
+		setIsFormOpen(true)
+	}
+
+	const handleFormSubmit = async (values: Omit<BookingType, 'id'>) => {
+		try {
+			if (editingBooking) {
+				// Update existing booking
+				await dispatch(
+					updateBookingById({
+						id: editingBooking.id,
+						data: values,
+					})
+				).unwrap()
+
+				setDialogConfig({
+					title: 'Success',
+					description: `Booking "${values.bookingId}" updated successfully!`,
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => setDialogOpen(false),
+				})
+			} else {
+				// Create new booking
+				await dispatch(createBooking(values)).unwrap()
+
+				setDialogConfig({
+					title: 'Success',
+					description: `Booking "${values.bookingId}" added successfully!`,
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => setDialogOpen(false),
+				})
+			}
+
+			// Refetch paginated data to ensure UI is in sync
+			await dispatch(fetchBookingsByPage({ page: currentPage, limit: itemsPerPage }))
+
+			setDialogOpen(true)
+			setIsFormOpen(false)
+			setEditingBooking(null)
+		} catch (error) {
+			setDialogConfig({
+				title: 'Error',
+				description: `Failed to ${editingBooking ? 'update' : 'create'} booking: ${error}`,
+				actionText: 'OK',
+				color: 'red',
+				onConfirm: () => setDialogOpen(false),
+			})
+			setDialogOpen(true)
+		}
 	}
 
 	const handleDelete = (booking: BookingType) => {
@@ -168,17 +190,33 @@ const Bookings: React.FC = () => {
 			actionText: 'Delete',
 			cancelText: 'Cancel',
 			color: 'red',
-			onConfirm: () => {
-				dispatch(deleteBookingById(booking.id))
-				setDialogOpen(false)
-				setDialogConfig({
-					title: 'Success',
-					description: 'Booking deleted successfully.',
-					actionText: 'OK',
-					color: 'green',
-					onConfirm: () => setDialogOpen(false),
-				})
-				setDialogOpen(true)
+			onConfirm: async () => {
+				try {
+					await dispatch(deleteBookingById(booking.id)).unwrap()
+					
+					// Refetch paginated data
+					await dispatch(fetchBookingsByPage({ page: currentPage, limit: itemsPerPage }))
+
+					setDialogOpen(false)
+					setDialogConfig({
+						title: 'Success',
+						description: 'Booking deleted successfully.',
+						actionText: 'OK',
+						color: 'green',
+						onConfirm: () => setDialogOpen(false),
+					})
+					setDialogOpen(true)
+				} catch (error) {
+					setDialogOpen(false)
+					setDialogConfig({
+						title: 'Error',
+						description: `Failed to delete booking: ${error}`,
+						actionText: 'OK',
+						color: 'red',
+						onConfirm: () => setDialogOpen(false),
+					})
+					setDialogOpen(true)
+				}
 			},
 		})
 		setDialogOpen(true)
@@ -349,6 +387,51 @@ const Bookings: React.FC = () => {
 
 	return (
 		<Box style={{ padding: '24px', position: 'relative', width: '100%' }}>
+			{/* Loading indicator */}
+			{loading && (
+				<Box style={{ 
+					position: 'absolute', 
+					top: 0, 
+					left: 0, 
+					right: 0, 
+					bottom: 0, 
+					background: 'rgba(0,0,0,0.1)', 
+					zIndex: 1000, 
+					display: 'flex', 
+					alignItems: 'center', 
+					justifyContent: 'center' 
+				}}>
+					<Text>Loading...</Text>
+				</Box>
+			)}
+
+			{/* Error display */}
+			{error && (
+				<Box style={{ 
+					marginBottom: '16px', 
+					padding: '12px', 
+					background: 'var(--red-3)', 
+					borderRadius: '4px',
+					border: '1px solid var(--red-6)'
+				}}>
+					<Flex justify="between" align="center">
+						<Text size="2" color="red" weight="medium">
+							Error: {error}
+						</Text>
+						<Button 
+							variant="soft" 
+							size="1" 
+							color="red"
+							onClick={() => {
+								dispatch(fetchBookingsByPage({ page: currentPage, limit: itemsPerPage }))
+							}}
+						>
+							Retry
+						</Button>
+					</Flex>
+				</Box>
+			)}
+
 			{/* Add Booking Form Component */}
 			<AddBookingForm
 				isOpen={isFormOpen}
@@ -403,22 +486,18 @@ const Bookings: React.FC = () => {
 					</TextField.Slot>
 				</TextField.Root>
 
-				{/* Columns Menu */}
-				<Button variant="soft" size="2"
-  						onClick={() => {
-    					setEditingBooking(null)   // new booking
-    				 setIsFormOpen(true)      // form open
-  					}}
-  						style={{
-    					color: 'white',
-    					backgroundColor: 'var(--accent-9)',
-    					whiteSpace: 'nowrap',
-						
-  					}}
-					>
-  					Add Booking
+				<Button 
+					variant="soft" 
+					size="2"
+					onClick={handleAddNew}
+					style={{
+						color: 'white',
+						backgroundColor: 'var(--accent-9)',
+						whiteSpace: 'nowrap',
+					}}
+				>
+					Add Booking
 				</Button>
-
 
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
@@ -489,7 +568,7 @@ const Bookings: React.FC = () => {
 			{totalPages > 1 && (
 				<Flex justify="end" align="center" gap="3" style={{ marginTop: '16px' }}>
 					<Text size="2" style={{ color: 'var(--accent-11)' }}>
-						Page {pagination.page} of {totalPages} (Total: {pagination.totalRecords} records)
+						Page {pagination.page || currentPage} of {totalPages} (Total: {pagination.totalRecords || 0} records)
 					</Text>
 					<Button 
 						variant="soft" 
@@ -502,7 +581,7 @@ const Bookings: React.FC = () => {
 					<Button 
 						variant="soft" 
 						size="2" 
-						disabled={currentPage === totalPages} 
+						disabled={currentPage >= totalPages} 
 						onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
 					>
 						Next
@@ -511,30 +590,32 @@ const Bookings: React.FC = () => {
 			)}
 
 			{/* Alert Dialog */}
-			<AlertDialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
-				<AlertDialog.Content maxWidth="450px">
-					<AlertDialog.Title>{dialogConfig?.title}</AlertDialog.Title>
-					<AlertDialog.Description size="3">{dialogConfig?.description}</AlertDialog.Description>
-					<Flex gap="3" mt="4" justify="end">
-						{dialogConfig?.cancelText && (
-							<AlertDialog.Cancel>
-								<Button variant="soft" color="gray">
-									{dialogConfig.cancelText}
+			{dialogConfig && (
+				<AlertDialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
+					<AlertDialog.Content maxWidth="450px">
+						<AlertDialog.Title>{dialogConfig.title}</AlertDialog.Title>
+						<AlertDialog.Description size="3">{dialogConfig.description}</AlertDialog.Description>
+						<Flex gap="3" mt="4" justify="end">
+							{dialogConfig.cancelText && (
+								<AlertDialog.Cancel>
+									<Button variant="soft" color="gray">
+										{dialogConfig.cancelText}
+									</Button>
+								</AlertDialog.Cancel>
+							)}
+							<AlertDialog.Action>
+								<Button
+									variant="solid"
+									color={dialogConfig.color || 'blue'}
+									onClick={dialogConfig.onConfirm}
+								>
+									{dialogConfig.actionText}
 								</Button>
-							</AlertDialog.Cancel>
-						)}
-						<AlertDialog.Action>
-							<Button
-								variant="solid"
-								color={dialogConfig?.color || 'blue'}
-								onClick={dialogConfig?.onConfirm}
-							>
-								{dialogConfig?.actionText}
-							</Button>
-						</AlertDialog.Action>
-					</Flex>
-				</AlertDialog.Content>
-			</AlertDialog.Root>
+							</AlertDialog.Action>
+						</Flex>
+					</AlertDialog.Content>
+				</AlertDialog.Root>
+			)}
 		</Box>
 	)
 }

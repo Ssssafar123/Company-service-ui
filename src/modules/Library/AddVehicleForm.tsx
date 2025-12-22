@@ -1,261 +1,316 @@
 import React, { useEffect } from 'react'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
 import {
-	Box,
-	Flex,
-	Text,
-	TextField,
-	IconButton,
-	Select,
+    createTransport,
+    updateTransportById,
+    type Transport,
+} from '../../features/TransportSlice'
+import {
+    Box,
+    Flex,
+    Text,
+    TextField,
+    IconButton,
+    Select,
 } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
 
 type AddVehicleFormProps = {
-	isOpen: boolean
-	onClose: () => void
-	onSubmit: (values: Record<string, any>) => void
-	initialData?: {
-		id?: string
-		vehicleType?: string
-		vehicleNumber?: string
-		capacity?: number
-		price?: number
-		priceType?: string
-		routes?: string
-		vendorName?: string
-		contact?: string
-		rating?: number
-	} | null
+    isOpen: boolean
+    onClose: () => void
+    onSubmit: (values: Record<string, any>) => void
+    initialData?: {
+        id?: string
+        vehicleType?: string
+        vehicleNumber?: string
+        capacity?: number
+        price?: number
+        priceType?: string
+        routes?: string
+        vendorName?: string
+        contact?: string
+        rating?: number
+    } | null
 }
 
 const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
-	// Prevent body scroll when form is open
-	useEffect(() => {
-		if (isOpen) {
-			document.body.style.overflow = 'hidden'
-		} else {
-			document.body.style.overflow = 'unset'
-		}
+    const dispatch = useDispatch<AppDispatch>()
 
-		// Cleanup function to restore scroll when component unmounts
-		return () => {
-			document.body.style.overflow = 'unset'
-		}
-	}, [isOpen])
+    // Prevent body scroll when form is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = 'unset'
+        }
 
-	// Form fields configuration
-	const formFields = [
-		{
-			name: 'vehicleType',
-			label: 'Vehicle Type',
-			type: 'text' as const,
-			placeholder: 'Enter vehicle type (e.g., SUV, Mini Bus)',
-			fullWidth: true,
-		},
-		{
-			name: 'vehicleNumber',
-			label: 'Vehicle Number',
-			type: 'text' as const,
-			placeholder: 'Enter vehicle number',
-			fullWidth: true,
-		},
-		{
-			name: 'capacity',
-			label: 'Capacity',
-			type: 'number' as const,
-			placeholder: 'Enter capacity',
-		},
-		{
-			name: 'rating',
-			label: 'Rating (1-10)',
-			type: 'number' as const,
-			placeholder: 'Enter rating (1-10)',
-		},
-		{
-			name: 'priceType',
-			label: 'Price Type',
-			type: 'select' as const,
-			placeholder: 'Select price type',
-			options: [
-				{ value: 'Per Tour', label: 'Per Tour' },
-				{ value: 'Per Km', label: 'Per Km' },
-			],
-		},
-		{
-			name: 'price',
-			label: 'Price',
-			type: 'number' as const,
-			placeholder: 'Enter price',
-		},
-		{
-			name: 'vendorName',
-			label: 'Vendor Name',
-			type: 'text' as const,
-			placeholder: 'Enter vendor name',
-			fullWidth: true,
-		},
-		{
-			name: 'vendorLocation',
-			label: 'Vendor Location',
-			type: 'text' as const,
-			placeholder: 'Enter vendor location',
-			fullWidth: true,
-		},
-		{
-			name: 'contact',
-			label: 'Contact',
-			type: 'text' as const,
-			placeholder: 'Enter contact number',
-			fullWidth: true,
-		},
-		{
-			name: 'availableRoutes',
-			label: 'Available Routes',
-			type: 'textarea' as const,
-			placeholder: 'Enter available routes (comma-separated)',
-			fullWidth: true,
-		},
-	]
+        // Cleanup function to restore scroll when component unmounts
+        return () => {
+            document.body.style.overflow = 'unset'
+        }
+    }, [isOpen])
 
-	const handleFormSubmit = (values: Record<string, any>) => {
-		onSubmit(values)
-		onClose()
-	}
+    // Form fields configuration
+    const formFields = [
+        {
+            name: 'vehicleType',
+            label: 'Vehicle Type',
+            type: 'text' as const,
+            placeholder: 'Enter vehicle type (e.g., SUV, Mini Bus)',
+            fullWidth: true,
+        },
+        {
+            name: 'vehicleNumber',
+            label: 'Vehicle Number',
+            type: 'text' as const,
+            placeholder: 'Enter vehicle number',
+            fullWidth: true,
+        },
+        {
+            name: 'capacity',
+            label: 'Capacity',
+            type: 'number' as const,
+            placeholder: 'Enter capacity',
+        },
+        {
+            name: 'rating',
+            label: 'Rating (1-10)',
+            type: 'number' as const,
+            placeholder: 'Enter rating (1-10)',
+        },
+        {
+            name: 'priceType',
+            label: 'Price Type',
+            type: 'select' as const,
+            placeholder: 'Select price type',
+            options: [
+                { value: 'Per Tour', label: 'Per Tour' },
+                { value: 'Per Km', label: 'Per Km' },
+            ],
+        },
+        {
+            name: 'price',
+            label: 'Price',
+            type: 'number' as const,
+            placeholder: 'Enter price',
+        },
+        {
+            name: 'vendorName',
+            label: 'Vendor Name',
+            type: 'text' as const,
+            placeholder: 'Enter vendor name',
+            fullWidth: true,
+        },
+        {
+            name: 'vendorLocation',
+            label: 'Vendor Location',
+            type: 'text' as const,
+            placeholder: 'Enter vendor location',
+            fullWidth: true,
+        },
+        {
+            name: 'contact',
+            label: 'Contact',
+            type: 'text' as const,
+            placeholder: 'Enter contact number',
+            fullWidth: true,
+        },
+        {
+            name: 'availableRoutes',
+            label: 'Available Routes',
+            type: 'textarea' as const,
+            placeholder: 'Enter available routes (comma-separated)',
+            fullWidth: true,
+        },
+    ]
 
-	if (!isOpen) return null
+    const handleFormSubmit = async (values: Record<string, any>) => {
+        try {
+            if (initialData?.id) {
+                // Update existing vehicle
+                const updateData: Partial<Transport> = {
+                    vehicleType: values.vehicleType || '',
+                    vehicleNumber: values.vehicleNumber || '',
+                    capacity: parseInt(values.capacity) || 0,
+                    price: parseFloat(values.price) || 0,
+                    priceType: values.priceType as 'Per Tour' | 'Per Km' || 'Per Tour',
+                    routes: values.availableRoutes || '',
+                    vendorName: values.vendorName || '',
+                    vendorLocation: values.vendorLocation || '',
+                    contact: values.contact || '',
+                    rating: parseInt(values.rating) || 0,
+                }
 
-	return (
-		<>
-			{/* Overlay */}
-			<Box
-				style={{
-					position: 'fixed',
-					top: 0,
-					left: 0,
-					right: 0,
-					bottom: 0,
-					backgroundColor: 'rgba(0, 0, 0, 0.5)',
-					zIndex: 1000,
-					transition: 'opacity 0.3s ease',
-				}}
-				onClick={onClose}
-			/>
+                await dispatch(updateTransportById({ 
+                    id: initialData.id, 
+                    data: updateData 
+                })).unwrap()
+            } else {
+                // Create new vehicle
+                const newTransport: Omit<Transport, 'id'> = {
+                    vehicleType: values.vehicleType || '',
+                    vehicleNumber: values.vehicleNumber || '',
+                    capacity: parseInt(values.capacity) || 0,
+                    price: parseFloat(values.price) || 0,
+                    priceType: values.priceType as 'Per Tour' | 'Per Km' || 'Per Tour',
+                    routes: values.availableRoutes || '',
+                    vendorName: values.vendorName || '',
+                    contact: values.contact || '',
+                    rating: parseInt(values.rating) || 0,
+                    availability: 'available', // 
+                    status: 'active',
+                    lastUpdated: new Date().toISOString(),
+                }
 
-			{/* Slide-in Form Panel */}
-			<Box
-				style={{
-					position: 'fixed',
-					top: '70px', // Start below navbar (navbar height is 70px)
-					right: 0,
-					width: '600px',
-					height: 'calc(100vh - 70px)', // Full height minus navbar
-					backgroundColor: 'var(--color-panel)',
-					boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.3)',
-					zIndex: 1001,
-					overflowY: 'auto',
-					display: 'flex',
-					flexDirection: 'column',
-					animation: 'slideIn 0.3s ease',
-				}}
-			>
-				{/* Form Header */}
-				<Box
-					style={{
-						padding: '24px',
-						borderBottom: '1px solid var(--accent-6)',
-						position: 'sticky',
-						top: 0,
-						backgroundColor: 'var(--color-panel)',
-						zIndex: 10,
-					}}
-				>
-					<Flex justify="between" align="start">
-						<Box style={{ flex: 1 }}>
-                        <Text 
-	size="6" 
-	weight="bold" 
-	style={{ 
-		color: 'var(--accent-12)', 
-		display: 'block', 
-		marginBottom: '8px' 
-	}}
->
-	{initialData ? 'Edit Vehicle' : 'Add Vehicle'}
-</Text>
-<Text 
-	size="2" 
-	style={{ 
-		color: 'var(--accent-11)',
-		display: 'block',
-	}}
->
-	{initialData ? 'Update the vehicle details below.' : 'Fill out the form to add a new vehicle to your fleet.'}
-</Text>
-						</Box>
-						<IconButton
-							variant="ghost"
-							size="3"
-							onClick={onClose}
-							style={{ 
-								cursor: 'pointer', 
-								marginLeft: '16px',
-								color: 'var(--accent-11)',
-							}}
-							title="Close"
-						>
-							<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2.5"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							>
-								<line x1="18" y1="6" x2="6" y2="18" />
-								<line x1="6" y1="6" x2="18" y2="18" />
-							</svg>
-						</IconButton>
-					</Flex>
-				</Box>
+                await dispatch(createTransport(newTransport)).unwrap()
+            }
 
-				{/* Form Content */}
-				<Box style={{ padding: '24px', flex: 1 }}>
-					<Box style={{ maxWidth: '100%' }}>
-                    <DynamicForm
-	fields={formFields}
-	buttonText={initialData ? 'Update Vehicle' : 'Add Vehicle'}
-	onSubmit={handleFormSubmit}
-	initialValues={{
-		vehicleType: initialData?.vehicleType || '',
-		vehicleNumber: initialData?.vehicleNumber || '',
-		capacity: initialData?.capacity || '',
-		rating: initialData?.rating || '',
-		priceType: initialData?.priceType || '',
-		price: initialData?.price || '',
-		vendorName: initialData?.vendorName || '',
-		// vendorLocation: initialData?.vendorLocation || '',
-		contact: initialData?.contact || '',
-		availableRoutes: initialData?.routes || '',
-	}}
-/>
-					</Box>
-				</Box>
-			</Box>
+            // Call parent onSubmit for additional handling (like showing success dialog)
+            onSubmit(values)
+            onClose()
+        } catch (error) {
+            console.error('Failed to save vehicle:', error)
+            // Re-throw to let parent handle error dialog
+            throw error
+        }
+    }
 
-			{/* CSS Animation */}
-			<style>{`
-				@keyframes slideIn {
-					from {
-						transform: translateX(100%);
-					}
-					to {
-						transform: translateX(0);
-					}
-				}
-			`}</style>
-		</>
-	)
+    if (!isOpen) return null
+
+    return (
+        <>
+            {/* Overlay */}
+            <Box
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    zIndex: 1000,
+                    transition: 'opacity 0.3s ease',
+                }}
+                onClick={onClose}
+            />
+
+            {/* Slide-in Form Panel */}
+            <Box
+                style={{
+                    position: 'fixed',
+                    top: '70px',
+                    right: 0,
+                    width: '600px',
+                    height: 'calc(100vh - 70px)',
+                    backgroundColor: 'var(--color-panel)',
+                    boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.3)',
+                    zIndex: 1001,
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    animation: 'slideIn 0.3s ease',
+                }}
+            >
+                {/* Form Header */}
+                <Box
+                    style={{
+                        padding: '24px',
+                        borderBottom: '1px solid var(--accent-6)',
+                        position: 'sticky',
+                        top: 0,
+                        backgroundColor: 'var(--color-panel)',
+                        zIndex: 10,
+                    }}
+                >
+                    <Flex justify="between" align="start">
+                        <Box style={{ flex: 1 }}>
+                            <Text 
+                                size="6" 
+                                weight="bold" 
+                                style={{ 
+                                    color: 'var(--accent-12)', 
+                                    display: 'block', 
+                                    marginBottom: '8px' 
+                                }}
+                            >
+                                {initialData ? 'Edit Vehicle' : 'Add Vehicle'}
+                            </Text>
+                            <Text 
+                                size="2" 
+                                style={{ 
+                                    color: 'var(--accent-11)',
+                                    display: 'block',
+                                }}
+                            >
+                                {initialData ? 'Update the vehicle details below.' : 'Fill out the form to add a new vehicle to your fleet.'}
+                            </Text>
+                        </Box>
+                        <IconButton
+                            variant="ghost"
+                            size="3"
+                            onClick={onClose}
+                            style={{ 
+                                cursor: 'pointer', 
+                                marginLeft: '16px',
+                                color: 'var(--accent-11)',
+                            }}
+                            title="Close"
+                        >
+                            <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </IconButton>
+                    </Flex>
+                </Box>
+
+                {/* Form Content */}
+                <Box style={{ padding: '24px', flex: 1 }}>
+                    <Box style={{ maxWidth: '100%' }}>
+                        <DynamicForm
+                            fields={formFields}
+                            buttonText={initialData ? 'Update Vehicle' : 'Add Vehicle'}
+                            onSubmit={handleFormSubmit}
+                            initialValues={{
+                                vehicleType: initialData?.vehicleType || '',
+                                vehicleNumber: initialData?.vehicleNumber || '',
+                                capacity: initialData?.capacity || '',
+                                rating: initialData?.rating || '',
+                                priceType: initialData?.priceType || '',
+                                price: initialData?.price || '',
+                                vendorName: initialData?.vendorName || '',
+                                vendorLocation: initialData?.vendorLocation || '', //
+                                contact: initialData?.contact || '',
+                                availableRoutes: initialData?.routes || '',
+                            }}
+                        />
+                    </Box>
+                </Box>
+            </Box>
+
+            {/* CSS Animation */}
+            <style>{`
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(100%);
+                    }
+                    to {
+                        transform: translateX(0);
+                    }
+                }
+            `}</style>
+        </>
+    )
 }
 
 export default AddVehicleForm

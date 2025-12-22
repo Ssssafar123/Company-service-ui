@@ -102,12 +102,22 @@ const Itinerary: React.FC = () => {
     const itemsPerPage = 10
 
     const handleEdit = (itinerary: ItineraryData) => {
-        // Find the original itinerary from store
+        // Find the full itinerary from Redux store
         const originalItinerary = itinerariesFromStore.find(i => i.id === itinerary.id)
-        console.log('Editing itinerary:', originalItinerary) // Debug log
-        navigate('/dashboard/add-itinerary', {
-            state: { itineraryData: originalItinerary },
-        })
+        
+        if (originalItinerary) {
+            // Pass the full itinerary object directly - let AddNewItinerary handle mapping safely
+            navigate('/dashboard/add-itinerary', {
+                state: { 
+                    itineraryData: originalItinerary
+                },
+            })
+        } else {
+            // Fallback: pass what we have
+            navigate('/dashboard/add-itinerary', {
+                state: { itineraryData: itinerary },
+            })
+        }
     }
 
     const handleDuplicate = (itinerary: ItineraryData) => {

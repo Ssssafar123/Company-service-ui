@@ -1,5 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../../store'
+import {
+	fetchLocations,
+	createLocation,
+	updateLocationById,
+	deleteLocationById,
+	type Location as LocationType,
+} from '../../features/LocationSlice'
 import {
 	Box,
 	Flex,
@@ -20,56 +29,15 @@ type LocationData = {
 	order?: number
 }
 
-const dummyLocations: LocationData[] = [
-	{
-		id: '1',
-		name: 'Goa',
-		image: '/images/locations/goa.jpg',
-		tripCount: 15,
-		order: 1,
-	},
-	{
-		id: '2',
-		name: 'Kerala',
-		image: '/images/locations/kerala.jpg',
-		tripCount: 12,
-		order: 2,
-	},
-	{
-		id: '3',
-		name: 'Himachal Pradesh',
-		image: '/images/locations/himachal.jpg',
-		tripCount: 20,
-		order: 3,
-	},
-	{
-		id: '4',
-		name: 'Rajasthan',
-		image: '/images/locations/rajasthan.jpg',
-		tripCount: 18,
-		order: 4,
-	},
-	{
-		id: '5',
-		name: 'Uttarakhand',
-		image: '/images/locations/uttarakhand.jpg',
-		tripCount: 10,
-		order: 5,
-	},
-	{
-		id: '6',
-		name: 'Ladakh',
-		image: '/images/locations/ladakh.jpg',
-		tripCount: 8,
-		order: 6,
-	},
-]
-
-// LocalStorage key for location order
-const LOCATION_ORDER_KEY = 'location_order'
-
 const Location: React.FC = () => {
 	const navigate = useNavigate()
+	const dispatch = useDispatch<AppDispatch>()
+	
+	// Get data from Redux store
+	const locationsFromStore = useSelector((state: RootState) => state.location.locations)
+	const loading = useSelector((state: RootState) => state.location.ui.loading)
+	const error = useSelector((state: RootState) => state.location.ui.error)
+
 	const [searchQuery, setSearchQuery] = useState('')
 	const [locations, setLocations] = useState<LocationData[]>([])
 	const [draggedId, setDraggedId] = useState<string | null>(null)
@@ -86,25 +54,23 @@ const Location: React.FC = () => {
 		color?: 'red' | 'blue' | 'green' | 'gray'
 	} | null>(null)
 
-	// Load locations from localStorage on mount
+	// Fetch locations on mount
 	useEffect(() => {
-		const savedOrder = localStorage.getItem(LOCATION_ORDER_KEY)
-		if (savedOrder) {
-			try {
-				const savedLocations: LocationData[] = JSON.parse(savedOrder)
-				const mergedLocations = dummyLocations.map((dummy) => {
-					const saved = savedLocations.find((loc) => loc.id === dummy.id)
-					return saved ? { ...dummy, order: saved.order } : dummy
-				})
-				const sorted = mergedLocations.sort((a, b) => (a.order || 0) - (b.order || 0))
-				setLocations(sorted)
-			} catch (error) {
-				setLocations(dummyLocations)
-			}
-		} else {
-			setLocations(dummyLocations)
-		}
-	}, [])
+		dispatch(fetchLocations())
+	}, [dispatch])
+
+	// Map Redux data to local format
+	useEffect(() => {
+		const mappedLocations = locationsFromStore.map((item) => ({
+			id: item.id,
+			name: item.name,
+			// Set image to 'has-image' if binary data exists, empty otherwise
+			image: 'binary', // Always use binary endpoint
+			tripCount: item.tripCount || 0,
+			order: item.order || 0,
+		}))
+		setLocations(mappedLocations)
+	}, [locationsFromStore])
 
 	const filteredLocations = useMemo(() => {
 		if (!searchQuery.trim()) {
@@ -159,7 +125,7 @@ const Location: React.FC = () => {
 		setDraggedId(null)
 	}
 
-	const handleUpdateLocation = () => {
+	const handleUpdateLocation = async () => {
 		if (!hasOrderChanged) {
 			setDialogConfig({
 				title: 'No Changes',
@@ -173,29 +139,70 @@ const Location: React.FC = () => {
 		}
 
 		try {
-			localStorage.setItem(LOCATION_ORDER_KEY, JSON.stringify(locations))
-		} catch (error) {
-			console.error('Failed to save location order:', error)
-		}
+			// Update each location's order
+			for (const location of locations) {
+				const originalLocation = locationsFromStore.find(l => l.id === location.id)
+				if (originalLocation && originalLocation.order !== location.order) {
+					await dispatch(updateLocationById({
+						id: location.id,
+						data: { order: location.order }
+					})).unwrap()
+				}
+			}
 
-		setDialogConfig({
-			title: 'Success',
-			description: 'Location order updated successfully!',
-			actionText: 'OK',
-			color: 'green',
-			onConfirm: () => {
-				setDialogOpen(false)
-				setHasOrderChanged(false)
-			},
-		})
-		setDialogOpen(true)
+			setDialogConfig({
+				title: 'Success',
+				description: 'Location order updated successfully!',
+				actionText: 'OK',
+				color: 'green',
+				onConfirm: () => {
+					setDialogOpen(false)
+					setHasOrderChanged(false)
+					dispatch(fetchLocations())
+				},
+			})
+			setDialogOpen(true)
+		} catch (error: any) {
+			setDialogConfig({
+				title: 'Error',
+				description: error.message || 'Failed to update location order.',
+				actionText: 'OK',
+				color: 'red',
+				onConfirm: () => setDialogOpen(false),
+			})
+			setDialogOpen(true)
+		}
 	}
 
-	const handleEdit = (location: LocationData) => {
+
+const handleEdit = (location: LocationData) => {
+	// Find the full location data from Redux store
+	const fullLocation = locationsFromStore.find(l => l.id === location.id)
+	
+	if (fullLocation) {
+		// Pass the full Location object with all fields properly mapped
+		navigate('/dashboard/add-location', {
+			state: { 
+				locationData: {
+					...fullLocation,
+					// Map to the format AddLocation expects
+					shortDescription: fullLocation.short_description,
+					longDescription: fullLocation.long_description,
+					images: fullLocation.feature_images && fullLocation.feature_images.length > 0 
+						? fullLocation.feature_images 
+						: (fullLocation.image ? [fullLocation.image] : []),
+					itineraryIds: [], // Location type doesn't have this, but form expects it
+					seoData: fullLocation.seo_fields,
+				}
+			},
+		})
+	} else {
+		// Fallback: pass what we have
 		navigate('/dashboard/add-location', {
 			state: { locationData: location },
 		})
 	}
+}
 
 	const handleDelete = (location: LocationData) => {
 		setDialogConfig({
@@ -204,25 +211,29 @@ const Location: React.FC = () => {
 			actionText: 'Delete',
 			cancelText: 'Cancel',
 			color: 'red',
-			onConfirm: () => {
-				const updatedLocations = locations
-					.filter((item) => item.id !== location.id)
-					.map((loc, index) => ({ ...loc, order: index + 1 }))
-				setLocations(updatedLocations)
+			onConfirm: async () => {
 				try {
-					localStorage.setItem(LOCATION_ORDER_KEY, JSON.stringify(updatedLocations))
-				} catch (error) {
-					console.error('Failed to save location order:', error)
+					await dispatch(deleteLocationById(location.id)).unwrap()
+					setDialogOpen(false)
+					setDialogConfig({
+						title: 'Success',
+						description: `Location "${location.name}" deleted successfully!`,
+						actionText: 'OK',
+						color: 'green',
+						onConfirm: () => setDialogOpen(false),
+					})
+					setDialogOpen(true)
+				} catch (error: any) {
+					setDialogOpen(false)
+					setDialogConfig({
+						title: 'Error',
+						description: error.message || 'Failed to delete location.',
+						actionText: 'OK',
+						color: 'red',
+						onConfirm: () => setDialogOpen(false),
+					})
+					setDialogOpen(true)
 				}
-				setDialogOpen(false)
-				setDialogConfig({
-					title: 'Success',
-					description: `Location "${location.name}" deleted successfully!`,
-					actionText: 'OK',
-					color: 'green',
-					onConfirm: () => setDialogOpen(false),
-				})
-				setDialogOpen(true)
 			},
 		})
 		setDialogOpen(true)
@@ -377,7 +388,7 @@ const Location: React.FC = () => {
 							}}
 						>
 							<img
-								src={location.image}
+								src={`http://localhost:8000/api/location/${location.id}/image?t=${Date.now()}`}
 								alt={location.name}
 								style={{
 									width: '100%',
@@ -387,7 +398,10 @@ const Location: React.FC = () => {
 								}}
 								onError={(e) => {
 									const target = e.target as HTMLImageElement
-									target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200"%3E%3Crect fill="%23ddd" width="400" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E'
+									// Prevent infinite error loop
+									if (!target.src.includes('data:image')) {
+										target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200"%3E%3Crect fill="%23ddd" width="400" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E'
+									}
 								}}
 							/>
 						</Box>

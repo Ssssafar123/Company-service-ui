@@ -1,4 +1,13 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../../store'
+import {
+	fetchContents,
+	createContent,
+	updateContentById,
+	deleteContentById,
+	type Content as ContentType,
+} from '../../features/ContentSlice'
 import {
 	Box,
 	Flex,
@@ -33,83 +42,16 @@ type OfferDetails = {
 	cancellationPolicy: string
 }
 
-// Dummy data for promotional offers
-const dummyOffers: OfferBannerData[] = [
-	{
-		id: '1',
-		offerName: 'Summer Special Discount',
-		categoryName: 'Seasonal',
-		expiredDate: '2024-06-30',
-		status: 'active',
-	},
-	{
-		id: '2',
-		offerName: 'Early Bird Booking',
-		categoryName: 'Booking',
-		expiredDate: '2024-05-15',
-		status: 'active',
-	},
-	{
-		id: '3',
-		offerName: 'Group Travel Offer',
-		categoryName: 'Group',
-		expiredDate: '2024-07-20',
-		status: 'inactive',
-	},
-	{
-		id: '4',
-		offerName: 'Weekend Getaway',
-		categoryName: 'Weekend',
-		expiredDate: '2024-06-10',
-		status: 'active',
-	},
-	{
-		id: '5',
-		offerName: 'Family Package Deal',
-		categoryName: 'Family',
-		expiredDate: '2024-08-15',
-		status: 'active',
-	},
-	{
-		id: '6',
-		offerName: 'Adventure Sports Special',
-		categoryName: 'Adventure',
-		expiredDate: '2024-05-30',
-		status: 'inactive',
-	},
-	{
-		id: '7',
-		offerName: 'Honeymoon Package',
-		categoryName: 'Romantic',
-		expiredDate: '2024-09-10',
-		status: 'active',
-	},
-	{
-		id: '8',
-		offerName: 'Senior Citizen Discount',
-		categoryName: 'Special',
-		expiredDate: '2024-12-31',
-		status: 'active',
-	},
-	{
-		id: '9',
-		offerName: 'Student Travel Offer',
-		categoryName: 'Student',
-		expiredDate: '2024-06-25',
-		status: 'inactive',
-	},
-	{
-		id: '10',
-		offerName: 'Last Minute Deals',
-		categoryName: 'Deals',
-		expiredDate: '2024-05-05',
-		status: 'active',
-	},
-]
-
 const Content: React.FC = () => {
-	const [offers, setOffers] = useState<OfferBannerData[]>(dummyOffers)
-	const [searchQuery, setSearchQuery] = useState('')
+    const dispatch = useDispatch<AppDispatch>()
+    
+    // Get data from Redux store
+    const contentsFromStore = useSelector((state: RootState) => state.content.contents)
+    const loading = useSelector((state: RootState) => state.content.ui.loading)
+    const error = useSelector((state: RootState) => state.content.ui.error)
+
+    const [searchQuery, setSearchQuery] = useState('')
+	const [offers, setOffers] = useState<OfferBannerData[]>([])
 	const [selectedOffer, setSelectedOffer] = useState<string>('Recent 10 Offers')
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 	const [offerToDelete, setOfferToDelete] = useState<string | null>(null)
@@ -133,6 +75,44 @@ const Content: React.FC = () => {
 	// Pagination
 	const [currentPage, setCurrentPage] = useState(1)
 	const itemsPerPage = 10
+
+	// Add Content Form State
+    const [addForm, setAddForm] = useState<Omit<ContentType, 'id'>>({
+        offerName: '',
+        categoryName: '',
+        expiredDate: '',
+        status: 'active',
+        imageUrl: '',
+        images: [],
+        headlines: '',
+        termsCondition: '',
+        cancellationPolicy: '',
+        description: '',
+        discountPercentage: 0,
+        discountAmount: 0,
+        applicableCategories: [],
+        applicableLocations: [],
+        clicks: 0,
+    })
+    const [addDialogOpen, setAddDialogOpen] = useState(false)
+
+	// Fetch contents on mount
+	useEffect(() => {
+		dispatch(fetchContents())
+	}, [dispatch])
+
+	// Map Redux data to local format
+	useEffect(() => {
+		const mappedOffers = contentsFromStore.map((item) => ({
+			id: item.id,
+			offerName: item.offerName || '',
+			categoryName: item.categoryName || '',
+			expiredDate: item.expiredDate || new Date().toISOString().split('T')[0],
+			status: item.status || 'active',
+			imageUrl: item.imageUrl,
+		}))
+		setOffers(mappedOffers)
+	}, [contentsFromStore])
 
 	// Calculate statistics
 	const stats = useMemo(() => {
@@ -230,16 +210,49 @@ const Content: React.FC = () => {
 		setImageError('')
 	}
 
+    // Add new content (example, you can expand this as needed)
+    const handleAddContent = async () => {
+        try {
+            await dispatch(createContent(addForm)).unwrap()
+            setAddDialogOpen(false)
+            setAddForm({
+                offerName: '',
+                categoryName: '',
+                expiredDate: '',
+                status: 'active',
+                imageUrl: '',
+                images: [],
+                headlines: '',
+                termsCondition: '',
+                cancellationPolicy: '',
+                description: '',
+                discountPercentage: 0,
+                discountAmount: 0,
+                applicableCategories: [],
+                applicableLocations: [],
+                clicks: 0,
+            })
+            dispatch(fetchContents())
+        } catch (error: any) {
+            alert(error.message || 'Failed to add content')
+        }
+    }
+
 	const handleDelete = (id: string) => {
 		setOfferToDelete(id)
 		setDeleteDialogOpen(true)
 	}
 
-	const confirmDelete = () => {
+	const confirmDelete = async () => {
 		if (offerToDelete) {
-			setOffers((prev) => prev.filter((offer) => offer.id !== offerToDelete))
-			setDeleteDialogOpen(false)
-			setOfferToDelete(null)
+			try {
+				await dispatch(deleteContentById(offerToDelete)).unwrap()
+				setDeleteDialogOpen(false)
+				setOfferToDelete(null)
+				dispatch(fetchContents())
+			} catch (error: any) {
+				alert(error.message || 'Failed to delete offer')
+			}
 		}
 	}
 
@@ -247,9 +260,18 @@ const Content: React.FC = () => {
 		setEditingField(field)
 	}
 
-	const handleSaveField = (field: keyof OfferDetails, value: string) => {
-		setOfferDetails((prev) => ({ ...prev, [field]: value }))
-		setEditingField(null)
+	const handleSaveField = async (field: keyof OfferDetails, value: string) => {
+		try {
+			// Update content in Redux
+			// Note: You may need to fetch the content ID first or handle this differently
+			// This is a simplified version - adjust based on your API structure
+			setOfferDetails((prev) => ({ ...prev, [field]: value }))
+			setEditingField(null)
+			// If you have a content ID, you can update it:
+			// await dispatch(updateContentById({ id: contentId, data: { [field]: value } })).unwrap()
+		} catch (error: any) {
+			alert(error.message || 'Failed to save field')
+		}
 	}
 
 	const handleCancelEdit = () => {
@@ -310,6 +332,100 @@ const Content: React.FC = () => {
 
 	return (
 		<Box style={{ padding: '24px', width: '100%', boxSizing: 'border-box' }}>
+			{/* Add Content Dialog */}
+			<AlertDialog.Root open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                <AlertDialog.Content maxWidth="500px">
+                    <AlertDialog.Title>Add New Content</AlertDialog.Title>
+                    <AlertDialog.Description>
+                        Fill in the details to add a new content/offer.
+                    </AlertDialog.Description>
+                    <Box mt="3">
+                        <TextField.Root
+                            placeholder="Offer Name"
+                            value={addForm.offerName}
+                            onChange={e => setAddForm(f => ({ ...f, offerName: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextField.Root
+                            placeholder="Category Name"
+                            value={addForm.categoryName}
+                            onChange={e => setAddForm(f => ({ ...f, categoryName: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextField.Root
+                            placeholder="Expired Date (YYYY-MM-DD)"
+                            value={addForm.expiredDate}
+                            onChange={e => setAddForm(f => ({ ...f, expiredDate: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <Select.Root
+                            value={addForm.status}
+                            onValueChange={v => setAddForm(f => ({ ...f, status: v as 'active' | 'inactive' }))}
+                        >
+                            <Select.Trigger style={{ width: '100%', marginBottom: 12 }} />
+                            <Select.Content>
+                                <Select.Item value="active">Active</Select.Item>
+                                <Select.Item value="inactive">Inactive</Select.Item>
+                            </Select.Content>
+                        </Select.Root>
+                        <TextField.Root
+                            placeholder="Image URL"
+                            value={addForm.imageUrl}
+                            onChange={e => setAddForm(f => ({ ...f, imageUrl: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextArea
+                            placeholder="Headlines"
+                            value={addForm.headlines}
+                            onChange={e => setAddForm(f => ({ ...f, headlines: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextArea
+                            placeholder="Terms & Conditions"
+                            value={addForm.termsCondition}
+                            onChange={e => setAddForm(f => ({ ...f, termsCondition: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextArea
+                            placeholder="Cancellation Policy"
+                            value={addForm.cancellationPolicy}
+                            onChange={e => setAddForm(f => ({ ...f, cancellationPolicy: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextArea
+                            placeholder="Description"
+                            value={addForm.description}
+                            onChange={e => setAddForm(f => ({ ...f, description: e.target.value }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextField.Root
+                            placeholder="Discount Percentage"
+                            type="number"
+                            value={addForm.discountPercentage?.toString() || ''}
+                            onChange={e => setAddForm(f => ({ ...f, discountPercentage: Number(e.target.value) }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                        <TextField.Root
+                            placeholder="Discount Amount"
+                            type="number"
+                            value={addForm.discountAmount?.toString() || ''}
+                            onChange={e => setAddForm(f => ({ ...f, discountAmount: Number(e.target.value) }))}
+                            style={{ marginBottom: 12 }}
+                        />
+                    </Box>
+                    <Flex gap="3" mt="4" justify="end">
+                        <AlertDialog.Cancel>
+                            <Button variant="soft" color="gray">
+                                Cancel
+                            </Button>
+                        </AlertDialog.Cancel>
+                        <Button color="green" onClick={handleAddContent}>
+                            Add
+                        </Button>
+                    </Flex>
+                </AlertDialog.Content>
+            </AlertDialog.Root>
+
 			{/* Header */}
 			<Flex justify="between" align="center" mb="6">
 				<Box>
@@ -323,9 +439,9 @@ const Content: React.FC = () => {
 				<Button
 					size="3"
 					variant="soft"
-					onClick={() => setIsHeroSectionOpen(true)}
+					onClick={() => setAddDialogOpen(true)}
 				>
-					Edit Hero Section
+					Add Content
 				</Button>
 			</Flex>
 
@@ -368,7 +484,7 @@ const Content: React.FC = () => {
 									)}
 								</Box>
 								<Flex gap="2">
-                                <IconButton
+									<IconButton
 										variant="ghost"
 										size="2"
 										onClick={() => handleEditField('headlines')}
@@ -534,7 +650,7 @@ const Content: React.FC = () => {
 										onChange={handleFileUpload}
 									/>
 									<Box style={{ marginBottom: '16px' }}>
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--accent-11)' }}>
+										<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--accent-11)' }}>
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 											<polyline points="17 8 12 3 7 8" />
 											<line x1="12" y1="3" x2="12" y2="15" />

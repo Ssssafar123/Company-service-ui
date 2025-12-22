@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Box, Text, Separator, Flex, Button, AlertDialog, Card, Checkbox } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
+import { createCategory, updateCategoryById } from '../../features/CategorySlice'
 
 type ItineraryData = {
 	id: string
@@ -109,9 +112,9 @@ const dummyItineraries: ItineraryData[] = [
 const AddCategory: React.FC = () => {
 	const location = useLocation()
 	const navigate = useNavigate()
-	const [formData, setFormData] = useState<any>({})
 	const [initialValues, setInitialValues] = useState<any>({})
 	const [isEditMode, setIsEditMode] = useState(false)
+	const dispatch = useDispatch<AppDispatch>() // <-- use the typed dispatch
 
 	// Dialog state
 	const [dialogOpen, setDialogOpen] = useState(false)
@@ -129,12 +132,16 @@ const AddCategory: React.FC = () => {
 		if (categoryData) {
 			setIsEditMode(true)
 			
+			// Map the full Category object to form initial values
 			const mappedValues = {
 				category_name: categoryData.name || '',
-				short_description: categoryData.shortDescription || '',
-				long_description: categoryData.longDescription || '',
-				feature_images: categoryData.images || [''],
-				itineraries: categoryData.itineraryIds || [],
+				short_description: categoryData.short_description || '',
+				long_description: categoryData.long_description || '',
+				feature_images: categoryData.feature_images && categoryData.feature_images.length > 0 
+					? categoryData.feature_images 
+					: (categoryData.image ? [categoryData.image] : ['']), // Use image if feature_images is empty
+				// itineraries: categoryData.itineraries || [],
+				seo_fields: categoryData.seo_fields || null, // Add SEO fields
 			}
 			
 			setInitialValues(mappedValues)
@@ -142,134 +149,185 @@ const AddCategory: React.FC = () => {
 			setIsEditMode(false)
 			setInitialValues({
 				feature_images: [''],
-				itineraries: [],
+				// itineraries: [],
 			})
 		}
 	}, [location.state])
 
-	const handleSubmit = (values: Record<string, any>) => {
+	const handleSubmit = async (values: Record<string, any>) => {
+		// Extract File objects from feature_images
+		let featureImageFiles: File[] = [];
+		if (Array.isArray(values.feature_images)) {
+			featureImageFiles = values.feature_images.filter((img: any) => img instanceof File);
+		}
+
 		if (isEditMode) {
-			console.log('Category updated with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Category updated successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/category')
-				},
-			})
+			// Update category
+			try {
+				const id = location.state?.categoryData?.id
+				await dispatch(updateCategoryById({
+					id,
+					data: {
+						name: values.category_name,
+						short_description: values.short_description,
+						long_description: values.long_description,
+						// itineraries: values.itineraries,
+						seo_fields: values.seo_fields,
+						status: 'active',
+						// Pass File objects if they exist
+						imageFile: featureImageFiles[0],
+						featureImageFiles: featureImageFiles,
+					}
+				})).unwrap()
+				setDialogConfig({
+					title: 'Success',
+					description: 'Category updated successfully!',
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => {
+						setDialogOpen(false)
+						navigate('/dashboard/category')
+					},
+				})
+			} catch (error: any) {
+				setDialogConfig({
+					title: 'Error',
+					description: error?.message || 'Failed to update category',
+					actionText: 'OK',
+					color: 'red',
+					onConfirm: () => setDialogOpen(false),
+				})
+			}
 		} else {
-			console.log('Category created with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Category created successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/category')
-				},
-			})
+			// Create category
+			try {
+				await dispatch(createCategory({
+					name: values.category_name,
+					short_description: values.short_description,
+					long_description: values.long_description,
+					// itineraries: values.itineraries,
+					seo_fields: values.seo_fields,
+					status: 'active',
+					image: '', // Will be replaced by backend with actual binary data
+					// Pass File objects
+					imageFile: featureImageFiles[0],
+					featureImageFiles: featureImageFiles,
+				})).unwrap()
+				setDialogConfig({
+					title: 'Success',
+					description: 'Category created successfully!',
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => {
+						setDialogOpen(false)
+						navigate('/dashboard/category')
+					},
+				})
+			} catch (error: any) {
+				setDialogConfig({
+					title: 'Error',
+					description: error?.message || 'Failed to create category',
+					actionText: 'OK',
+					color: 'red',
+					onConfirm: () => setDialogOpen(false),
+				})
+			}
 		}
 		setDialogOpen(true)
 	}
 
 	// Memoize the custom render function for itineraries - use value from form, not external state
-	const renderItinerariesField = useCallback((value: string[] = [], onChange: (value: string[]) => void) => {
-		const selectedIds = value || []
+	// const renderItinerariesField = useCallback((value: string[] = [], onChange: (value: string[]) => void) => {
+	// 	const selectedIds = value || []
 		
-		const handleToggle = (itineraryId: string) => {
-			const newSelection = selectedIds.includes(itineraryId)
-				? selectedIds.filter((id) => id !== itineraryId)
-				: [...selectedIds, itineraryId]
-			onChange(newSelection)
-		}
+	// 	const handleToggle = (itineraryId: string) => {
+	// 		const newSelection = selectedIds.includes(itineraryId)
+	// 			? selectedIds.filter((id) => id !== itineraryId)
+	// 			: [...selectedIds, itineraryId]
+	// 		onChange(newSelection)
+	// 	}
 		
-		return (
-			<Box>
-				<Text
-					size="2"
-					weight="medium"
-					style={{
-						color: 'var(--accent-12)',
-						marginBottom: '12px',
-						display: 'block',
-					}}
-				>
-					Total Itineraries ({dummyItineraries.length})
-				</Text>
-				<Box
-					style={{
-						maxHeight: '400px',
-						overflowY: 'auto',
-						border: '1px solid var(--accent-6)',
-						borderRadius: '8px',
-						padding: '16px',
-						backgroundColor: 'var(--color-panel)',
-					}}
-				>
-					<Flex direction="column" gap="3">
-						{dummyItineraries.map((itinerary) => {
-							const isSelected = selectedIds.includes(itinerary.id)
+	// 	return (
+	// 		<Box>
+	// 			<Text
+	// 				size="2"
+	// 				weight="medium"
+	// 				style={{
+	// 					color: 'var(--accent-12)',
+	// 					marginBottom: '12px',
+	// 					display: 'block',
+	// 				}}
+	// 			>
+	// 				Total Itineraries{/*  ({dummyItineraries.length}) */}
+	// 			</Text>
+	// 			<Box
+	// 				style={{
+	// 					maxHeight: '400px',
+	// 					overflowY: 'auto',
+	// 					border: '1px solid var(--accent-6)',
+	// 					borderRadius: '8px',
+	// 					padding: '16px',
+	// 					backgroundColor: 'var(--color-panel)',
+	// 				}}
+	// 			>
+	// 				<Flex direction="column" gap="3">
+	// 					{dummyItineraries.map((itinerary) => {
+	// 						const isSelected = selectedIds.includes(itinerary.id)
 							
-							return (
-								<Card
-									key={itinerary.id}
-									style={{
-										padding: '12px',
-										border: isSelected
-											? '2px solid var(--accent-9)'
-											: '1px solid var(--accent-6)',
-										backgroundColor: isSelected
-											? 'var(--accent-3)'
-											: 'var(--color-panel)',
-										cursor: 'pointer',
-										transition: 'all 0.2s',
-									}}
-									onClick={() => handleToggle(itinerary.id)}
-								>
-									<Flex align="center" gap="3">
-										<Checkbox
-											checked={isSelected}
-											onCheckedChange={() => handleToggle(itinerary.id)}
-											onClick={(e) => {
-												e.stopPropagation()
-											}}
-										/>
-										<Box style={{ flex: 1 }}>
-											<Text
-												size="3"
-												weight="medium"
-												style={{
-													color: 'var(--accent-12)',
-													marginBottom: '4px',
-													display: 'block',
-												}}
-											>
-												{itinerary.name}
-											</Text>
-											<Text
-												size="2"
-												style={{
-													color: 'var(--accent-11)',
-												}}
-											>
-												{itinerary.city} • {itinerary.priceDisplay}
-											</Text>
-										</Box>
-									</Flex>
-								</Card>
-							)
-						})}
-					</Flex>
-				</Box>
-			</Box>
-		)
-	}, []) 
+	// 						return (
+	// 							<Card
+	// 								key={itinerary.id}
+	// 								style={{
+	// 									padding: '12px',
+	// 									border: isSelected
+	// 										? '2px solid var(--accent-9)'
+	// 										: '1px solid var(--accent-6)',
+	// 									backgroundColor: isSelected
+	// 										? 'var(--accent-3)'
+	// 										: 'var(--color-panel)',
+	// 									cursor: 'pointer',
+	// 									transition: 'all 0.2s',
+	// 								}}
+	// 								onClick={() => handleToggle(itinerary.id)}
+	// 							>
+	// 								<Flex align="center" gap="3">
+	// 									<Checkbox
+	// 										checked={isSelected}
+	// 										onCheckedChange={() => handleToggle(itinerary.id)}
+	// 										onClick={(e) => {
+	// 											e.stopPropagation()
+	// 										}}
+	// 									/>
+	// 									<Box style={{ flex: 1 }}>
+	// 										<Text
+	// 											size="3"
+	// 											weight="medium"
+	// 											style={{
+	// 												color: 'var(--accent-12)',
+	// 												marginBottom: '4px',
+	// 												display: 'block',
+	// 											}}
+	// 										>
+	// 											{itinerary.name}
+	// 										</Text>
+	// 										<Text
+	// 											size="2"
+	// 											style={{
+	// 												color: 'var(--accent-11)',
+	// 											}}
+	// 										>
+	// 											{itinerary.city} • {itinerary.priceDisplay}
+	// 										</Text>
+	// 									</Box>
+	// 								</Flex>
+	// 							</Card>
+	// 						)
+	// 					})}
+	// 				</Flex>
+	// 			</Box>
+	// 		</Box>
+	// 	)
+	// }, []) 
 
 	// Memoize form fields to prevent recreation on every render
 	const formFields = useMemo(() => [
@@ -315,12 +373,12 @@ const AddCategory: React.FC = () => {
 			name: 'feature_images',
 			label: 'Feature Image',
 		},
-		{
-			type: 'custom' as const,
-			name: 'itineraries',
-			label: 'Total Itineraries',
-			customRender: renderItinerariesField,
-		},
+		// {
+		// 	type: 'custom' as const,
+		// 	name: 'itineraries',
+		// 	label: 'Total Itineraries',
+		// 	customRender: renderItinerariesField,
+		// },
 		{
 			type: 'custom' as const,
 			name: '_separator_seo',
@@ -339,7 +397,7 @@ const AddCategory: React.FC = () => {
 			type: 'seo' as const,
 			fullWidth: true,
 		},
-	], [renderItinerariesField])
+	], [/*renderItinerariesField*/])
 
 	return (
 		<Box style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -356,6 +414,7 @@ const AddCategory: React.FC = () => {
 			</Text>
 
 			<DynamicForm
+				key={isEditMode ? `edit-${location.state?.categoryData?.id}` : 'new'} // Add key to force re-render
 				fields={formFields}
 				buttonText={isEditMode ? 'Update Category' : 'Create Category'}
 				onSubmit={handleSubmit}

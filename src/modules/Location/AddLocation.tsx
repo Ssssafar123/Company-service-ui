@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../store'
+import { createLocation, updateLocationById } from '../../features/LocationSlice'
 import { Box, Text, Separator, Flex, Button, AlertDialog, Card, Checkbox } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
 
@@ -15,103 +18,107 @@ type ItineraryData = {
 }
 
 // Dummy itineraries data (same as Itinerary component)
-const dummyItineraries: ItineraryData[] = [
-	{
-		id: '1',
-		name: 'Pachmarhi | Ex- Indore',
-		city: 'Pachmarhi',
-		price: 4499,
-		priceDisplay: '₹4,499',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '2',
-		name: 'Kerala 7D 6N',
-		city: 'Kerala',
-		price: 16499,
-		priceDisplay: '₹16,499',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '3',
-		name: 'Spiti Valley Full Circuit',
-		city: 'Spiti Valley',
-		price: 5599,
-		priceDisplay: '₹5,599',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '4',
-		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore',
-		city: 'Udaipur, Mount abu',
-		price: 15999,
-		priceDisplay: '₹15,999',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '5',
-		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Delhi',
-		city: 'Udaipur, Mount Abu',
-		price: 15999,
-		priceDisplay: '₹15,999',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '6',
-		name: 'Goa Beach Paradise 4D 3N',
-		city: 'Goa',
-		price: 8999,
-		priceDisplay: '₹8,999',
-		status: 'Inactive',
-		trending: 'No',
-	},
-	{
-		id: '7',
-		name: 'Rajasthan Cultural Tour 6D 5N',
-		city: 'Rajasthan',
-		price: 12499,
-		priceDisplay: '₹12,499',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '8',
-		name: 'Himachal Adventure 5D 4N',
-		city: 'Himachal Pradesh',
-		price: 9999,
-		priceDisplay: '₹9,999',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '9',
-		name: 'North East Explorer 8D 7N',
-		city: 'North East',
-		price: 18999,
-		priceDisplay: '₹18,999',
-		status: 'Active',
-		trending: 'No',
-	},
-	{
-		id: '10',
-		name: 'Ladakh Motorcycle Trip 10D 9N',
-		city: 'Ladakh',
-		price: 25999,
-		priceDisplay: '₹25,999',
-		status: 'Inactive',
-		trending: 'No',
-	},
-]
+// const dummyItineraries: ItineraryData[] = [
+// 	{
+// 		id: '1',
+// 		name: 'Pachmarhi | Ex- Indore',
+// 		city: 'Pachmarhi',
+// 		price: 4499,
+// 		priceDisplay: '₹4,499',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '2',
+// 		name: 'Kerala 7D 6N',
+// 		city: 'Kerala',
+// 		price: 16499,
+// 		priceDisplay: '₹16,499',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '3',
+// 		name: 'Spiti Valley Full Circuit',
+// 		city: 'Spiti Valley',
+// 		price: 5599,
+// 		priceDisplay: '₹5,599',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '4',
+// 		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore',
+// 		city: 'Udaipur, Mount abu',
+// 		price: 15999,
+// 		priceDisplay: '₹15,999',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '5',
+// 		name: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Delhi',
+// 		city: 'Udaipur, Mount Abu',
+// 		price: 15999,
+// 		priceDisplay: '₹15,999',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '6',
+// 		name: 'Goa Beach Paradise 4D 3N',
+// 		city: 'Goa',
+// 		price: 8999,
+// 		priceDisplay: '₹8,999',
+// 		status: 'Inactive',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '7',
+// 		name: 'Rajasthan Cultural Tour 6D 5N',
+// 		city: 'Rajasthan',
+// 		price: 12499,
+// 		priceDisplay: '₹12,499',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '8',
+// 		name: 'Himachal Adventure 5D 4N',
+// 		city: 'Himachal Pradesh',
+// 		price: 9999,
+// 		priceDisplay: '₹9,999',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '9',
+// 		name: 'North East Explorer 8D 7N',
+// 		city: 'North East',
+// 		price: 18999,
+// 		priceDisplay: '₹18,999',
+// 		status: 'Active',
+// 		trending: 'No',
+// 	},
+// 	{
+// 		id: '10',
+// 		name: 'Ladakh Motorcycle Trip 10D 9N',
+// 		city: 'Ladakh',
+// 		price: 25999,
+// 		priceDisplay: '₹25,999',
+// 		status: 'Inactive',
+// 		trending: 'No',
+// 	},
+// ]
+
+const dummyItineraries: ItineraryData[] = []
+
 
 const AddLocation: React.FC = () => {
 	const location = useLocation()
 	const navigate = useNavigate()
-	const [formData, setFormData] = useState<any>({})
+	const dispatch = useDispatch<AppDispatch>()
+	// Removed unused formData state
 	const [initialValues, setInitialValues] = useState<any>({})
 	const [isEditMode, setIsEditMode] = useState(false)
 
@@ -131,13 +138,18 @@ const AddLocation: React.FC = () => {
 		if (locationData) {
 			setIsEditMode(true)
 			
+			// Map the full Location object to form initial values
 			const mappedValues = {
 				location_name: locationData.name || '',
-				short_description: locationData.shortDescription || '',
-				long_description: locationData.longDescription || '',
-				feature_images: locationData.images || [''],
-				itineraries: locationData.itineraryIds || [],
-				seo_fields: locationData.seoData || null,
+				short_description: locationData.short_description || locationData.shortDescription || '',
+				long_description: locationData.long_description || locationData.longDescription || '',
+				feature_images: (locationData.feature_images && locationData.feature_images.length > 0)
+					? locationData.feature_images 
+					: (locationData.images && locationData.images.length > 0)
+						? locationData.images
+						: (locationData.image ? [locationData.image] : ['']),
+				itineraries: locationData.itineraries || locationData.itineraryIds || [],
+				seo_fields: locationData.seo_fields || locationData.seoData || null,
 			}
 			
 			setInitialValues(mappedValues)
@@ -151,33 +163,84 @@ const AddLocation: React.FC = () => {
 		}
 	}, [location.state])
 
-	const handleSubmit = (values: Record<string, any>) => {
+	const handleSubmit = async (values: Record<string, any>) => {
+		// Extract File objects from feature_images
+		let featureImageFiles: File[] = [];
+		if (Array.isArray(values.feature_images)) {
+			featureImageFiles = values.feature_images.filter((img: any) => img instanceof File);
+		}
+
 		if (isEditMode) {
-			console.log('Location updated with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Location updated successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/location')
-				},
-			})
+			// Update location
+			try {
+				const id = location.state?.locationData?.id
+				await dispatch(updateLocationById({
+					id,
+					data: {
+						name: values.location_name,
+						short_description: values.short_description,
+						long_description: values.long_description,
+						seo_fields: values.seo_fields,
+						status: 'active',
+						// Pass File objects if they exist
+						imageFile: featureImageFiles[0],
+						featureImageFiles: featureImageFiles,
+					}
+				})).unwrap()
+				setDialogConfig({
+					title: 'Success',
+					description: 'Location updated successfully!',
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => {
+						setDialogOpen(false)
+						navigate('/dashboard/location')
+					},
+				})
+			} catch (error: any) {
+				setDialogConfig({
+					title: 'Error',
+					description: error?.message || 'Failed to update location',
+					actionText: 'OK',
+					color: 'red',
+					onConfirm: () => setDialogOpen(false),
+				})
+			}
 		} else {
-			console.log('Location created with values:', values)
-			setFormData(values)
-			setDialogConfig({
-				title: 'Success',
-				description: 'Location created successfully!',
-				actionText: 'OK',
-				color: 'green',
-				onConfirm: () => {
-					setDialogOpen(false)
-					navigate('/dashboard/location')
-				},
-			})
+			// Create location
+			try {
+				const payload = {
+					name: values.location_name,
+					short_description: values.short_description,
+					long_description: values.long_description,
+					seo_fields: values.seo_fields,
+					image: '', // Will be replaced by backend with actual binary data
+					status: 'active' as 'active',
+					country: 'India',
+					// Pass File objects
+					imageFile: featureImageFiles[0],
+					featureImageFiles: featureImageFiles,
+				};
+				await dispatch(createLocation(payload)).unwrap();
+				setDialogConfig({
+					title: 'Success',
+					description: 'Location created successfully!',
+					actionText: 'OK',
+					color: 'green',
+					onConfirm: () => {
+						setDialogOpen(false);
+						navigate('/dashboard/location');
+					},
+				});
+			} catch (error: any) {
+				setDialogConfig({
+					title: 'Error',
+					description: error?.message || 'Failed to create location',
+					actionText: 'OK',
+					color: 'red',
+					onConfirm: () => setDialogOpen(false),
+				});
+			}
 		}
 		setDialogOpen(true)
 	}
@@ -204,7 +267,7 @@ const AddLocation: React.FC = () => {
 						display: 'block',
 					}}
 				>
-					Total Itineraries ({dummyItineraries.length})
+					 Total Itineraries{/*({dummyItineraries.length})*/}
 				</Text>
 				<Box
 					style={{
@@ -360,6 +423,7 @@ const AddLocation: React.FC = () => {
 			</Text>
 
 			<DynamicForm
+				key={isEditMode ? `edit-${location.state?.locationData?.id}` : 'new'} // Add key to force re-render
 				fields={formFields}
 				buttonText={isEditMode ? 'Update Location' : 'Create Location'}
 				onSubmit={handleSubmit}
