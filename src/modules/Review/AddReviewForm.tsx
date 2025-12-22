@@ -11,6 +11,10 @@ import {
 	Select,
 } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
+import { fetchLocations } from '../../features/LocationSlice'
+import { fetchItineraries } from '../../features/ItinerarySlice'
+import { useSelector } from 'react-redux'
+import type { RootState } from '../../store'
 
 type AddReviewFormProps = {
 	isOpen: boolean
@@ -28,27 +32,15 @@ type AddReviewFormProps = {
 }
 
 // Dummy itineraries data for dropdown
-const dummyItineraries = [
-	{ value: '1', label: 'Pachmarhi | Ex- Indore' },
-	{ value: '2', label: 'Kerala 7D 6N' },
-	{ value: '3', label: 'Spiti Valley Full Circuit' },
-	{ value: '4', label: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Indore' },
-	{ value: '5', label: 'Udaipur Mount Abu Weekend Group Trip 2D 1N | Ex- Delhi' },
-	{ value: '6', label: 'Goa Beach Paradise 4D 3N' },
-	{ value: '7', label: 'Rajasthan Cultural Tour 6D 5N' },
-	{ value: '8', label: 'Himachal Adventure 5D 4N' },
-	{ value: '9', label: 'North East Explorer 8D 7N' },
-	{ value: '10', label: 'Ladakh Motorcycle Trip 10D 9N' },
-	{ value: '11', label: 'Manali & Kasol Tour' },
-	{ value: '12', label: 'Goa Beach Tour' },
-	{ value: '13', label: 'Kerala Backwaters' },
-	{ value: '14', label: 'Ladakh Adventure' },
-	{ value: '15', label: 'Rajasthan Heritage' },
-]
+
 
 const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
     const dispatch = useDispatch<AppDispatch>()
     const [rating, setRating] = useState<number>(initialData?.rating || 5)
+
+	const itineraries = useSelector((state : RootState) => state.itinerary.itineraries)
+	const itinerariesLoading = useSelector((state: RootState) => state.itinerary.ui.loading)
+
 
 	// Prevent body scroll when form is open
 	useEffect(() => {
@@ -60,6 +52,9 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 			} else {
 				setRating(5)
 			}
+
+			dispatch(fetchItineraries());
+
 		} else {
 			document.body.style.overflow = 'unset'
 		}
@@ -68,7 +63,7 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 		return () => {
 			document.body.style.overflow = 'unset'
 		}
-	}, [isOpen, initialData])
+	}, [isOpen, initialData , dispatch])
 
 	// Star Rating Component
 	const StarRating = ({ value, onChange }: { value: number; onChange: (rating: number) => void }) => {
@@ -94,6 +89,11 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 			</Flex>
 		)
 	}
+
+	const itineraryOptions = itineraries.map((itinerary)=>({
+		value : itinerary.id,
+		label : itinerary.name
+	}))
 
 	// Form fields configuration
 	const formFields = [
@@ -138,7 +138,7 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 			label: 'Select Itinerary',
 			type: 'select' as const,
 			placeholder: 'Select itinerary',
-			options: dummyItineraries,
+			options: itineraryOptions,
 			fullWidth: true,
 		},
 	]

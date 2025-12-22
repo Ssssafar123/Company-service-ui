@@ -15,7 +15,7 @@ type Permission = "read" | "write" | "create" | "delete" | "admin";
 type User = {
   name: string;
   email: string;
-  permissions: Permission[];
+  permissions?: Permission[];
   avatar?: string;
 };
 
@@ -339,7 +339,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
         </div>
 
         {/* Permissions Badges */}
-        {!isCollapsed && user.permissions.length > 0 && (
+        {!isCollapsed && user.permissions && user.permissions.length > 0 && (
           <Flex gap="1" wrap="wrap" style={{ marginTop: "0px", padding: "0 10px" }}>
             {user.permissions.map(permission => (
               <Badge 

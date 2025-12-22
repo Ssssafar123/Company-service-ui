@@ -186,8 +186,6 @@ const Layout = () => {
                     user={{
                         name: 'Rohit Sharma',
                         email: 'rohit.sharma@example.com',
-                        permissions: ['read', 'write', 'admin'],
-                        avatar: 'https://i.pravatar.cc/40?img=3',
                     }}
                     menuItems={[
                         { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
@@ -238,7 +236,6 @@ const Layout = () => {
                         },
                      
                        
-                        { id: 'home', label: 'Home', path: '/', icon: <HomeIcon /> },
 
                     ]}
                     collapsed={collapsed}
