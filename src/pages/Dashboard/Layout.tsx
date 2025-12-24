@@ -186,8 +186,6 @@ const Layout = () => {
                     user={{
                         name: 'Rohit Sharma',
                         email: 'rohit.sharma@example.com',
-                        permissions: ['read', 'write', 'admin'],
-                        avatar: 'https://i.pravatar.cc/40?img=3',
                     }}
                     menuItems={[
                         { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
@@ -203,6 +201,7 @@ const Layout = () => {
                                 { id: 'reviews', label: 'Reviews', path: '/dashboard/review', icon: <ReviewIcon /> },
                                 { id: 'bookings', label: 'Bookings', path: '/dashboard/bookings', icon: <BookingsIcon /> },
                                 { id: 'content', label: 'Content', path: '/dashboard/content', icon: <ContentIcon /> },
+                                { id: 'customers', label: 'Customers', path: '/dashboard/customers', }, 
                             ],
                         },
                          {
@@ -238,7 +237,6 @@ const Layout = () => {
                         },
                      
                        
-                        { id: 'home', label: 'Home', path: '/', icon: <HomeIcon /> },
 
                     ]}
                     collapsed={collapsed}

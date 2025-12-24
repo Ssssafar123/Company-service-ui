@@ -11,17 +11,27 @@ export interface SEOFields {
 export interface Location {
   id: string
   name: string
-  image: string
-  feature_images?: string[]
   short_description?: string
   long_description?: string
   description?: string
-  state?: string
+  image?: string
+  feature_images?: string[]
+  status?: 'active' | 'inactive'
   country?: string
-  tripCount?: number
+  state?: string
   order?: number
-  status: 'active' | 'inactive'
-  seo_fields?: SEOFields
+  tripCount?: number
+  itineraries?: string[]
+  seo_fields?: {
+    meta_title?: string
+    meta_description?: string
+    meta_keywords?: string
+    og_title?: string
+    og_description?: string
+    og_image?: string
+  } | null
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface LocationState {
@@ -53,6 +63,7 @@ const mapLocation = (location: any): Location => ({
   tripCount: location.tripCount || 0,
   order: location.order || 0,
   status: location.status || 'active',
+  itineraries: location.itineraries || [],
   seo_fields: location.seo_fields,
 })
 
@@ -80,13 +91,20 @@ export const createLocation = createAsyncThunk(
       
       // Add basic fields
       formData.append('name', location.name)
-      formData.append('status', location.status)
+      if (location.status) formData.append('status', location.status)
       if (location.short_description) formData.append('short_description', location.short_description)
       if (location.long_description) formData.append('long_description', location.long_description)
       if (location.description) formData.append('description', location.description)
       if (location.state) formData.append('state', location.state)
       if (location.country) formData.append('country', location.country)
-      if (location.order) formData.append('order', location.order.toString())
+      if (location.order !== undefined) formData.append('order', location.order.toString())
+      
+      // Add itineraries - each ID separately, not as JSON string
+      if (location.itineraries && location.itineraries.length > 0) {
+        location.itineraries.forEach((itineraryId) => {
+          formData.append('itineraries[]', itineraryId)
+        })
+      }
       
       // Add SEO fields as JSON
       if (location.seo_fields) {
@@ -150,6 +168,17 @@ export const updateLocationById = createAsyncThunk(
       if (data.state !== undefined) formData.append('state', data.state)
       if (data.country !== undefined) formData.append('country', data.country)
       if (data.order !== undefined) formData.append('order', data.order.toString())
+      
+      // Add itineraries - each ID separately, not as JSON string
+      if (data.itineraries !== undefined) {
+        if (data.itineraries.length === 0) {
+          formData.append('itineraries[]', '') // Send empty to clear
+        } else {
+          data.itineraries.forEach((itineraryId) => {
+            formData.append('itineraries[]', itineraryId)
+          })
+        }
+      }
       
       // Add SEO fields as JSON
       if (data.seo_fields !== undefined) {
