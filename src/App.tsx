@@ -27,6 +27,7 @@ import Invoice from './pages/Dashboard/Invoice.js'
 import AddInvoice from './pages/Dashboard/AddInvoice.js'
 import LedgerPage from './pages/Dashboard/Ledger'
 import CustomersPage from './modules/Customer/Customer'
+import BatchesPage from './modules/Batch/Batch.js'
 
 const App = () => {
   return (
@@ -57,7 +58,8 @@ const App = () => {
         <Route path='itinerary' element={<ItineraryPage />} />
         <Route path='category' element={<CategoryPage />} />
         <Route path='location' element={<LocationPage />} />
-        <Route path="customers" element={<CustomersPage />} />
+        <Route path='customers' element={<CustomersPage />} />
+         <Route path='batches' element={<BatchesPage />} />
         <Route path='leads' element={<Leads />} />
         <Route path='customize-leads' element={<CustomizeLeadsPage />} />
         <Route path='library/hotel' element={<HotelPage />} />

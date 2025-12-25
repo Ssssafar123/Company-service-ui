@@ -202,6 +202,7 @@ const Layout = () => {
                                 { id: 'bookings', label: 'Bookings', path: '/dashboard/bookings', icon: <BookingsIcon /> },
                                 { id: 'content', label: 'Content', path: '/dashboard/content', icon: <ContentIcon /> },
                                 { id: 'customers', label: 'Customers', path: '/dashboard/customers', }, 
+                                { id: 'batches', label: 'Batches', path: '/dashboard/batches',},
                             ],
                         },
                          {
