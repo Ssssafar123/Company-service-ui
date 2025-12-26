@@ -26,6 +26,8 @@ import {
 } from '@radix-ui/themes'
 import Table from '../../components/dynamicComponents/Table'
 import AddBookingForm from './AddBookingForm'
+import BookingDetails from './BookingDetails'
+
 
 const Bookings: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>()
@@ -35,6 +37,10 @@ const Bookings: React.FC = () => {
     const error = useSelector((state: RootState) => state.booking.ui.error)
     const customers = useSelector((state: RootState) => state.customer.customers)
     const batches = useSelector((state: RootState) => state.batch.batches)
+    
+    const [detailsOpen, setDetailsOpen] = useState(false)
+    const [selectedBooking, setSelectedBooking] = useState<BookingType | null>(null)
+
 
     const navigate = useNavigate()
     const [searchQuery, setSearchQuery] = useState('')
@@ -128,6 +134,12 @@ const Bookings: React.FC = () => {
         setEditingBooking(booking)
         setIsFormOpen(true)
     }
+
+    const handleDetails = (booking: BookingType) => {
+        setSelectedBooking(booking)
+        setDetailsOpen(true)
+    }
+
 
     const handleAddNew = () => {
         setEditingBooking(null)
@@ -264,6 +276,11 @@ const Bookings: React.FC = () => {
                     </IconButton>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content>
+                    <DropdownMenu.Item onClick={() => handleDetails(booking)}>
+                        <Flex align="center" gap="2">
+                            <Text size="2">Details</Text>
+                        </Flex>
+                    </DropdownMenu.Item>
                     <DropdownMenu.Item onClick={() => handleEdit(booking)}>
                         <Flex align="center" gap="2">
                             <Text size="2">Edit</Text>
@@ -565,8 +582,16 @@ const Bookings: React.FC = () => {
                     </AlertDialog.Content>
                 </AlertDialog.Root>
             )}
-        </Box>
-    )
+            <BookingDetails
+  open={detailsOpen}
+  onClose={() => setDetailsOpen(false)}
+  booking={selectedBooking}
+/>
+
+</Box>
+)
+    //     </Box>
+    // )
 }
 
 export default Bookings
