@@ -3,17 +3,20 @@ import type { PayloadAction } from '@reduxjs/toolkit'
 
 export interface Booking {
   id: string
-  bookingId: string
-  customerName: string
-  customerEmail: string
-  customerPhone: string
-  itinerary: string
-  bookingDate: string
-  travelDate: string
-  numberOfTravelers: number
-  totalAmount: number
-  status: 'confirmed' | 'pending' | 'cancelled' | 'completed'
-  paymentStatus?: 'paid' | 'pending' | 'refunded'
+  customer?: string // ObjectId reference
+  people_count: number
+  travellers: string[] // Array of ObjectId references
+  itinerary_id: string // ObjectId reference
+  batch_id: string // ObjectId reference
+  total_price: number
+  paid_amount: number
+  invoice_link?: string
+  transaction?: string // ObjectId reference
+  txn_id: string
+  transaction_status?: 'INITIATED' | 'SUCCESS' | 'FAILED'
+  deleted?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface PaginationData {
@@ -55,17 +58,20 @@ const initialState: AppState = {
 // Helper function to map _id to id
 const mapBooking = (booking: any): Booking => ({
   id: booking._id || booking.id,
-  bookingId: booking.bookingId,
-  customerName: booking.customerName,
-  customerEmail: booking.customerEmail,
-  customerPhone: booking.customerPhone,
-  itinerary: booking.itinerary,
-  bookingDate: booking.bookingDate,
-  travelDate: booking.travelDate,
-  numberOfTravelers: booking.numberOfTravelers,
-  totalAmount: booking.totalAmount,
-  status: booking.status,
-  paymentStatus: booking.paymentStatus,
+  customer: booking.customer || '',
+  people_count: booking.people_count || 0,
+  travellers: booking.travellers || [],
+  itinerary_id: booking.itinerary_id,
+  batch_id: booking.batch_id || '',
+  total_price: booking.total_price || 0,
+  paid_amount: booking.paid_amount || 0,
+  invoice_link: booking.invoice_link || '',
+  transaction: booking.transaction || '',
+  txn_id: booking.txn_id || '',
+  transaction_status: booking.transaction_status,
+  deleted: booking.deleted || false,
+  createdAt: booking.createdAt,
+  updatedAt: booking.updatedAt,
 })
 
 export const fetchBookings = createAsyncThunk(

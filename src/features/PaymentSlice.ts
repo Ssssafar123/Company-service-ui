@@ -76,6 +76,22 @@ const mapPayment = (payment: any): Payment => ({
   remarks: payment.remarks,
 })
 
+// export const fetchPayments = createAsyncThunk(
+//   'payment/fetchPayments',
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const res = await fetch('http://localhost:8000/api/payment', {
+//         credentials: 'include',
+//       })
+//       if (!res.ok) throw new Error('Failed to fetch payments')
+//       const data = await res.json()
+//       return data.map(mapPayment)
+//     } catch (err) {
+//       return rejectWithValue((err as Error).message)
+//     }
+//   }
+// )
+
 export const fetchPayments = createAsyncThunk(
   'payment/fetchPayments',
   async (_, { rejectWithValue }) => {
@@ -83,14 +99,24 @@ export const fetchPayments = createAsyncThunk(
       const res = await fetch('http://localhost:8000/api/payment', {
         credentials: 'include',
       })
+
       if (!res.ok) throw new Error('Failed to fetch payments')
-      const data = await res.json()
-      return data.map(mapPayment)
+
+      const response = await res.json()
+
+      // ✅ works if backend returns array OR { data: [] }
+      const paymentsArray = Array.isArray(response)
+        ? response
+        : response.data || []
+
+      return paymentsArray.map(mapPayment)
     } catch (err) {
       return rejectWithValue((err as Error).message)
     }
   }
 )
+
+
 
 export const fetchPaymentsByPage = createAsyncThunk(
   'payment/fetchPaymentsByPage',

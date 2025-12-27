@@ -15,8 +15,8 @@ type Permission = "read" | "write" | "create" | "delete" | "admin";
 type User = {
   name: string;
   email: string;
-  permissions: Permission[];
-  // avatar?: string;
+  permissions?: Permission[];
+  avatar?: string;
 };
 
 type MenuItem = {
@@ -82,11 +82,16 @@ const ReportsIcon = ({ size = 20 }) => (
 
 const hasPermission = (user: User, item: MenuItem) => {
   if (!item.permission) return true;
+
+  const userPermissions = user.permissions ?? [];
+
   if (Array.isArray(item.permission)) {
-    return item.permission.some((p) => user.permissions.includes(p));
+    return item.permission.some((p) => userPermissions.includes(p));
   }
-  return user.permissions.includes(item.permission);
+
+  return userPermissions.includes(item.permission);
 };
+
 
 const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapsed = false, onToggle, topOffset = 64 }) => {
   const [activeItem, setActiveItem] = useState<string>("");
@@ -340,7 +345,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
         </div>
 
         {/* Permissions Badges */}
-        {/* {!isCollapsed && user.permissions.length > 0 && (
+        {!isCollapsed && user.permissions && user.permissions.length > 0 && (
           <Flex gap="1" wrap="wrap" style={{ marginTop: "0px", padding: "0 10px" }}>
             {user.permissions.map(permission => (
               <Badge 
@@ -353,8 +358,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, menuItems, onNavigate, collapse
               </Badge>
             ))}
           </Flex>
-        )} */}
-
+        )} 
         <Separator size="4" style={{ margin: "0 0px" }} />
 
         {/* Navigation */}

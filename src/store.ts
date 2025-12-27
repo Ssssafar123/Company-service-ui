@@ -1,5 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import bookingReducer from './features/BookingSlice'
+import customerReducer from './features/CustomerSlice'
+import batchReducer from './features/BatchSlice'
 import itineraryReducer from './features/ItinerarySlice'
 
 // Website module
@@ -27,6 +29,8 @@ import localSupportReducer from './features/LocalSupportSlice'
 export const store = configureStore({
   reducer: {
     booking: bookingReducer,
+    customer: customerReducer,
+    batch: batchReducer,
     itinerary: itineraryReducer,
     
     // Website

@@ -1,315 +1,438 @@
 import React, { useEffect } from 'react'
-import { useDispatch } from 'react-redux'
+import { useForm, Controller } from 'react-hook-form'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../../store'
+import { Box, Flex, Text, TextField, Button, Select } from '@radix-ui/themes'
 import type { Booking } from '../../features/BookingSlice'
+import { fetchCustomers } from '../../features/CustomerSlice'
+import { fetchItineraries } from '../../features/ItinerarySlice'
+import { fetchBatches } from '../../features/BatchSlice'
 
-import {
-	Box,
-	Flex,
-	Text,
-	IconButton,
-	TextField,
-} from '@radix-ui/themes'
-import DynamicForm from '../../components/dynamicComponents/Form'
-import { createBooking } from '../../features/BookingSlice'
-import type { AppDispatch } from '../../store'
-type AddBookingFormProps = {
-	isOpen: boolean
-	onClose: () => void
-	onSubmit: (values: Omit<Booking, "id">) => void
-	initialData?: Partial<Booking> | null
+interface AddBookingFormProps {
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (data: Omit<Booking, 'id'>) => void
+  initialData?: Booking | null
 }
 
-// Dummy itineraries data for dropdown
-const dummyItineraries = [
-	{ value: 'Manali Kasol | Best Selling - Manali', label: 'Manali Kasol | Best Selling - Manali' },
-	{ value: 'Udaipur Mount Abu Weekend Group Trip 2D 1N', label: 'Udaipur Mount Abu Weekend Group Trip 2D 1N' },
-	{ value: 'Pachmarhi | Ex- Indore - Pachmarhi', label: 'Pachmarhi | Ex- Indore - Pachmarhi' },
-	{ value: 'Goa Beach Tour | 3 Days 2 Nights', label: 'Goa Beach Tour | 3 Days 2 Nights' },
-	{ value: 'Kerala Backwaters | Alleppey Houseboat', label: 'Kerala Backwaters | Alleppey Houseboat' },
-	{ value: 'Rajasthan Heritage Tour | Jaipur Udaipur', label: 'Rajasthan Heritage Tour | Jaipur Udaipur' },
-	{ value: 'Himachal Pradesh | Shimla Manali', label: 'Himachal Pradesh | Shimla Manali' },
-	{ value: 'Darjeeling Gangtok | Hill Station Tour', label: 'Darjeeling Gangtok | Hill Station Tour' },
-	{ value: 'Varanasi Spiritual Tour | 2 Days', label: 'Varanasi Spiritual Tour | 2 Days' },
-	{ value: 'Mumbai City Tour | Gateway of India', label: 'Mumbai City Tour | Gateway of India' },
-]
+type BookingFormData = Omit<Booking, 'id'>
 
-const statusOptions = [
-	{ value: 'confirmed', label: 'Confirmed' },
-	{ value: 'pending', label: 'Pending' },
-	{ value: 'cancelled', label: 'Cancelled' },
-	{ value: 'completed', label: 'Completed' },
-]
+const AddBookingForm: React.FC<AddBookingFormProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+}) => {
+  const dispatch = useDispatch<AppDispatch>()
+  
+  // Fetch data from Redux store
+  const customers = useSelector((state: RootState) => state.customer.customers)
+  const itineraries = useSelector((state: RootState) => state.itinerary.itineraries)
+  const batches = useSelector((state: RootState) => state.batch.batches)
+  const customersLoading = useSelector((state: RootState) => state.customer.ui.loading)
+  const itinerariesLoading = useSelector((state: RootState) => state.itinerary.ui.loading)
+  const batchesLoading = useSelector((state: RootState) => state.batch.ui.loading)
+  
+  // Debug logs
+  console.log('Customers in state:', customers)
+  console.log('Customers count:', customers.length)
 
-const paymentStatusOptions = [
-	{ value: 'paid', label: 'Paid' },
-	{ value: 'pending', label: 'Pending' },
-	{ value: 'refunded', label: 'Refunded' },
-]
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<BookingFormData>({
+    defaultValues: {
+      people_count: 1,
+      travellers: [],
+      itinerary_id: '',
+      batch_id: '',
+      total_price: 0,
+      paid_amount: 0,
+      invoice_link: '',
+      txn_id: '',
+      transaction_status: 'INITIATED',
+      deleted: false,
+    },
+  })
 
-const AddBookingForm: React.FC<AddBookingFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
-	// Prevent body scroll when form is open
-	useEffect(() => {
-		if (isOpen) {
-			document.body.style.overflow = 'hidden'
-		} else {
-			document.body.style.overflow = 'unset'
-		}
+  // Fetch data on component mount
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(fetchCustomers())
+      dispatch(fetchItineraries())
+      dispatch(fetchBatches())
+    }
+  }, [dispatch, isOpen])
 
-		// Cleanup function to restore scroll when component unmounts
-		return () => {
-			document.body.style.overflow = 'unset'
-		}
-	}, [isOpen])
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        customer: initialData.customer,
+        people_count: initialData.people_count,
+        travellers: initialData.travellers,
+        itinerary_id: initialData.itinerary_id,
+        batch_id: initialData.batch_id,
+        total_price: initialData.total_price,
+        paid_amount: initialData.paid_amount,
+        invoice_link: initialData.invoice_link,
+        transaction: initialData.transaction,
+        txn_id: initialData.txn_id,
+        transaction_status: initialData.transaction_status,
+        deleted: initialData.deleted,
+      })
+    } else {
+      reset({
+        people_count: 1,
+        travellers: [],
+        itinerary_id: '',
+        batch_id: '',
+        total_price: 0,
+        paid_amount: 0,
+        invoice_link: '',
+        txn_id: '',
+        transaction_status: 'INITIATED',
+        deleted: false,
+      })
+    }
+  }, [initialData, reset])
 
-	// Remove dispatch - parent handles it!
-	// const dispatch = useDispatch<AppDispatch>()
+  const isValidObjectId = (id: string) => {
+    return /^[0-9a-fA-F]{24}$/.test(id)
+  }
 
-	// Form fields configuration
-	const formFields = [
-		{
-			name: 'bookingId',
-			label: 'Booking ID',
-			type: 'text' as const,
-			placeholder: 'Enter booking ID (e.g., BK001)',
-			fullWidth: true,
-		},
-		{
-			name: 'customerName',
-			label: 'Customer Name',
-			type: 'text' as const,
-			placeholder: 'Enter customer name',
-			fullWidth: true,
-		},
-		{
-			name: 'customerEmail',
-			label: 'Customer Email',
-			type: 'email' as const,
-			placeholder: 'Enter customer email',
-			fullWidth: true,
-		},
-		{
-			name: 'customerPhone',
-			label: 'Customer Phone',
-			type: 'text' as const,
-			placeholder: 'Enter customer phone (e.g., +91 98765 43210)',
-			fullWidth: true,
-		},
-		{
-			name: 'itinerary',
-			label: 'Select Itinerary',
-			type: 'select' as const,
-			placeholder: 'Select itinerary',
-			options: dummyItineraries,
-			fullWidth: true,
-		},
-		{
-			name: 'bookingDate',
-			label: 'Booking Date',
-			type: 'custom' as const,
-			placeholder: 'Select booking date',
-			fullWidth: true,
-			customRender: (value: any, onChange: (value: any) => void) => (
-				<TextField.Root
-					type="date"
-					value={value || ''}
-					onChange={(e) => onChange(e.target.value)}
-					placeholder="Select booking date"
-				/>
-			),
-		},
-		{
-			name: 'travelDate',
-			label: 'Travel Date',
-			type: 'custom' as const,
-			placeholder: 'Select travel date',
-			fullWidth: true,
-			customRender: (value: any, onChange: (value: any) => void) => (
-				<TextField.Root
-					type="date"
-					value={value || ''}
-					onChange={(e) => onChange(e.target.value)}
-					placeholder="Select travel date"
-				/>
-			),
-		},
-		{
-			name: 'numberOfTravelers',
-			label: 'Number of Travelers',
-			type: 'number' as const,
-			placeholder: 'Enter number of travelers',
-			fullWidth: true,
-		},
-		{
-			name: 'totalAmount',
-			label: 'Total Amount (₹)',
-			type: 'number' as const,
-			placeholder: 'Enter total amount',
-			fullWidth: true,
-		},
-		{
-			name: 'status',
-			label: 'Status',
-			type: 'select' as const,
-			placeholder: 'Select status',
-			options: statusOptions,
-			fullWidth: true,
-		},
-		{
-			name: 'paymentStatus',
-			label: 'Payment Status',
-			type: 'select' as const,
-			placeholder: 'Select payment status',
-			options: paymentStatusOptions,
-			fullWidth: true,
-		},
-	]
+  const handleFormSubmit = (data: BookingFormData) => {
+    // Clean up the data before submitting
+    const cleanedData: any = {
+      people_count: data.people_count,
+      itinerary_id: data.itinerary_id,
+      batch_id: data.batch_id,
+      total_price: data.total_price,
+      paid_amount: data.paid_amount,
+      txn_id: data.txn_id,
+      transaction_status: data.transaction_status,
+      deleted: data.deleted || false,
+    }
 
-	
+    // Only include optional ObjectId fields if they are valid
+    if (data.customer && isValidObjectId(data.customer)) {
+      cleanedData.customer = data.customer
+    }
 
+    if (data.transaction && isValidObjectId(data.transaction)) {
+      cleanedData.transaction = data.transaction
+    }
 
-	const handleFormSubmit = (values: Record<string, any>) => {
-		// Don't dispatch here - parent handles it!
-		// Just call parent's onSubmit callback
-		onSubmit(values as Omit<Booking, 'id'>)
-		onClose()
-	}
+    // Only include invoice_link if it's not empty
+    if (data.invoice_link && data.invoice_link.trim()) {
+      cleanedData.invoice_link = data.invoice_link
+    }
 
-	if (!isOpen) return null
+    // Include travellers array
+    cleanedData.travellers = data.travellers || []
 
-	return (
-		<>
-			{/* Overlay */}
-			<Box
-				style={{
-					position: 'fixed',
-					top: 0,
-					left: 0,
-					right: 0,
-					bottom: 0,
-					backgroundColor: 'rgba(0, 0, 0, 0.5)',
-					zIndex: 1000,
-					transition: 'opacity 0.3s ease',
-				}}
-				onClick={onClose}
-			/>
+    onSubmit(cleanedData)
+    reset()
+  }
 
-			{/* Slide-in Form Panel */}
-			<Box
-				style={{
-					position: 'fixed',
-					top: '70px',
-					right: 0,
-					width: '600px',
-					height: 'calc(100vh - 70px)',
-					backgroundColor: 'var(--color-panel)',
-					boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.3)',
-					zIndex: 1001,
-					overflowY: 'auto',
-					display: 'flex',
-					flexDirection: 'column',
-					animation: 'slideIn 0.3s ease',
-				}}
-			>
-				{/* Form Header */}
-				<Box
-					style={{
-						padding: '24px',
-						borderBottom: '1px solid var(--accent-6)',
-						position: 'sticky',
-						top: 0,
-						backgroundColor: 'var(--color-panel)',
-						zIndex: 10,
-					}}
-				>
-					<Flex justify="between" align="start">
-						<Box style={{ flex: 1 }}>
-							<Text 
-								size="6" 
-								weight="bold" 
-								style={{ 
-									color: 'var(--accent-12)', 
-									display: 'block', 
-									marginBottom: '8px' 
-								}}
-							>
-								{initialData ? 'Edit Booking' : 'Add New Booking'}
-							</Text>
-							<Text 
-								size="2" 
-								style={{ 
-									color: 'var(--accent-11)',
-									display: 'block',
-								}}
-							>
-								{initialData ? 'Update the booking details below.' : 'Fill out the form to add a new booking.'}
-							</Text>
-						</Box>
-						<IconButton
-							variant="ghost"
-							size="3"
-							onClick={onClose}
-							style={{ 
-								cursor: 'pointer', 
-								marginLeft: '16px',
-								color: 'var(--accent-11)',
-							}}
-							title="Close"
-						>
-							<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2.5"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							>
-								<line x1="18" y1="6" x2="6" y2="18" />
-								<line x1="6" y1="6" x2="18" y2="18" />
-							</svg>
-						</IconButton>
-					</Flex>
-				</Box>
+  if (!isOpen) return null
 
-				{/* Form Content */}
-				<Box style={{ padding: '24px', flex: 1 }}>
-					<Box style={{ maxWidth: '100%' }}>
-						<DynamicForm
-							fields={formFields}
-							buttonText={initialData ? 'Update Booking' : 'Add Booking'}
-							onSubmit={handleFormSubmit}
-							initialValues={{
-								bookingId: initialData?.bookingId || '',
-								customerName: initialData?.customerName || '',
-								customerEmail: initialData?.customerEmail || '',
-								customerPhone: initialData?.customerPhone || '',
-								itinerary: initialData?.itinerary || '',
-								bookingDate: initialData?.bookingDate || '',
-								travelDate: initialData?.travelDate || '',
-								numberOfTravelers: initialData?.numberOfTravelers || 1,
-								totalAmount: initialData?.totalAmount || 0,
-								status: initialData?.status || 'pending',
-								paymentStatus: initialData?.paymentStatus || 'pending',
-							}}
-						/>
-					</Box>
-				</Box>
-			</Box>
+  return (
+    <Box
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        height: '100vh',
+        width: '500px',
+        background: 'var(--color-background)',
+        boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
+        zIndex: 1000,
+        overflowY: 'auto',
+        padding: '24px',
+      }}
+    >
+      <Flex direction="column" gap="4">
+        <Flex justify="between" align="center">
+          <Text size="6" weight="bold">
+            {initialData ? 'Edit Booking' : 'Add New Booking'}
+          </Text>
+          <Button variant="ghost" onClick={onClose}>
+            ✕
+          </Button>
+        </Flex>
 
-			{/* CSS Animation */}
-			<style>{`
-				@keyframes slideIn {
-					from {
-						transform: translateX(100%);
-					}
-					to {
-						transform: translateX(0);
-					}
-				}
-			`}</style>
-		</>
-	)
+        <form onSubmit={handleSubmit(handleFormSubmit)}>
+          <Flex direction="column" gap="4">
+            {/* Customer (Optional) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Customer (Optional)
+              </Text>
+              <Controller
+                name="customer"
+                control={control}
+                render={({ field }) => (
+                  <Select.Root value={field.value || undefined} onValueChange={field.onChange}>
+                    <Select.Trigger 
+                      placeholder={customersLoading ? 'Loading customers...' : 'Select customer (optional)'}
+                      style={{ width: '100%' }}
+                    />
+                    <Select.Content>
+                      {customers.map((customer) => (
+                        <Select.Item key={customer.id} value={customer.id}>
+                          {customer.name} - {customer.email}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
+                )}
+              />
+              {errors.customer && (
+                <Text size="1" color="red">{errors.customer.message}</Text>
+              )}
+            </Box>
+
+            {/* People Count (Required) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Number of People <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <Controller
+                name="people_count"
+                control={control}
+                rules={{ required: 'People count is required', min: 1 }}
+                render={({ field }) => (
+                  <TextField.Root
+                    type="number"
+                    min="1"
+                    value={field.value}
+                    placeholder="Enter number of people"
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  />
+                )}
+              />
+              {errors.people_count && (
+                <Text size="1" color="red">{errors.people_count.message}</Text>
+              )}
+            </Box>
+
+            {/* Itinerary (Required) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Itinerary <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <Controller
+                name="itinerary_id"
+                control={control}
+                rules={{ required: 'Itinerary is required' }}
+                render={({ field }) => (
+                  <Select.Root value={field.value} onValueChange={field.onChange}>
+                    <Select.Trigger 
+                      placeholder={itinerariesLoading ? 'Loading itineraries...' : 'Select itinerary'}
+                      style={{ width: '100%' }}
+                    />
+                    <Select.Content>
+                      {itineraries.map((itinerary) => (
+                        <Select.Item key={itinerary.id} value={itinerary.id}>
+                          {itinerary.name} - {itinerary.city}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
+                )}
+              />
+              {errors.itinerary_id && (
+                <Text size="1" color="red">{errors.itinerary_id.message}</Text>
+              )}
+            </Box>
+
+            {/* Batch (Required) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Batch <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <Controller
+                name="batch_id"
+                control={control}
+                rules={{ required: 'Batch is required' }}
+                render={({ field }) => (
+                  <Select.Root value={field.value} onValueChange={field.onChange}>
+                    <Select.Trigger 
+                      placeholder={batchesLoading ? 'Loading batches...' : 'Select batch'}
+                      style={{ width: '100%' }}
+                    />
+                    <Select.Content>
+                      {batches.map((batch) => (
+                        <Select.Item key={batch.id} value={batch.id}>
+                          {new Date(batch.start_date).toLocaleDateString()} - {new Date(batch.end_date).toLocaleDateString()}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
+                )}
+              />
+              {errors.batch_id && (
+                <Text size="1" color="red">{errors.batch_id.message}</Text>
+              )}
+            </Box>
+
+            {/* Total Price (Required) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Total Price <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <Controller
+                name="total_price"
+                control={control}
+                rules={{ required: 'Total price is required', min: 0 }}
+                render={({ field }) => (
+                  <TextField.Root
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={field.value}
+                    placeholder="Enter total price"
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  />
+                )}
+              />
+              {errors.total_price && (
+                <Text size="1" color="red">{errors.total_price.message}</Text>
+              )}
+            </Box>
+
+            {/* Paid Amount (Required) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Paid Amount <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <Controller
+                name="paid_amount"
+                control={control}
+                rules={{ required: 'Paid amount is required', min: 0 }}
+                render={({ field }) => (
+                  <TextField.Root
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={field.value}
+                    placeholder="Enter paid amount"
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  />
+                )}
+              />
+              {errors.paid_amount && (
+                <Text size="1" color="red">{errors.paid_amount.message}</Text>
+              )}
+            </Box>
+
+            {/* Transaction ID (Required) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Transaction ID <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <Controller
+                name="txn_id"
+                control={control}
+                rules={{ required: 'Transaction ID is required' }}
+                render={({ field }) => (
+                  <TextField.Root
+                    {...field}
+                    placeholder="Enter transaction ID"
+                  />
+                )}
+              />
+              {errors.txn_id && (
+                <Text size="1" color="red">{errors.txn_id.message}</Text>
+              )}
+            </Box>
+
+            {/* Transaction Reference (Optional) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Transaction Reference (Optional)
+              </Text>
+              <Controller
+                name="transaction"
+                control={control}
+                render={({ field }) => (
+                  <TextField.Root
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="Enter transaction reference (optional)"
+                  />
+                )}
+              />
+              {errors.transaction && (
+                <Text size="1" color="red">{errors.transaction.message}</Text>
+              )}
+            </Box>
+
+            {/* Transaction Status */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Transaction Status
+              </Text>
+              <Controller
+                name="transaction_status"
+                control={control}
+                render={({ field }) => (
+                  <Select.Root value={field.value} onValueChange={field.onChange}>
+                    <Select.Trigger placeholder="Select status" />
+                    <Select.Content>
+                      <Select.Item value="INITIATED">Initiated</Select.Item>
+                      <Select.Item value="SUCCESS">Success</Select.Item>
+                      <Select.Item value="FAILED">Failed</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                )}
+              />
+            </Box>
+
+            {/* Invoice Link (Optional) */}
+            <Box>
+              <Text as="label" size="2" weight="medium" mb="1">
+                Invoice Link (Optional)
+              </Text>
+              <Controller
+                name="invoice_link"
+                control={control}
+                render={({ field }) => (
+                  <TextField.Root
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="Enter invoice link"
+                  />
+                )}
+              />
+            </Box>
+
+            {/* Form Actions */}
+            <Flex gap="3" mt="4">
+              <Button
+                type="button"
+                variant="soft"
+                color="gray"
+                style={{ flex: 1 }}
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="solid"
+                style={{ flex: 1 }}
+              >
+                {initialData ? 'Update' : 'Create'}
+              </Button>
+            </Flex>
+          </Flex>
+        </form>
+      </Flex>
+    </Box>
+  )
 }
 
 export default AddBookingForm
