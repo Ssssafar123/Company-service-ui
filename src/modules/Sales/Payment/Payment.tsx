@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import type { RootState, AppDispatch } from '../../../store'
 
 import {
@@ -51,6 +52,7 @@ type ColumnConfig = {
 
 const Payment: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate()
   const { payments, ui } = useSelector((state: RootState) => state.payment)
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -62,7 +64,7 @@ const Payment: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogContent, setDialogContent] = useState<React.ReactNode>(null)
 
-  /* ================= FETCH PAYMENTS ================= */
+  /* ================= FETCH ================= */
 
   useEffect(() => {
     dispatch(fetchPayments())
@@ -106,6 +108,19 @@ const Payment: React.FC = () => {
     )
 
     setDialogOpen(true)
+  }
+
+  /* ================= EDIT ================= */
+
+  const handleEdit = (row: PaymentData) => {
+    const payment = payments.find((p) => p.id === row.id)
+    if (!payment) return
+
+    navigate('/dashboard/payment/add', {
+      state: {
+        paymentData: payment,
+      },
+    })
   }
 
   /* ================= DELETE ================= */
@@ -227,6 +242,10 @@ const Payment: React.FC = () => {
               View Details
             </DropdownMenu.Item>
 
+            <DropdownMenu.Item onClick={() => handleEdit(row)}>
+              Edit Payment
+            </DropdownMenu.Item>
+
             <DropdownMenu.Separator />
 
             <DropdownMenu.Item
@@ -245,6 +264,16 @@ const Payment: React.FC = () => {
 
   return (
     <Box p="4">
+      <Flex justify="between" align="center" mb="4">
+        <Text size="7" weight="bold">
+          Payments
+        </Text>
+
+        <Button onClick={() => navigate('/dashboard/payment/add')}>
+          + Add Payment
+        </Button>
+      </Flex>
+
       <TextField.Root
         placeholder="Search payments..."
         value={searchQuery}
