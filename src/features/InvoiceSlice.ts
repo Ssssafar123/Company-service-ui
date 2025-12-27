@@ -144,20 +144,39 @@ export const fetchInvoices = createAsyncThunk(
 
 export const fetchInvoicesByPage = createAsyncThunk(
   'invoice/fetchInvoicesByPage',
-  async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
+  async (
+    { page, limit }: { page: number; limit: number },
+    { rejectWithValue }
+  ) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/invoice/page?page=${page}&limit=${limit}`, {
-        credentials: 'include',
-      })
+      const res = await fetch(
+        `http://localhost:8000/api/invoice/page?page=${page}&limit=${limit}`,
+        { credentials: 'include' }
+      )
+
       if (!res.ok) throw new Error('Failed to fetch invoices')
+
       const response = await res.json()
+
+      // 🔴 NORMALIZE BACKEND RESPONSE
+      const list =
+        response.data || response.rows || []
+
+      const totalRecords =
+        response.totalRecords ??
+        response.total ??
+        response.count ??
+        list.length
+
       return {
-        data: response.data.map(mapInvoice),
-        page: response.page,
-        limit: response.limit,
-        totalPages: response.totalPages,
-        totalRecords: response.totalRecords
-      } as PaginationData
+        data: list.map(mapInvoice),
+        page: response.page ?? page,
+        limit: response.limit ?? limit,
+        totalPages:
+          response.totalPages ??
+          Math.ceil(totalRecords / limit),
+        totalRecords,
+      }
     } catch (err) {
       return rejectWithValue((err as Error).message)
     }
