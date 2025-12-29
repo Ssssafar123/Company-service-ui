@@ -16,9 +16,7 @@ import type { AppDispatch } from '../../../store'
 import { createPayment, type Payment } from '../../../features/PaymentSlice'
 import DynamicForm from '../../../components/dynamicComponents/Form'
 
-/* =======================
-   Section Header
-======================= */
+// Section Header
 const FormSectionHeader = ({ title }: { title: string }) => (
   <Box style={{ gridColumn: '1 / -1', marginBottom: 8, marginTop: 24 }}>
     <Text size="5" weight="bold">{title}</Text>
@@ -26,14 +24,10 @@ const FormSectionHeader = ({ title }: { title: string }) => (
   </Box>
 )
 
-/* =======================
-   Helpers
-======================= */
+// Helpers
 const isValidObjectId = (id: string) => /^[a-f\d]{24}$/i.test(id)
 
-/* =======================
-   Add Payment
-======================= */
+// Add Payment
 const AddPayment: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
@@ -44,10 +38,8 @@ const AddPayment: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  /* =======================
-     INITIAL VALUES
-  ======================= */
-  const initialValues = {
+  // INITIAL VALUES
+    const initialValues = {
     invoiceId: '',
     invoiceNumber: '',
     customer: '',
@@ -67,10 +59,8 @@ const AddPayment: React.FC = () => {
     remarks: '',
   }
 
-  /* =======================
-     SUBMIT
-  ======================= */
-  const handleSubmit = async (values: any) => {
+  // SUBMIT
+    const handleSubmit = async (values: any) => {
     setError(null)
 
     if (!isValidObjectId(values.invoiceId)) {
@@ -131,10 +121,8 @@ const AddPayment: React.FC = () => {
     }
   }
 
-  /* =======================
-     FORM FIELDS
-  ======================= */
-  const formFields: any[] = [
+  // FORM FIELDS
+    const formFields: any[] = [
     {
       name: '_header',
       label: '',
@@ -150,7 +138,7 @@ const AddPayment: React.FC = () => {
     { name: 'amount', label: 'Amount', type: 'number', required: true },
     { name: 'date', label: 'Payment Date', type: 'date', required: true },
 
-    // 🔥 CUSTOM PAYMENT MODE FIELD
+    // CUSTOM PAYMENT MODE FIELD
     {
       name: '_paymentMode',
       label: 'Payment Mode',
@@ -215,10 +203,8 @@ const AddPayment: React.FC = () => {
     { name: 'remarks', label: 'Remarks', type: 'textarea', fullWidth: true },
   ]
 
-  /* =======================
-     RENDER
-  ======================= */
-  return (
+  // RENDER
+    return (
     <Box p="4">
       <Flex justify="between" mb="4">
         <Text size="7" weight="bold">Add Payment</Text>

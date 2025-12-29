@@ -42,14 +42,14 @@ const AddBatchForm: React.FC<AddBatchFormProps> = ({
     },
   })
 
-  /** Fetch itineraries when drawer opens */
+  /* Fetch itineraries when drawer opens */
   useEffect(() => {
     if (isOpen) {
       dispatch(fetchItineraries())
     }
   }, [dispatch, isOpen])
 
-  /** Fill form when editing */
+  /* Fill form when editing */
   useEffect(() => {
     if (initialData) {
       reset({

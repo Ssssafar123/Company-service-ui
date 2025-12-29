@@ -22,9 +22,7 @@ import DynamicForm from '../../../components/dynamicComponents/Form'
 
 import { Plus, HelpCircle, Settings, Trash2 } from 'lucide-react'
 
-/* =======================
-   Section Header
-======================= */
+// Section Header
 const FormSectionHeader: React.FC<{ title: string }> = ({ title }) => (
   <Box style={{ gridColumn: '1 / -1', marginBottom: 8, marginTop: 24 }}>
     <Text size="5" weight="bold" style={{ color: 'var(--accent-12)' }}>
@@ -34,9 +32,7 @@ const FormSectionHeader: React.FC<{ title: string }> = ({ title }) => (
   </Box>
 )
 
-/* =======================
-   Line Items (UNCHANGED)
-======================= */
+// Line Items (UNCHANGED)
 type LineItem = {
   id: string
   item: string
@@ -115,9 +111,8 @@ const LineItems: React.FC<LineItemsProps> = ({ value = [], onChange }) => {
   )
 }
 
-/* =======================
-   Add Invoice
-======================= */
+
+// Add Invoice
 const AddInvoice: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const location = useLocation()
@@ -161,10 +156,8 @@ const AddInvoice: React.FC = () => {
     }
   }, [location.state])
 
-  /* =======================
-     SAVE (TYPE SAFE)
-  ======================= */
-  const handleSubmit = async (values: Record<string, any>) => {
+  // SAVE (TYPE SAFE)
+    const handleSubmit = async (values: Record<string, any>) => {
   const payload: Omit<Invoice, 'id'> = {
     customer: values.customer,
     billTo: values.billTo,
@@ -201,7 +194,7 @@ const AddInvoice: React.FC = () => {
     clientNote: values.clientNote ?? '',
     termsAndConditions: values.termsAndConditions ?? '',
 
-    // 🔴 REQUIRED NUMBERS (VERY IMPORTANT)
+    // REQUIRED NUMBERS (VERY IMPORTANT)
     amount:
       values.lineItems?.reduce(
         (sum: number, item: any) => sum + (item.amount || 0),
@@ -231,10 +224,8 @@ const AddInvoice: React.FC = () => {
 }
 
 
-  /* =======================
-     FORM FIELDS (FIXED)
-  ======================= */
-const formFields = [
+  // FORM FIELDS (FIXED)
+  const formFields = [
   {
     name: '_header_customer',
     label: '',

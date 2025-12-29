@@ -136,6 +136,31 @@ const ContentIcon = () => {
     )
 }
 
+
+const CustomersIcon = () => {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+      strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  )
+}
+
+const BatchesIcon = () => {
+  return (
+    <svg
+      width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+      strokeLinejoin="round">
+      <polygon points="12 2 22 8 12 14 2 8 12 2" />
+      <polyline points="2 12 12 18 22 12" />
+      <polyline points="2 16 12 22 22 16" />
+    </svg>
+  )
+}
+
 const WebsiteIcon = () => {
     return (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -201,8 +226,8 @@ const Layout = () => {
                                 { id: 'reviews', label: 'Reviews', path: '/dashboard/review', icon: <ReviewIcon /> },
                                 { id: 'bookings', label: 'Bookings', path: '/dashboard/bookings', icon: <BookingsIcon /> },
                                 { id: 'content', label: 'Content', path: '/dashboard/content', icon: <ContentIcon /> },
-                                { id: 'customers', label: 'Customers', path: '/dashboard/customers', }, 
-                                { id: 'batches', label: 'Batches', path: '/dashboard/batches',},
+                                { id: 'customers', label: 'Customers', path: '/dashboard/customers', icon: <CustomersIcon/> }, 
+                                { id: 'batches', label: 'Batches', path: '/dashboard/batches', icon: <BatchesIcon/>},
                             ],
                         },
                          {
