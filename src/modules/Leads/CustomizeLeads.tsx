@@ -1,6 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea } from '@radix-ui/themes'
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } from '@radix-ui/react-icons'
+import { useDispatch, useSelector } from 'react-redux'
+import type { RootState, AppDispatch } from '../../store'
+import { fetchCustomizeLeads } from '../../features/CustomizeLeadSlice'
+
 
 // Define Lead type
 interface Lead {
@@ -1814,3 +1818,4 @@ const Leads: React.FC = () => {
 }
 
 export default Leads
+
