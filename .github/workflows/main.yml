@@ -1,26 +1,33 @@
-name: CI Pipeline
+name: Deploy to Hostinger VPS
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - master
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build
+      - name: SSH into VPS and pull latest changes
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}     
+          VPS_USER: ${{ secrets.VPS_USER }}      # e.g., root
+          VPS_PASS: ${{ secrets.VPS_PASS }}      # your VPS password
+          PROJECT_DIR: ${{ secrets.PROJECT_DIR }} # e.g., /var/www/yourproject
+        run: |
+          sshpass -p "$VPS_PASS" ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
+            cd $PROJECT_DIR
+            git reset --hard
+            git pull origin master
+            npm install
+            npm run build
+            pm2 restart CRM-UI
+          "
