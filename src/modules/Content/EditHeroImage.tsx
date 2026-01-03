@@ -53,7 +53,7 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
         heroType: s.heroType || '',
         title: s.title || '',
         description: s.description || '',
-        bgPreview: s.bgImage || '',
+        bgPreview: s.bgImage || '', // ✅ Cloudinary URL will be stored here
         cards: s.cards?.length ? s.cards : ['', '', ''],
       }))
     )
@@ -285,7 +285,7 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
           <Flex gap="5" align="start" style={{ marginBottom: 12 }}>
             <Box flexGrow="2">
               <Text weight="medium" mb="1">
-                Background Image * (Will be compressed)
+                Background Image * {slide.bgPreview && slide.bgPreview.startsWith('http') ? '(Cloudinary URL)' : '(Will be compressed)'}
               </Text>
               <input
                 type="file"
@@ -304,6 +304,11 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
                     objectFit: 'cover',
                     borderRadius: 10,
                     marginTop: 8,
+                  }}
+                  onError={(e) => {
+                    console.error('Failed to load background image:', slide.bgPreview)
+                    // Hide broken image but keep the container
+                    e.currentTarget.style.display = 'none'
                   }}
                 />
               )}
@@ -333,6 +338,10 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
                       objectFit: 'cover',
                       borderRadius: 8,
                       marginTop: 6,
+                    }}
+                    onError={(e) => {
+                      console.error('Failed to load card image:', slide.cards[cardIndex])
+                      e.currentTarget.style.display = 'none'
                     }}
                   />
                 )}

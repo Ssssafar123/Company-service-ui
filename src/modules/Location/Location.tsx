@@ -253,7 +253,7 @@ const handleEdit = (location: LocationData) => {
 				}}>
 					<Flex direction="column" align="center" gap="3">
 						<Spinner />
-						<Text size="3" style={{ color: 'var(--accent-11)' }}>Loading categories...</Text>
+						<Text size="3" style={{ color: 'var(--accent-11)' }}>Loading location...</Text>
 					</Flex>
 				</Box>
 			)}
