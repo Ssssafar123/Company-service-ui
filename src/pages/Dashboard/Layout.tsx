@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar/Navbar'
 import Sidebar from '../../components/Sidebar/Sidebar'
@@ -175,72 +175,177 @@ const PaymentIcon = () => {
     )
 }
 
+const UserIcon = () => {
+    return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+        </svg>
+    )
+}
+
+const RoleIcon = () => {
+    return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+    )
+}
+
+// Module to menu item mapping
+const MODULE_MENU_MAP: Record<string, string[]> = {
+    'Dashboard': ['dashboard'],
+    'Itinerary': ['itinerary'],
+    'Category': ['category'],
+    'Location': ['location'],
+    'Reviews': ['reviews'],
+    'Bookings': ['bookings'],
+    'Content': ['content'],
+    'User Management': ['user'],
+    'Role Management': ['role'],
+    'Leads': ['all-leads'],
+    'Customize Leads': ['customize-leads'],
+    'Invoice': ['invoice'],
+    'Payment': ['payment'],
+    'Ledger': ['ledger'],
+    'Hotel': ['hotel'],
+    'Activities': ['activities'],
+    'Transport': ['transport'],
+    'Coordinator': ['coordinator'],
+    'Local Support': ['local-support'],
+    // Parent sections - if user has any child, they can see the parent
+    'Website': ['itinerary', 'category', 'location', 'reviews', 'bookings', 'content', 'user', 'role'],
+    'Sales': ['invoice', 'payment', 'ledger'],
+    'Library': ['hotel', 'activities', 'transport', 'coordinator', 'local-support'],
+}
+
 const Layout = () => {
     const [collapsed, setCollapsed] = useState(false)
     const navigate = useNavigate()
+    const [userModules, setUserModules] = useState<string[]>([])
+    const [userInfo, setUserInfo] = useState<any>(null)
+
+    useEffect(() => {
+        // Get user info and modules from localStorage
+        const storedUser = localStorage.getItem('user')
+        const storedModules = localStorage.getItem('userModules')
+        
+        if (storedUser) {
+            try {
+                setUserInfo(JSON.parse(storedUser))
+            } catch (e) {
+                console.error('Error parsing user info:', e)
+            }
+        }
+        
+        if (storedModules) {
+            try {
+                setUserModules(JSON.parse(storedModules))
+            } catch (e) {
+                console.error('Error parsing user modules:', e)
+            }
+        }
+    }, [])
+
+    // All menu items
+    const allMenuItems = useMemo(() => [
+        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
+        {
+            id: 'website',
+            label: 'Website',
+            icon: <WebsiteIcon />,
+            children: [
+                { id: 'itinerary', label: 'Itinerary', path: '/dashboard/itinerary', icon: <ItineraryIcon /> },
+                { id: 'category', label: 'Category', path: '/dashboard/category', icon: <CategoryIcon /> },
+                { id: 'location', label: 'Location', path: '/dashboard/location', icon: <LocationIcon /> },
+                { id: 'reviews', label: 'Reviews', path: '/dashboard/review', icon: <ReviewIcon /> },
+                { id: 'bookings', label: 'Bookings', path: '/dashboard/bookings', icon: <BookingsIcon /> },
+                { id: 'content', label: 'Content', path: '/dashboard/content', icon: <ContentIcon /> },
+                { id: 'user', label: 'Users', path: '/dashboard/user', icon: <UserIcon /> },
+                { id: 'role', label: 'Roles', path: '/dashboard/role', icon: <RoleIcon /> },
+            ],
+        },
+        {
+            id: 'leads',
+            label: 'Leads',
+            icon: <LeadsIcon />,
+            children: [
+                { id: 'all-leads', label: 'All Leads', path: '/dashboard/leads' },
+                { id: 'customize-leads', label: 'Customize Leads', path: '/dashboard/customize-leads' },
+            ],
+        },
+        {
+            id: "sales", 
+            label: "Sales", 
+            icon: <SalesIcon />,
+            children: [
+                { id: 'invoice', label: "Invoice", path: '/dashboard/invoice', icon: <InvoiceIcon /> },
+                { id: 'payment', label: "Payment", path: '/dashboard/payment', icon: <PaymentIcon /> },
+                { id: 'ledger', label: "Ledger", path: '/dashboard/ledger', icon: <LedgerIcon /> },
+            ]
+        },
+        {
+            id: 'library',
+            label: 'Library',
+            icon: <LibraryIcon />,
+            children: [
+                { id: 'hotel', label: 'Hotel', path: '/dashboard/library/hotel' },
+                { id: 'activities', label: 'Activities', path: '/dashboard/library/activities' },
+                { id: 'transport', label: 'Transport', path: '/dashboard/library/transport' },
+                { id: 'coordinator', label: 'Coordinator', path: '/dashboard/library/coordinator' },
+                { id: 'local-support', label: 'Local Support', path: '/dashboard/library/local-support' },
+            ],
+        },
+    ], [])
+
+    // Filter menu items based on user modules
+    const filteredMenuItems = useMemo(() => {
+        // If no modules, show all (for admin or if modules not set)
+        if (!userModules || userModules.length === 0) {
+            return allMenuItems
+        }
+
+        const hasAccess = (menuId: string): boolean => {
+            // Dashboard is always accessible
+            if (menuId === 'dashboard') return true
+            
+            // Check if any module grants access to this menu item
+            for (const [moduleName, menuIds] of Object.entries(MODULE_MENU_MAP)) {
+                if (userModules.includes(moduleName) && menuIds.includes(menuId)) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        return allMenuItems.map(item => {
+            // If item has children, filter children
+            if (item.children) {
+                const filteredChildren = item.children.filter(child => hasAccess(child.id))
+                // Only show parent if it has accessible children
+                if (filteredChildren.length > 0) {
+                    return { ...item, children: filteredChildren }
+                }
+                return null
+            }
+            // If item has no children, check direct access
+            return hasAccess(item.id) ? item : null
+        }).filter(Boolean) as typeof allMenuItems
+    }, [userModules, allMenuItems])
+
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', width: '100%', overflowX: 'hidden' }}>
             <Navbar onSidebarToggle={() => setCollapsed((s) => !s)} />
             <div style={{ display: 'flex', flex: 1, width: '100%', overflowX: 'hidden' }}>
                 <Sidebar
                     user={{
-                        name: 'Rohit Sharma',
-                        email: 'rohit.sharma@example.com',
-                        permissions: ['read', 'write', 'admin'],
-                        avatar: 'https://i.pravatar.cc/40?img=3',
+                        name: userInfo?.username || 'User',
+                        email: userInfo?.companyId || '',
                     }}
-                    menuItems={[
-                        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-                       
-                           {
-                            id: 'website',
-                            label: 'Website',
-                            icon: <WebsiteIcon />,
-                            children: [
-                                { id: 'itinerary', label: 'Itinerary', path: '/dashboard/itinerary', icon: <ItineraryIcon /> },
-                                { id: 'category', label: 'Category', path: '/dashboard/category', icon: <CategoryIcon /> },
-                                { id: 'location', label: 'Location', path: '/dashboard/location', icon: <LocationIcon /> },
-                                { id: 'reviews', label: 'Reviews', path: '/dashboard/review', icon: <ReviewIcon /> },
-                                { id: 'bookings', label: 'Bookings', path: '/dashboard/bookings', icon: <BookingsIcon /> },
-                                { id: 'content', label: 'Content', path: '/dashboard/content', icon: <ContentIcon /> },
-                            ],
-                        },
-                         {
-                            id: 'leads',
-                            label: 'Leads',
-                            icon: <LeadsIcon />,
-                            children: [
-                                { id: 'all-leads', label: 'All Leads', path: '/dashboard/leads' },
-                                { id: 'customize-leads', label: 'Customize Leads', path: '/dashboard/customize-leads' },
-                            ],
-                        },
-                        {
-                            id: "sales", 
-                            label: "Sales", 
-                            icon: <SalesIcon />,
-                            children: [
-                                { id: 'invoice', label: "Invoice", path: '/dashboard/invoice', icon: <InvoiceIcon /> },
-                                { id: 'payment', label: "Payment", path: '/dashboard/payment', icon: <PaymentIcon /> },
-                                { id: 'ledger', label: "Ledger", path: '/dashboard/ledger', icon: <LedgerIcon /> },
-                            ]
-                        },
-                        {
-                            id: 'library',
-                            label: 'Library',
-                            icon: <LibraryIcon />,
-                            children: [
-                                { id: 'hotel', label: 'Hotel', path: '/dashboard/library/hotel' },
-                                { id: 'activities', label: 'Activities', path: '/dashboard/library/activities' },
-                                { id: 'transport', label: 'Transport', path: '/dashboard/library/transport' },
-                                { id: 'coordinator', label: 'Coordinator', path: '/dashboard/library/coordinator' },
-                                { id: 'local-support', label: 'Local Support', path: '/dashboard/library/local-support' },
-                            ],
-                        },
-                     
-                       
-                        { id: 'home', label: 'Home', path: '/', icon: <HomeIcon /> },
-
-                    ]}
+                    menuItems={filteredMenuItems}
                     collapsed={collapsed}
                     onToggle={() => setCollapsed((s) => !s)}
                     onNavigate={(path) => navigate(path)}

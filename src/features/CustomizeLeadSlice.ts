@@ -1,9 +1,31 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface CustomField {
   fieldName: string
   fieldValue: any
   fieldType: 'text' | 'number' | 'date' | 'boolean' | 'select'
+}
+
+// Add Lead interface for populated data
+export interface Lead {
+  _id?: string
+  id?: string
+  name: string
+  badgeType: string
+  leadId: string
+  phone: string
+  email?: string
+  destination?: string
+  packageCode?: string
+  remarks?: string
+  status?: string
+  contacted?: string
+  assignedTo?: string
+  savedRemarks?: string[]
+  reminder?: Date | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export interface CustomizeLead {
@@ -16,6 +38,8 @@ export interface CustomizeLead {
   followUpDate?: string
   conversionProbability?: number
   customNotes?: string
+  // Add populated lead data (optional, for when leadId is populated)
+  lead?: Lead | null
 }
 
 interface CustomizeLeadState {
@@ -34,23 +58,38 @@ const initialState: CustomizeLeadState = {
   },
 }
 
-const mapCustomizeLead = (customizeLead: any): CustomizeLead => ({
-  id: customizeLead._id || customizeLead.id,
-  leadId: customizeLead.leadId || '',
-  customFields: customizeLead.customFields || [],
-  customStatus: customizeLead.customStatus,
-  customTags: customizeLead.customTags || [],
-  priority: customizeLead.priority || 'medium',
-  followUpDate: customizeLead.followUpDate,
-  conversionProbability: customizeLead.conversionProbability,
-  customNotes: customizeLead.customNotes,
-})
+const mapCustomizeLead = (customizeLead: any): CustomizeLead => {
+  // Handle populated leadId
+  const leadId = customizeLead.leadId?._id 
+    ? customizeLead.leadId._id.toString() 
+    : (customizeLead.leadId?.toString() || customizeLead.leadId || '')
+  
+  // Extract populated lead data if available
+  const lead = customizeLead.leadId && typeof customizeLead.leadId === 'object' && !customizeLead.leadId._id
+    ? null // If it's an object but no _id, it might be just the ID string
+    : (customizeLead.leadId && typeof customizeLead.leadId === 'object' && customizeLead.leadId._id
+      ? customizeLead.leadId
+      : null)
+  
+  return {
+    id: customizeLead._id || customizeLead.id,
+    leadId: leadId,
+    customFields: customizeLead.customFields || [],
+    customStatus: customizeLead.customStatus,
+    customTags: customizeLead.customTags || [],
+    priority: customizeLead.priority || 'medium',
+    followUpDate: customizeLead.followUpDate,
+    conversionProbability: customizeLead.conversionProbability,
+    customNotes: customizeLead.customNotes,
+    lead: lead // Now this is part of the interface
+  }
+}
 
 export const fetchCustomizeLeads = createAsyncThunk(
   'customizeLead/fetchCustomizeLeads',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/customizelead', {
+      const res = await fetch(getApiUrl('customizelead'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch customize leads')
@@ -66,7 +105,7 @@ export const createCustomizeLead = createAsyncThunk(
   'customizeLead/createCustomizeLead',
   async (customizeLead: Omit<CustomizeLead, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/customizelead', {
+      const res = await fetch(getApiUrl('customizelead'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -85,7 +124,7 @@ export const fetchCustomizeLeadById = createAsyncThunk(
   'customizeLead/fetchCustomizeLeadById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/customizelead/${id}`, {
+      const res = await fetch(getApiUrl(`customizelead/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch customize lead')
@@ -101,7 +140,7 @@ export const updateCustomizeLeadById = createAsyncThunk(
   'customizeLead/updateCustomizeLeadById',
   async ({ id, data }: { id: string; data: Partial<CustomizeLead> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/customizelead/${id}`, {
+      const res = await fetch(getApiUrl(`customizelead/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -123,7 +162,7 @@ export const deleteCustomizeLeadById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid customize lead ID')
       }
-      const res = await fetch(`http://localhost:8000/api/customizelead/${id}`, {
+      const res = await fetch(getApiUrl(`customizelead/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Itinerary {
   id: string
@@ -36,33 +37,68 @@ const initialState: ItineraryState = {
   },
 }
 
+// Helper function to calculate starting price from packages
+const calculateStartingPrice = (itinerary: any): number => {
+  // First, check if price is set and valid
+  if (itinerary.price && typeof itinerary.price === 'number' && itinerary.price > 0) {
+    return itinerary.price;
+  }
+  
+  // Calculate from basePackages if available
+  if (itinerary.packages && itinerary.packages.basePackages && Array.isArray(itinerary.packages.basePackages)) {
+    const basePackages = itinerary.packages.basePackages;
+    if (basePackages.length > 0) {
+      // Find minimum discounted_price from basePackages
+      const prices = basePackages
+        .map((pkg: any) => {
+          // Check for discounted_price first, then price
+          const discountedPrice = pkg.discounted_price || pkg.price || 0;
+          return typeof discountedPrice === 'number' && discountedPrice > 0 ? discountedPrice : null;
+        })
+        .filter((price: number | null): price is number => price !== null);
+      
+      if (prices.length > 0) {
+        return Math.min(...prices);
+      }
+    }
+  }
+  
+  // Fallback to 0 if no price found
+  return 0;
+};
+
 // Helper function to map _id to id
-const mapItinerary = (itinerary: any): Itinerary => ({
-  id: itinerary._id || itinerary.id,
-  name: itinerary.name || '',
-  city: itinerary.city || '',
-  description: itinerary.description || '',
-  duration: itinerary.duration || '',
-  price: itinerary.price || 0,
-  startDate: itinerary.startDate || '',
-  endDate: itinerary.endDate || '',
-  maxTravelers: itinerary.maxTravelers || 0,
-  availableSeats: itinerary.availableSeats || 0,
-  inclusions: itinerary.inclusions || [],
-  exclusions: itinerary.exclusions || [],
-  highlights: itinerary.highlights || [],
-  status: itinerary.status || 'inactive',
-  imageUrl: itinerary.brochureBanner || (itinerary.images && itinerary.images[0]) || '',
-  priceDisplay: itinerary.priceDisplay || `₹${itinerary.price?.toLocaleString('en-IN')}`,
-  trending: itinerary.trending || 'No',
-})
+const mapItinerary = (itinerary: any): Itinerary => {
+  // Calculate starting price from packages if price is not set
+  const calculatedPrice = calculateStartingPrice(itinerary);
+  
+  return {
+    id: itinerary._id || itinerary.id,
+    name: itinerary.name || '',
+    city: itinerary.city || '',
+    description: itinerary.description || '',
+    duration: itinerary.duration || '',
+    price: calculatedPrice, // Use calculated price
+    startDate: itinerary.startDate || '',
+    endDate: itinerary.endDate || '',
+    maxTravelers: itinerary.maxTravelers || 0,
+    availableSeats: itinerary.availableSeats || 0,
+    inclusions: itinerary.inclusions || [],
+    exclusions: itinerary.exclusions || [],
+    highlights: itinerary.highlights || [],
+    status: itinerary.status || 'inactive',
+    imageUrl: itinerary.brochureBanner || (itinerary.images && itinerary.images[0]) || '',
+    priceDisplay: itinerary.priceDisplay || (calculatedPrice > 0 ? `₹${calculatedPrice.toLocaleString('en-IN')}` : '₹0'),
+    trending: itinerary.trending || 'No',
+  }
+}
 
 // Fetch all itineraries
 export const fetchItineraries = createAsyncThunk(
   'itinerary/fetchItineraries',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/itinerary', {
+      const res = await fetch(getApiUrl('itinerary'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch itineraries')
@@ -77,34 +113,120 @@ export const fetchItineraries = createAsyncThunk(
 // Create new itinerary
 export const createItinerary = createAsyncThunk(
   'itinerary/createItinerary',
-  async (itinerary: Omit<Itinerary, 'id'>, { rejectWithValue }) => {
+  async (data: { 
+	payload: any; 
+	imageFiles?: File[]; 
+	brochureBannerFile?: File;
+	hotelImageFiles?: { hotelIndex: number, imageIndex: number, file: File }[];
+	dayImageFiles?: { dayIndex: number, imageIndex: number, file: File }[];
+	mealImageFiles?: { dayIndex: number, mealName: string, imageIndex: number, file: File }[];
+	stayImageFiles?: { dayIndex: number, stayName: string, imageIndex: number, file: File }[];
+}, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/itinerary', {
+      const formData = new FormData();
+      
+      // Append all payload fields to FormData
+      Object.keys(data.payload).forEach(key => {
+        const value = data.payload[key];
+        
+        // Skip image fields if we have files to upload - otherwise include URLs
+        if (key === 'images' && data.imageFiles && data.imageFiles.length > 0) {
+          return; // Skip URLs if we have files
+        }
+        if (key === 'brochureBanner' && data.brochureBannerFile) {
+          return; // Skip URL if we have file
+        }
+        
+        // Handle arrays and objects - stringify them
+        if (Array.isArray(value)) {
+          // For arrays, append each item or stringify if complex
+          if (value.length > 0 && typeof value[0] === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            value.forEach((item, index) => {
+              formData.append(`${key}[${index}]`, item);
+            });
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, value);
+        }
+      });
+      
+      // Append image files
+      if (data.imageFiles && data.imageFiles.length > 0) {
+        data.imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
+      }
+      
+      // Append brochure banner file
+      if (data.brochureBannerFile) {
+        formData.append('brochureBanner', data.brochureBannerFile);
+      }
+
+      // Append hotel images
+if (data.hotelImageFiles && data.hotelImageFiles.length > 0) {
+	data.hotelImageFiles.forEach(({ hotelIndex, imageIndex, file }) => {
+		formData.append(`hotelImages[${hotelIndex}][${imageIndex}]`, file);
+	});
+}
+
+// Append day images
+if (data.dayImageFiles && data.dayImageFiles.length > 0) {
+	data.dayImageFiles.forEach(({ dayIndex, imageIndex, file }) => {
+		formData.append(`dayImages[${dayIndex}][${imageIndex}]`, file);
+	});
+}
+
+// Append meal images
+if (data.mealImageFiles && data.mealImageFiles.length > 0) {
+	data.mealImageFiles.forEach(({ dayIndex, mealName, imageIndex, file }) => {
+		formData.append(`mealImages[${dayIndex}][${mealName}][${imageIndex}]`, file);
+	});
+}
+
+// Append stay images
+if (data.stayImageFiles && data.stayImageFiles.length > 0) {
+	data.stayImageFiles.forEach(({ dayIndex, stayName, imageIndex, file }) => {
+		formData.append(`stayImages[${dayIndex}][${stayName}][${imageIndex}]`, file);
+	});
+}
+      
+      const res = await fetch(getApiUrl('itinerary'), {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(itinerary),
+        // DON'T set Content-Type header - browser will set it with boundary
+        body: formData,
       })
-      if (!res.ok) throw new Error('Failed to create itinerary')
-      const data = await res.json()
-      return mapItinerary(data)
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to create itinerary');
+      }
+      const responseData = await res.json();
+      return mapItinerary(responseData);
     } catch (err) {
-      return rejectWithValue((err as Error).message)
+      return rejectWithValue((err as Error).message);
     }
   }
 )
 
-// Fetch itinerary by ID
+// Fetch itinerary by ID - returns full data for editing
 export const fetchItineraryById = createAsyncThunk(
   'itinerary/fetchItineraryById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/itinerary/${id}`, {
+      const res = await fetch(getApiUrl(`itinerary/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch itinerary')
       const data = await res.json()
-      return mapItinerary(data)
+      // Return full data with id mapped for consistency
+      return {
+        ...data,
+        id: data._id || data.id,
+      }
     } catch (err) {
       return rejectWithValue((err as Error).message)
     }
@@ -114,19 +236,107 @@ export const fetchItineraryById = createAsyncThunk(
 // Update itinerary by ID
 export const updateItineraryById = createAsyncThunk(
   'itinerary/updateItineraryById',
-  async ({ id, data }: { id: string; data: Partial<Itinerary> }, { rejectWithValue }) => {
+ async ({ 
+	id, 
+	data, 
+	imageFiles, 
+	brochureBannerFile,
+	hotelImageFiles,
+	dayImageFiles,
+	mealImageFiles,
+	stayImageFiles
+}: { 
+	id: string; 
+	data: Partial<Itinerary>;
+	imageFiles?: File[];
+	brochureBannerFile?: File;
+	hotelImageFiles?: { hotelIndex: number, imageIndex: number, file: File }[];
+	dayImageFiles?: { dayIndex: number, imageIndex: number, file: File }[];
+	mealImageFiles?: { dayIndex: number, mealName: string, imageIndex: number, file: File }[];
+	stayImageFiles?: { dayIndex: number, stayName: string, imageIndex: number, file: File }[];
+}, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/itinerary/${id}`, {
+      const formData = new FormData();
+      
+      // Append all data fields to FormData
+      Object.keys(data).forEach(key => {
+        const value = (data as any)[key];
+        
+        // Skip image fields - we'll append them as files separately
+        if (key === 'images' || key === 'brochureBanner') {
+          return;
+        }
+        
+        // Handle arrays and objects - stringify them
+        if (Array.isArray(value)) {
+          if (value.length > 0 && typeof value[0] === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            value.forEach((item, index) => {
+              formData.append(`${key}[${index}]`, item);
+            });
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, value);
+        }
+      });
+      
+      // Append image files
+      if (imageFiles && imageFiles.length > 0) {
+        imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
+      }
+      
+      // Append brochure banner file
+           // Append brochure banner file
+      if (brochureBannerFile) {
+        formData.append('brochureBanner', brochureBannerFile);
+      }
+
+      // Append hotel images
+      if (hotelImageFiles && hotelImageFiles.length > 0) {
+        hotelImageFiles.forEach(({ hotelIndex, imageIndex, file }) => {
+          formData.append(`hotelImages[${hotelIndex}][${imageIndex}]`, file);
+        });
+      }
+
+      // Append day images
+      if (dayImageFiles && dayImageFiles.length > 0) {
+        dayImageFiles.forEach(({ dayIndex, imageIndex, file }) => {
+          formData.append(`dayImages[${dayIndex}][${imageIndex}]`, file);
+        });
+      }
+
+      // Append meal images
+      if (mealImageFiles && mealImageFiles.length > 0) {
+        mealImageFiles.forEach(({ dayIndex, mealName, imageIndex, file }) => {
+          formData.append(`mealImages[${dayIndex}][${mealName}][${imageIndex}]`, file);
+        });
+      }
+
+      // Append stay images
+      if (stayImageFiles && stayImageFiles.length > 0) {
+        stayImageFiles.forEach(({ dayIndex, stayName, imageIndex, file }) => {
+          formData.append(`stayImages[${dayIndex}][${stayName}][${imageIndex}]`, file);
+        });
+      }
+      
+      const res = await fetch(getApiUrl(`itinerary/${id}`), {
         method: 'PUT',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: formData,
       })
-      if (!res.ok) throw new Error('Failed to update itinerary')
-      const responseData = await res.json()
-      return mapItinerary(responseData)
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to update itinerary');
+      }
+      const responseData = await res.json();
+      return mapItinerary(responseData);
     } catch (err) {
-      return rejectWithValue((err as Error).message)
+      return rejectWithValue((err as Error).message);
     }
   }
 )
@@ -139,7 +349,7 @@ export const deleteItineraryById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid itinerary ID')
       }
-      const res = await fetch(`http://localhost:8000/api/itinerary/${id}`, {
+      const res = await fetch(getApiUrl(`itinerary/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

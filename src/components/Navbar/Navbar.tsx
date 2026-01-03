@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Box, 
   Flex, 
@@ -9,6 +10,7 @@ import {
   TextField
 } from "@radix-ui/themes";
 import { useThemeToggle } from '../../ThemeProvider';
+import { getApiUrl } from '../../config/api';
 
 const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle }) => {
   const { isDark, toggle } = useThemeToggle();
@@ -184,6 +186,49 @@ const MobileMenuDropdown: React.FC = () => {
 
 // Avatar Dropdown using DropdownMenu (Proper Radix UI)
 const AvatarDropdown: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      // Call logout API endpoint to clear server-side session and cookie
+      try {
+        const response = await fetch(getApiUrl('login/logout'), {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          console.log('Logout endpoint returned error, proceeding with client-side cleanup');
+        }
+      } catch (err) {
+        // If logout endpoint doesn't exist, continue with client-side cleanup
+        console.log('Logout endpoint not available, proceeding with client-side logout');
+      }
+
+      // Clear all authentication-related data from localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('userModules');
+      localStorage.removeItem('token'); // Clear token if stored in localStorage
+
+      // Clear sessionStorage as well (if any token is stored there)
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('userModules');
+
+      // Redirect to login page
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, clear all storage and redirect
+      localStorage.removeItem('user');
+      localStorage.removeItem('userModules');
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('userModules');
+      navigate('/login');
+    }
+  };
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
@@ -211,7 +256,7 @@ const AvatarDropdown: React.FC = () => {
           </Flex>
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item color="red">
+        <DropdownMenu.Item color="red" onClick={handleLogout}>
           <Flex align="center" gap="2">
             <LogoutIcon size={14} />
             Logout

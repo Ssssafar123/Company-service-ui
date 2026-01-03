@@ -2,13 +2,24 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from '../../store'
+import { getImageUrl, getApiUrl } from '../../config/api'
 import {
     fetchItineraries,
+    fetchItineraryById,
     createItinerary,
     updateItineraryById,
     deleteItineraryById,
-    type Itinerary as ItineraryType,
 } from '../../features/ItinerarySlice'
+import {
+    fetchCategoryById,
+    updateCategoryById,
+    fetchCategories,
+} from '../../features/CategorySlice'
+import {
+    fetchLocationById,
+    updateLocationById,
+    fetchLocations,
+} from '../../features/LocationSlice'
 import {
     Box,
     Flex,
@@ -51,8 +62,6 @@ const Itinerary: React.FC = () => {
     
     // Get data from Redux store
     const itinerariesFromStore = useSelector((state: RootState) => state.itinerary.itineraries)
-    const loading = useSelector((state: RootState) => state.itinerary.ui.loading)
-    const error = useSelector((state: RootState) => state.itinerary.ui.error)
 
     const [searchQuery, setSearchQuery] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
@@ -90,10 +99,10 @@ const Itinerary: React.FC = () => {
     const itineraries: ItineraryData[] = useMemo(() => {
         return itinerariesFromStore.map((item) => ({
             id: item.id,
-            name: item.name, // Now it exists
-            city: item.city, // Now it exists
-            price: item.price,
-            priceDisplay: item.priceDisplay || `₹${item.price.toLocaleString('en-IN')}`,
+            name: item.name,
+            city: item.city,
+            price: item.price || 0, // Ensure price is always a number
+            priceDisplay: item.priceDisplay || (item.price > 0 ? `₹${item.price.toLocaleString('en-IN')}` : '₹0'),
             status: item.status === 'active' || item.status === 'Active' ? 'Active' : 'Inactive',
             trending: item.trending || 'No',
         }))
@@ -101,22 +110,33 @@ const Itinerary: React.FC = () => {
 
     const itemsPerPage = 10
 
-    const handleEdit = (itinerary: ItineraryData) => {
-        // Find the full itinerary from Redux store
-        const originalItinerary = itinerariesFromStore.find(i => i.id === itinerary.id)
-        
-        if (originalItinerary) {
-            // Pass the full itinerary object directly - let AddNewItinerary handle mapping safely
+    const handleEdit = async (itinerary: ItineraryData) => {
+        try {
+            // Fetch the full itinerary data from the API
+            const fullItinerary = await dispatch(fetchItineraryById(itinerary.id)).unwrap()
+            
+            // Navigate with the full itinerary data
             navigate('/dashboard/add-itinerary', {
                 state: { 
-                    itineraryData: originalItinerary
+                    itineraryData: fullItinerary
+                },
+            })
+        } catch (error) {
+            console.error('Error fetching itinerary:', error)
+            // Fallback: try to use Redux store data
+            const originalItinerary = itinerariesFromStore.find(i => i.id === itinerary.id)
+            if (originalItinerary) {
+                navigate('/dashboard/add-itinerary', {
+                    state: { 
+                        itineraryData: originalItinerary
                 },
             })
         } else {
-            // Fallback: pass what we have
+                // Last fallback: pass what we have
             navigate('/dashboard/add-itinerary', {
                 state: { itineraryData: itinerary },
             })
+            }
         }
     }
 
@@ -129,14 +149,329 @@ const Itinerary: React.FC = () => {
             color: 'blue',
             onConfirm: async () => {
                 try {
-                    const originalItinerary = itinerariesFromStore.find(i => i.id === itinerary.id)
-                    if (originalItinerary) {
-                        const { id, ...duplicateData } = originalItinerary
-                        await dispatch(createItinerary({
-                            ...duplicateData,
-                            name: `${duplicateData.name} (Copy)`,
-                        })).unwrap()
+                    // Fetch the full itinerary data from the API
+                    const fullItinerary = await dispatch(fetchItineraryById(itinerary.id)).unwrap()
+                    
+                    // Transform the full itinerary data to match createItinerary payload format
+                    const travelLocationValue = (fullItinerary as any).travelLocation;
+                    // Only include travelLocation if it's a valid ObjectId string, not null or empty
+                    const validTravelLocation = travelLocationValue && 
+                        travelLocationValue !== 'null' && 
+                        travelLocationValue !== null && 
+                        travelLocationValue !== '' 
+                        ? travelLocationValue 
+                        : undefined;
+                    
+                    const duplicatePayload: any = {
+                        name: `${fullItinerary.name || itinerary.name} (Copy)`,
+                        city: fullItinerary.city || '',
+                        description: fullItinerary.description || '',
+                        shortDescription: (fullItinerary as any).shortDescription || (fullItinerary as any).short_description || '',
+                        duration: fullItinerary.duration || '',
+                        price: fullItinerary.price || 0,
+                        status: (fullItinerary.status === 'active' || fullItinerary.status === 'Active' ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+                        trending: fullItinerary.trending || 'No',
+                        ...(validTravelLocation && { travelLocation: validTravelLocation }),
+                        categories: Array.isArray(fullItinerary.categories) 
+                            ? fullItinerary.categories.map((cat: any) => 
+                                typeof cat === 'object' && cat !== null ? (cat._id || cat.id) : cat
+                              ).filter((id: any) => id)
+                            : [],
+                        altitude: (fullItinerary as any).altitude || '',
+                        scenary: (fullItinerary as any).scenary || '',
+                        culturalSite: (fullItinerary as any).culturalSite || (fullItinerary as any).cultural_site || '',
+                        isCustomize: (fullItinerary as any).isCustomize || (fullItinerary as any).is_customize || 'not_specified',
+                        notes: (fullItinerary as any).notes || '',
+                        inclusions: Array.isArray(fullItinerary.inclusions) ? fullItinerary.inclusions : [],
+                        exclusions: Array.isArray(fullItinerary.exclusions) ? fullItinerary.exclusions : [],
+                        startDate: fullItinerary.startDate || new Date().toISOString(),
+                        endDate: fullItinerary.endDate || new Date().toISOString(),
+                        // Map daywise activities
+                        daywiseActivities: Array.isArray((fullItinerary as any).daywiseActivities) 
+                            ? (fullItinerary as any).daywiseActivities.map((activity: any) => ({
+                                day: activity.day || 0,
+                                title: activity.title || '',
+                                description: activity.description || '',
+                                activities: Array.isArray(activity.activities) ? activity.activities : [],
+                                meals: Array.isArray(activity.meals) 
+                                    ? activity.meals.map((meal: any) => typeof meal === 'string' ? meal : meal.name).filter(Boolean)
+                                    : [],
+                                accommodation: activity.accommodation || '',
+                            }))
+                            : [],
+                        // Map hotel details
+                        hotelDetails: Array.isArray((fullItinerary as any).hotelDetails) 
+                            ? (fullItinerary as any).hotelDetails.map((hotel: any) => ({
+                                hotelName: hotel.hotelName || hotel.name || '',
+                                stars: hotel.stars || '',
+                                reference: hotel.reference || '',
+                                checkIn: hotel.checkIn || '',
+                                checkOut: hotel.checkOut || '',
+                                nights: hotel.nights || 0,
+                            }))
+                            : [],
+                        // Map packages
+                        packages: (() => {
+                            const pkgData = (fullItinerary as any).packages || {};
+                            return {
+                                basePackages: Array.isArray(pkgData.basePackages) 
+                                    ? pkgData.basePackages.map((pkg: any) => ({
+                                        packageType: 'base',
+                                        name: pkg.name || '',
+                                        price: pkg.price || 0,
+                                        original_price: pkg.original_price || pkg.originalPrice || 0,
+                                        inclusions: pkg.inclusions || [],
+                                        exclusions: pkg.exclusions || [],
+                                    }))
+                                    : [],
+                                pickupPoint: Array.isArray(pkgData.pickupPoint) 
+                                    ? pkgData.pickupPoint.map((point: any) => ({
+                                        packageType: 'pickup',
+                                        name: point.name || '',
+                                        price: point.price || 0,
+                                    }))
+                                    : [],
+                                dropPoint: Array.isArray(pkgData.dropPoint) 
+                                    ? pkgData.dropPoint.map((point: any) => ({
+                                        packageType: 'drop',
+                                        name: point.name || '',
+                                        price: point.price || 0,
+                                    }))
+                                    : [],
+                            };
+                        })(),
+                        // Map batches
+                        batches: Array.isArray((fullItinerary as any).batches) 
+                            ? (fullItinerary as any).batches.map((batch: any) => ({
+                                batchName: batch.batchName || '',
+                                startDate: batch.startDate || batch.start_date || null,
+                                endDate: batch.endDate || batch.end_date || null,
+                                price: batch.price || batch.extra_amount || 0,
+                                availableSeats: batch.availableSeats || 0,
+                                bookedSeats: batch.bookedSeats || 0,
+                            }))
+                            : [],
+                        // Map SEO fields
+                        seoFields: (fullItinerary as any).seoFields || (fullItinerary as any).seo_fields || {},
+                        // Don't include images/brochureBanner in payload - we'll send them as files or URLs separately
+                    };
+
+                    // Helper function to convert image URL to File
+                    const urlToFile = async (url: string, filename: string): Promise<File | null> => {
+                        try {
+                            if (!url || url === '' || url.startsWith('blob:')) {
+                                console.log('Skipping invalid URL:', url);
+                                return null;
+                            }
+                            
+                            // Convert relative URLs to absolute
+                            let absoluteUrl = url;
+                            if (url.startsWith('/')) {
+                                absoluteUrl = getImageUrl(url);
+                            } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                                absoluteUrl = getImageUrl(`/${url}`);
+                            }
+                            
+                            console.log('Fetching image from:', absoluteUrl);
+                            const response = await fetch(absoluteUrl, {
+                                credentials: 'include',
+                                mode: 'cors',
+                            });
+                            
+                            if (!response.ok) {
+                                console.error('Failed to fetch image:', response.status, response.statusText);
+                                return null;
+                            }
+                            
+                            const blob = await response.blob();
+                            if (blob.size === 0) {
+                                console.error('Empty blob received');
+                                return null;
+                            }
+                            
+                            return new File([blob], filename, { type: blob.type || 'image/jpeg' });
+                        } catch (error) {
+                            console.error('Error converting URL to File:', url, error);
+                            return null;
+                        }
+                    };
+
+                    // Fetch and convert images - images are stored as Buffer in MongoDB
+                    // We need to fetch them from the backend image endpoints
+                    const imageFiles: File[] = [];
+                    const images = (fullItinerary as any).images || [];
+                    console.log('Original images array:', Array.isArray(images) ? images.length : 'not array');
+                    
+                    // If images exist (even as Buffer), fetch them from the backend endpoint
+                    // Try to fetch images from the itinerary's image endpoint
+                    if (Array.isArray(images) && images.length > 0) {
+                        for (let i = 0; i < images.length; i++) {
+                            try {
+                                // Construct URL to fetch image from backend
+                                const imageUrl = getImageUrl(`/api/itinerary/${itinerary.id}/image/${i}`);
+                                console.log(`Fetching image ${i} from:`, imageUrl);
+                                const file = await urlToFile(imageUrl, `image-${i}.jpg`);
+                                if (file) {
+                                    console.log(`Successfully converted image ${i} to file:`, file.name, file.size);
+                                    imageFiles.push(file);
+                                } else {
+                                    console.warn(`Failed to convert image ${i}`);
+                                }
+                            } catch (error) {
+                                console.warn(`Error fetching image ${i}:`, error);
+                            }
+                        }
+                    } else {
+                        // Try fetching from main image endpoint (index 0)
+                        try {
+                            const imageUrl = getImageUrl(`/api/itinerary/${itinerary.id}/image/0`);
+                            console.log('Trying main image endpoint:', imageUrl);
+                            const file = await urlToFile(imageUrl, 'image-0.jpg');
+                            if (file) imageFiles.push(file);
+                        } catch (error) {
+                            console.warn('Error fetching main image:', error);
+                        }
+                    }
+                    
+                    console.log('Total image files converted:', imageFiles.length);
+
+                    // Fetch and convert brochure banner
+                    let brochureBannerFile: File | undefined = undefined;
+                    const brochureBanner = (fullItinerary as any).brochureBanner || (fullItinerary as any).brochure_banner;
+                    if (brochureBanner && typeof brochureBanner === 'string') {
+                        const file = await urlToFile(brochureBanner, 'brochure-banner.jpg');
+                        if (file) brochureBannerFile = file;
+                    }
+
+                    // Fetch and convert hotel images
+                    const hotelImageFiles: { hotelIndex: number, imageIndex: number, file: File }[] = [];
+                    if (Array.isArray((fullItinerary as any).hotelDetails)) {
+                        for (let hotelIndex = 0; hotelIndex < (fullItinerary as any).hotelDetails.length; hotelIndex++) {
+                            const hotel = (fullItinerary as any).hotelDetails[hotelIndex];
+                            const hotelImages = hotel?.images || [];
+                            if (Array.isArray(hotelImages)) {
+                                for (let imageIndex = 0; imageIndex < hotelImages.length; imageIndex++) {
+                                    const imageUrl = hotelImages[imageIndex];
+                                    if (imageUrl && typeof imageUrl === 'string') {
+                                        const file = await urlToFile(imageUrl, `hotel-${hotelIndex}-${imageIndex}.jpg`);
+                                        if (file) hotelImageFiles.push({ hotelIndex, imageIndex, file });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Fetch and convert daywise activity images
+                    const dayImageFiles: { dayIndex: number, imageIndex: number, file: File }[] = [];
+                    const mealImageFiles: { dayIndex: number, mealName: string, imageIndex: number, file: File }[] = [];
+                    const stayImageFiles: { dayIndex: number, stayName: string, imageIndex: number, file: File }[] = [];
+                    
+                    if (Array.isArray((fullItinerary as any).daywiseActivities)) {
+                        for (let dayIndex = 0; dayIndex < (fullItinerary as any).daywiseActivities.length; dayIndex++) {
+                            const activity = (fullItinerary as any).daywiseActivities[dayIndex];
+                            
+                            // Day images
+                            const dayImages = activity?.images || [];
+                            if (Array.isArray(dayImages)) {
+                                for (let imageIndex = 0; imageIndex < dayImages.length; imageIndex++) {
+                                    const imageUrl = dayImages[imageIndex];
+                                    if (imageUrl && typeof imageUrl === 'string') {
+                                        const file = await urlToFile(imageUrl, `day-${dayIndex}-${imageIndex}.jpg`);
+                                        if (file) dayImageFiles.push({ dayIndex, imageIndex, file });
+                                    }
+                                }
+                            }
+                            
+                            // Meal images
+                            const meals = activity?.meals || [];
+                            if (Array.isArray(meals)) {
+                                for (const meal of meals) {
+                                    const mealName = typeof meal === 'string' ? meal : meal.name;
+                                    const mealImages = typeof meal === 'object' ? (meal.images || []) : [];
+                                    if (Array.isArray(mealImages)) {
+                                        for (let imageIndex = 0; imageIndex < mealImages.length; imageIndex++) {
+                                            const imageUrl = mealImages[imageIndex];
+                                            if (imageUrl && typeof imageUrl === 'string') {
+                                                const file = await urlToFile(imageUrl, `meal-${dayIndex}-${mealName}-${imageIndex}.jpg`);
+                                                if (file) mealImageFiles.push({ dayIndex, mealName, imageIndex, file });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Stay images
+                            const stays = activity?.stays || [];
+                            if (Array.isArray(stays)) {
+                                for (const stay of stays) {
+                                    const stayName = typeof stay === 'string' ? stay : stay.name;
+                                    const stayImages = typeof stay === 'object' ? (stay.images || []) : [];
+                                    if (Array.isArray(stayImages)) {
+                                        for (let imageIndex = 0; imageIndex < stayImages.length; imageIndex++) {
+                                            const imageUrl = stayImages[imageIndex];
+                                            if (imageUrl && typeof imageUrl === 'string') {
+                                                const file = await urlToFile(imageUrl, `stay-${dayIndex}-${stayName}-${imageIndex}.jpg`);
+                                                if (file) stayImageFiles.push({ dayIndex, stayName, imageIndex, file });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                        const newItinerary = await dispatch(
+                            createItinerary({
+                            payload: duplicatePayload,
+                            imageFiles: imageFiles.length > 0 ? imageFiles : undefined,
+                            brochureBannerFile: brochureBannerFile,
+                            hotelImageFiles: hotelImageFiles.length > 0 ? hotelImageFiles : undefined,
+                            dayImageFiles: dayImageFiles.length > 0 ? dayImageFiles : undefined,
+                            mealImageFiles: mealImageFiles.length > 0 ? mealImageFiles : undefined,
+                            stayImageFiles: stayImageFiles.length > 0 ? stayImageFiles : undefined,
+                            })
+                        ).unwrap()
                         
+                        const newItineraryId = newItinerary.id;
+                        
+                        // Update categories - add duplicate itinerary ID to each selected category
+                        const categoryIds = duplicatePayload.categories || [];
+                        for (const categoryId of categoryIds) {
+                            try {
+                                const category = await dispatch(fetchCategoryById(categoryId)).unwrap();
+                                const currentItineraries = category.itineraries || [];
+                                if (!currentItineraries.includes(newItineraryId)) {
+                                    await dispatch(updateCategoryById({
+                                        id: categoryId,
+                                        data: { itineraries: [...currentItineraries, newItineraryId] }
+                                    })).unwrap();
+                                }
+                            } catch (error) {
+                                console.error(`Error updating category ${categoryId}:`, error);
+                            }
+                        }
+                        
+                        // Update location - add duplicate itinerary ID to selected location
+                        if (validTravelLocation) {
+                            try {
+                                const location = await dispatch(fetchLocationById(validTravelLocation)).unwrap();
+                                const currentItineraries = location.itineraries || [];
+                                if (!currentItineraries.includes(newItineraryId)) {
+                                    await dispatch(updateLocationById({
+                                        id: validTravelLocation,
+                                        data: { itineraries: [...currentItineraries, newItineraryId] }
+                                    })).unwrap();
+                                }
+                            } catch (error) {
+                                console.error(`Error updating location ${validTravelLocation}:`, error);
+                            }
+                        }
+                        
+                        // Refresh the itinerary list, categories, and locations
+                        await dispatch(fetchItineraries())
+                        dispatch(fetchCategories())
+                        dispatch(fetchLocations())
+                    
                         setDialogOpen(false)
                         setDialogConfig({
                             title: 'Success',
@@ -146,8 +481,8 @@ const Itinerary: React.FC = () => {
                             onConfirm: () => setDialogOpen(false),
                         })
                         setDialogOpen(true)
-                    }
                 } catch (error: any) {
+                    console.error('Error duplicating itinerary:', error)
                     setDialogOpen(false)
                     setDialogConfig({
                         title: 'Error',
@@ -173,10 +508,14 @@ const Itinerary: React.FC = () => {
             color: 'blue',
             onConfirm: async () => {
                 try {
+                    // Send status as 'Active' or 'Inactive' (capitalized) to match backend expectations
                     await dispatch(updateItineraryById({
                         id: itinerary.id,
-                        data: { status: newStatus === 'Active' ? 'active' : 'inactive' }
+                        data: { status: newStatus as 'Active' | 'Inactive' }
                     })).unwrap()
+                    
+                    // Refresh the itinerary list to show updated status
+                    await dispatch(fetchItineraries())
                     
                     setDialogOpen(false)
                     setDialogConfig({
@@ -188,6 +527,7 @@ const Itinerary: React.FC = () => {
                     })
                     setDialogOpen(true)
                 } catch (error: any) {
+                    console.error('Error updating status:', error)
                     setDialogOpen(false)
                     setDialogConfig({
                         title: 'Error',
@@ -243,8 +583,13 @@ const Itinerary: React.FC = () => {
         try {
             await dispatch(updateItineraryById({
                 id,
-                data: { /* Add trending field to your Itinerary interface if needed */ }
+                data: { 
+                    trending: checked ? 'Yes' : 'No' // Send the trending field
+                }
             })).unwrap()
+            
+            // Refresh the list to show updated status
+            dispatch(fetchItineraries())
         } catch (error) {
             console.error('Failed to update trending status:', error)
         }

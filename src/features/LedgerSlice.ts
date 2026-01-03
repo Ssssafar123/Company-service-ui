@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Ledger {
   id: string
@@ -50,7 +51,7 @@ export const fetchLedgers = createAsyncThunk(
   'ledger/fetchLedgers',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/ledger', {
+      const res = await fetch(getApiUrl('ledger'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch ledgers')
@@ -66,7 +67,7 @@ export const createLedger = createAsyncThunk(
   'ledger/createLedger',
   async (ledger: Omit<Ledger, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/ledger', {
+      const res = await fetch(getApiUrl('ledger'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -85,7 +86,7 @@ export const fetchLedgerById = createAsyncThunk(
   'ledger/fetchLedgerById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/ledger/${id}`, {
+      const res = await fetch(getApiUrl(`ledger/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch ledger')
@@ -101,7 +102,7 @@ export const updateLedgerById = createAsyncThunk(
   'ledger/updateLedgerById',
   async ({ id, data }: { id: string; data: Partial<Ledger> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/ledger/${id}`, {
+      const res = await fetch(getApiUrl(`ledger/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -123,7 +124,7 @@ export const deleteLedgerById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid ledger ID')
       }
-      const res = await fetch(`http://localhost:8000/api/ledger/${id}`, {
+      const res = await fetch(getApiUrl(`ledger/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

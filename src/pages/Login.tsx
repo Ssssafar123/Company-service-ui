@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../config/api';
 import {
   Box,
   Card,
@@ -13,35 +15,49 @@ import {
 } from '@radix-ui/themes';
 
 const Login = () => {
- const [role, setRole] = useState<string>('');
-  const [companyId, setCompnayId] = useState<string>('');
+  const navigate = useNavigate();
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
     try {
-      const res = await fetch('http://localhost:8000/api/login', {
+      const res = await fetch(getApiUrl('login'), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyId, role })
+        body: JSON.stringify({ username, password })
       });
       
-      if (res.ok) {
-        setCompnayId('');
-        setRole('');
-        window.location.href = "/dashboard";
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        // Store user info and modules in localStorage
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          if (data.user.role && data.user.role.modules) {
+            localStorage.setItem('userModules', JSON.stringify(data.user.role.modules));
+          }
+        }
+        
+        setUsername('');
+        setPassword('');
+        navigate("/dashboard");
+      } else {
+        setError(data.message || 'Login failed. Please check your credentials.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      setError('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
-
-   
 
   return (
     <Container size="1" style={{ 
@@ -98,19 +114,36 @@ const Login = () => {
           </Flex>
         </Flex>
 
+        {/* Error Message */}
+        {error && (
+          <Box
+            style={{
+              padding: '12px 16px',
+              backgroundColor: 'var(--red-3)',
+              border: '1px solid var(--red-6)',
+              borderRadius: '8px',
+              marginBottom: '16px',
+            }}
+          >
+            <Text size="2" style={{ color: 'var(--red-11)' }}>
+              {error}
+            </Text>
+          </Box>
+        )}
+
         {/* Login Form */}
         <form onSubmit={handleLogin}>
           <Flex direction="column" gap="4">
             {/* Username Field */}
             <Flex direction="column" gap="2">
               <Text as="label" size="2" weight="medium" style={{ color: 'var(--accent-12)' }}>
-               Company ID
+                Username *
               </Text>
               <TextField.Root
                 size="3"
-                placeholder="Enter your Company ID"
-                value={companyId}
-                onChange={(e) => setCompnayId(e.target.value)}
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 style={{ 
                   padding: '12px 16px',
@@ -123,17 +156,17 @@ const Login = () => {
               </TextField.Root>
             </Flex>
 
-            {/* Email Field */}
+            {/* Password Field */}
             <Flex direction="column" gap="2">
               <Text as="label" size="2" weight="medium" style={{ color: 'var(--accent-12)' }}>
-                Role
+                Password *
               </Text>
               <TextField.Root
                 size="3"
-                type="text"
-                placeholder="Enter your Role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{ 
                   padding: '12px 16px',
@@ -141,7 +174,7 @@ const Login = () => {
                 }}
               >
                 <TextField.Slot>
-                  <UserIcon />
+                  <LockIcon />
                 </TextField.Slot>
               </TextField.Root>
             </Flex>
@@ -149,7 +182,7 @@ const Login = () => {
             {/* Forgot Password */}
             <Flex justify="end" align="center">
               <Link size="2" style={{ color: 'var(--accent-11)', textDecoration: 'none' }}>
-                Forgot Company ID?
+                Forgot Password?
               </Link>
             </Flex>
 
@@ -165,7 +198,8 @@ const Login = () => {
                 fontSize: '14px',
                 fontWeight: '600',
                 background: isLoading ? 'var(--accent-8)' : 'var(--accent-9)',
-                cursor: isLoading ? 'not-allowed' : 'pointer'
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                marginTop: '8px'
               }}
             >
               {isLoading ? (
@@ -217,10 +251,10 @@ const UserIcon = () => (
   </svg>
 );
 
-const EmailIcon = () => (
+const LockIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M2 4L8 8L14 4" stroke="var(--accent-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <rect x="2" y="3" width="12" height="10" rx="2" stroke="var(--accent-11)" strokeWidth="1.5"/>
+    <rect x="3" y="7" width="10" height="8" rx="2" stroke="var(--accent-11)" strokeWidth="1.5"/>
+    <path d="M5 7V5C5 3.34315 6.34315 2 8 2C9.65685 2 11 3.34315 11 5V7" stroke="var(--accent-11)" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 );
 

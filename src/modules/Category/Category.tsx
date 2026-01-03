@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from '../../store'
+import { getImageUrl } from '../../config/api'
 import {
 	fetchCategories,
 	createCategory,
@@ -59,13 +60,13 @@ const Category: React.FC = () => {
 		dispatch(fetchCategories())
 	}, [dispatch])
 
-	// Map Redux data to local format
+
 	useEffect(() => {
 		const mappedCategories = categoriesFromStore.map((item) => ({
 			id: item.id,
 			name: item.name,
 			image: 'binary', // Always use binary endpoint
-			tripCount: item.tripCount || 0,
+			tripCount: (item.itineraries?.length || 0),
 			order: item.order || 0,
 		}))
 		setCategories(mappedCategories)
@@ -375,7 +376,7 @@ const Category: React.FC = () => {
 							}}
 						>
 							<img
-								src={`http://localhost:8000/api/category/${category.id}/image?t=${Date.now()}`}
+								src={getImageUrl(`/api/category/${category.id}/image?t=${Date.now()}`)}
 								alt={category.name}
 								style={{
 									width: '100%',

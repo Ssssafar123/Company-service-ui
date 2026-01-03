@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface LocalSupport {
   id: string
@@ -78,7 +79,7 @@ export const fetchLocalSupports = createAsyncThunk(
   'localSupport/fetchLocalSupports',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/localsupport', {
+      const res = await fetch(getApiUrl('localsupport'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch local supports')
@@ -94,7 +95,7 @@ export const fetchLocalSupportsByPage = createAsyncThunk(
   'localSupport/fetchLocalSupportsByPage',
   async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/localsupport/paginate?page=${page}&limit=${limit}`, {
+      const res = await fetch(getApiUrl(`localsupport/paginate?page=${page}&limit=${limit}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch local supports')
@@ -116,7 +117,7 @@ export const createLocalSupport = createAsyncThunk(
   'localSupport/createLocalSupport',
   async (localSupport: Omit<LocalSupport, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/localsupport', {
+      const res = await fetch(getApiUrl('localsupport'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -135,7 +136,7 @@ export const fetchLocalSupportById = createAsyncThunk(
   'localSupport/fetchLocalSupportById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/localsupport/${id}`, {
+      const res = await fetch(getApiUrl(`localsupport/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch local support')
@@ -151,7 +152,7 @@ export const updateLocalSupportById = createAsyncThunk(
   'localSupport/updateLocalSupportById',
   async ({ id, data }: { id: string; data: Partial<LocalSupport> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/localsupport/${id}`, {
+      const res = await fetch(getApiUrl(`localsupport/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -173,7 +174,7 @@ export const deleteLocalSupportById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid local support ID')
       }
-      const res = await fetch(`http://localhost:8000/api/localsupport/${id}`, {
+      const res = await fetch(getApiUrl(`localsupport/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

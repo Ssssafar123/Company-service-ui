@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Lead {
   id: string
@@ -90,7 +91,7 @@ export const fetchLeads = createAsyncThunk(
   'lead/fetchLeads',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/lead', {
+      const res = await fetch(getApiUrl('lead'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch leads')
@@ -107,7 +108,7 @@ export const fetchLeadsByPage = createAsyncThunk(
   'lead/fetchLeadsByPage',
   async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/lead/paginate?page=${page}&limit=${limit}`, {
+      const res = await fetch(getApiUrl(`lead/paginate?page=${page}&limit=${limit}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch leads')
@@ -130,7 +131,7 @@ export const createLead = createAsyncThunk(
   'lead/createLead',
   async (lead: Omit<Lead, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/lead', {
+      const res = await fetch(getApiUrl('lead'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -150,7 +151,7 @@ export const fetchLeadById = createAsyncThunk(
   'lead/fetchLeadById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/lead/${id}`, {
+      const res = await fetch(getApiUrl(`lead/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch lead')
@@ -167,7 +168,7 @@ export const updateLeadById = createAsyncThunk(
   'lead/updateLeadById',
   async ({ id, data }: { id: string; data: Partial<Lead> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/lead/${id}`, {
+      const res = await fetch(getApiUrl(`lead/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -190,7 +191,7 @@ export const deleteLeadById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid lead ID')
       }
-      const res = await fetch(`http://localhost:8000/api/lead/${id}`, {
+      const res = await fetch(getApiUrl(`lead/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

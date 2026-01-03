@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface PriceRange {
   min?: number
@@ -74,7 +75,7 @@ export const fetchHotels = createAsyncThunk(
   'hotel/fetchHotels',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/hotel', {
+      const res = await fetch(getApiUrl('hotel'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch hotels')
@@ -90,7 +91,7 @@ export const createHotel = createAsyncThunk(
   'hotel/createHotel',
   async (hotel: Omit<Hotel, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/hotel', {
+      const res = await fetch(getApiUrl('hotel'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -109,7 +110,7 @@ export const fetchHotelById = createAsyncThunk(
   'hotel/fetchHotelById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/hotel/${id}`, {
+      const res = await fetch(getApiUrl(`hotel/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch hotel')
@@ -125,7 +126,7 @@ export const updateHotelById = createAsyncThunk(
   'hotel/updateHotelById',
   async ({ id, data }: { id: string; data: Partial<Hotel> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/hotel/${id}`, {
+      const res = await fetch(getApiUrl(`hotel/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -147,7 +148,7 @@ export const deleteHotelById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid hotel ID')
       }
-      const res = await fetch(`http://localhost:8000/api/hotel/${id}`, {
+      const res = await fetch(getApiUrl(`hotel/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

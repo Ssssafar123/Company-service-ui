@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { Box, Flex, Button, Text } from '@radix-ui/themes'
 
 type ImageUploadProps = {
@@ -9,12 +9,18 @@ type ImageUploadProps = {
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, error }) => {
+	const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({})
+
 	const handleFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) {
 			const newImages = [...images]
 			newImages[index] = file
 			onChange(newImages)
+		}
+		// Reset the input value so the same file can be selected again
+		if (e.target) {
+			e.target.value = ''
 		}
 	}
 
@@ -23,7 +29,20 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 	}
 
 	const removeImage = (index: number) => {
-		onChange(images.filter((_, i) => i !== index))
+		const newImages = images.filter((_, i) => i !== index)
+		onChange(newImages)
+		// Clear the ref for removed index
+		delete fileInputRefs.current[index]
+	}
+
+	const getFileDisplayName = (image: File | string): string => {
+		if (typeof image === 'string') {
+			return image ? 'Uploaded' : 'No file selected'
+		}
+		if (image instanceof File) {
+			return image.name
+		}
+		return 'No file selected'
 	}
 
 	return (
@@ -52,6 +71,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 							<input
 								type="file"
 								id={`image-upload-${index}`}
+								ref={(el) => {
+									fileInputRefs.current[index] = el
+								}}
 								accept="image/*"
 								style={{ display: 'none' }}
 								onChange={(e) => handleFileChange(index, e)}
@@ -62,18 +84,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 									variant="soft"
 									size="2"
 									onClick={() => {
-										const input = document.getElementById(`image-upload-${index}`)
-										input?.click()
+										const input = fileInputRefs.current[index] || document.getElementById(`image-upload-${index}`) as HTMLInputElement
+										if (input) {
+											input.click()
+										}
 									}}
 								>
 									{typeof image === 'string' && image ? 'Change Image' : 'Browse...'}
 								</Button>
 								<Text size="2" style={{ color: 'var(--accent-11)' }}>
-									{typeof image === 'string' && image
-										? 'Uploaded'
-										: image instanceof File
-											? image.name
-											: 'No file selected'}
+									{getFileDisplayName(image)}
 								</Text>
 								{images.length > 1 && (
 									<Button

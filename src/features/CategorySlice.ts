@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface SEOFields {
   index_status?: 'index' | 'notindex'
@@ -56,7 +57,7 @@ export const fetchCategories = createAsyncThunk(
   'category/fetchCategories',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/category', {
+      const res = await fetch(getApiUrl('category'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch categories')
@@ -103,7 +104,7 @@ export const createCategory = createAsyncThunk(
         })
       }
       
-      const res = await fetch('http://localhost:8000/api/category', {
+      const res = await fetch(getApiUrl('category'), {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -121,7 +122,7 @@ export const fetchCategoryById = createAsyncThunk(
   'category/fetchCategoryById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/category/${id}`, {
+      const res = await fetch(getApiUrl(`category/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch category')
@@ -168,7 +169,7 @@ export const updateCategoryById = createAsyncThunk(
         })
       }
       
-      const res = await fetch(`http://localhost:8000/api/category/${id}`, {
+      const res = await fetch(getApiUrl(`category/${id}`), {
         method: 'PUT',
         credentials: 'include',
         body: formData,
@@ -189,7 +190,7 @@ export const deleteCategoryById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid category ID')
       }
-      const res = await fetch(`http://localhost:8000/api/category/${id}`, {
+      const res = await fetch(getApiUrl(`category/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })
