@@ -2,13 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from '../../store'
-import { getImageUrl } from '../../config/api'
 import {
 	fetchLocations,
-	createLocation,
 	updateLocationById,
 	deleteLocationById,
-	type Location as LocationType,
 } from '../../features/LocationSlice'
 import {
 	Box,
@@ -36,8 +33,7 @@ const Location: React.FC = () => {
 	
 	// Get data from Redux store
 	const locationsFromStore = useSelector((state: RootState) => state.location.locations)
-	const loading = useSelector((state: RootState) => state.location.ui.loading)
-	const error = useSelector((state: RootState) => state.location.ui.error)
+	const isLoading = useSelector((state: RootState) => state.location.ui.loading)
 
 	const [searchQuery, setSearchQuery] = useState('')
 	const [locations, setLocations] = useState<LocationData[]>([])
@@ -65,7 +61,8 @@ const Location: React.FC = () => {
 		const mappedLocations = locationsFromStore.map((item) => ({
 			id: item.id,
 			name: item.name,
-			image: 'binary',
+			// Use the actual image URL from Cloudinary (string) or empty string if not available
+			image: item.image || '',
 			tripCount: item.itineraries?.length || 0,
 			order: item.order || 0,
 		}))
@@ -240,7 +237,27 @@ const handleEdit = (location: LocationData) => {
 	}
 
 	return (
-		<Box style={{ padding: '24px' }}>
+		<Box style={{ padding: '24px', position: 'relative' }}>
+			{isLoading && (
+				<Box style={{ 
+					position: 'absolute', 
+					top: 0, 
+					left: 0, 
+					right: 0, 
+					bottom: 0, 
+					background: 'rgba(255, 255, 255, 0.8)', 
+					zIndex: 1000, 
+					display: 'flex', 
+					alignItems: 'center', 
+					justifyContent: 'center' 
+				}}>
+					<Flex direction="column" align="center" gap="3">
+						<Spinner />
+						<Text size="3" style={{ color: 'var(--accent-11)' }}>Loading categories...</Text>
+					</Flex>
+				</Box>
+			)}
+
 			<Text
 				size="7"
 				weight="bold"
@@ -387,23 +404,40 @@ const handleEdit = (location: LocationData) => {
 								borderBottomRightRadius: '10px',
 							}}
 						>
-							<img
-								src={getImageUrl(`/api/common/${location.id}/image?t=${Date.now()}`)}
-								alt={location.name}
-								style={{
-									width: '100%',
-									height: '100%',
-									objectFit: 'cover',
-									pointerEvents: 'none',
-								}}
-								onError={(e) => {
-									const target = e.target as HTMLImageElement
-									// Prevent infinite error loop
-									if (!target.src.includes('data:image')) {
-										target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200"%3E%3Crect fill="%23ddd" width="400" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E'
-									}
-								}}
-							/>
+							{location.image ? (
+								<img
+									src={location.image}
+									alt={location.name}
+									style={{
+										width: '100%',
+										height: '100%',
+										objectFit: 'cover',
+										pointerEvents: 'none',
+									}}
+									onError={(e) => {
+										const target = e.target as HTMLImageElement
+										// Prevent infinite error loop
+										if (!target.src.includes('data:image')) {
+											target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200"%3E%3Crect fill="%23ddd" width="400" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E'
+										}
+									}}
+								/>
+							) : (
+								<Box
+									style={{
+										width: '100%',
+										height: '100%',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										backgroundColor: 'var(--accent-3)',
+									}}
+								>
+									<Text size="2" style={{ color: 'var(--accent-11)' }}>
+										No Image
+									</Text>
+								</Box>
+							)}
 						</Box>
 
 						<Box style={{ padding: '16px' }}>
@@ -540,5 +574,15 @@ const handleEdit = (location: LocationData) => {
 		</Box>
 	)
 }
+
+const Spinner = () => (
+	<svg width="32" height="32" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: 'spin 1s linear infinite' }}>
+		<style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+		<path d="M8 2V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+		<path d="M8 11V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+		<path d="M3 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+		<path d="M10 8H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+	</svg>
+);
 
 export default Location

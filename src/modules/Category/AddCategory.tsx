@@ -33,8 +33,10 @@ const AddCategory: React.FC = () => {
                 category_name: categoryData.name || '',
                 short_description: categoryData.short_description || '',
                 long_description: categoryData.long_description || '',
-                feature_images: categoryData.feature_images && categoryData.feature_images.length > 0 
-                    ? categoryData.feature_images 
+                // Handle image: if it's a URL string (from Cloudinary), wrap it in array
+                // The ImageUpload component will display it as a preview
+                image: categoryData.image && typeof categoryData.image === 'string' 
+                    ? [categoryData.image] 
                     : (categoryData.image ? [categoryData.image] : ['']),
                 seo_fields: categoryData.seo_fields || null,
             }
@@ -43,17 +45,43 @@ const AddCategory: React.FC = () => {
         } else {
             setIsEditMode(false)
             setInitialValues({
-                feature_images: [''],
+                image: [''],
             })
         }
     }, [location.state])
 
     const handleSubmit = async (values: Record<string, any>) => {
-        // Extract File objects from feature_images
-        let featureImageFiles: File[] = [];
-        if (Array.isArray(values.feature_images)) {
-            featureImageFiles = values.feature_images.filter((img: any) => img instanceof File);
+        // Extract File object from image (single image)
+        // Only send imageFile if there's actually a File object (not just a URL string)
+        let imageFile: File | undefined;
+        let imageRemoved: boolean = false;
+        
+        if (Array.isArray(values.image)) {
+            // Find the first File object in the array (if user uploaded a new image)
+            const fileImage = values.image.find((img: any) => img instanceof File);
+            imageFile = fileImage;
+            
+            // Check if image was removed: no File object and no valid URL string
+            // Valid image = File object OR non-empty URL string
+            const hasValidImage = fileImage || values.image.some((img: any) => 
+                typeof img === 'string' && img && img !== '' && img !== 'null' && img !== 'undefined'
+            );
+            
+            // In edit mode, if there was originally an image but now there's no valid image,
+            // the user removed it. In create mode, empty is normal (no image yet).
+            if (isEditMode && !hasValidImage) {
+                // User removed the image (array is empty or contains only empty strings)
+                imageRemoved = true;
+            }
+        } else if (values.image instanceof File) {
+            imageFile = values.image;
+        } else if (isEditMode && (!values.image || values.image === '' || values.image === 'null' || values.image === 'undefined')) {
+            // In edit mode, if image is explicitly null/empty (not array), it was removed
+            imageRemoved = true;
         }
+        
+        // If imageFile is undefined and imageRemoved is false, backend will keep existing image
+        // If imageRemoved is true, backend will remove the image
 
         if (isEditMode) {
             // Update category
@@ -67,9 +95,9 @@ const AddCategory: React.FC = () => {
                         long_description: values.long_description,
                         seo_fields: values.seo_fields,
                         status: 'active',
-                        imageFile: featureImageFiles[0],
-                        featureImageFiles: featureImageFiles,
-                    }
+                        imageFile: imageFile,
+                        imageRemoved: imageRemoved,
+                    } as any
                 })).unwrap()
                 setDialogConfig({
                     title: 'Success',
@@ -100,8 +128,7 @@ const AddCategory: React.FC = () => {
                     seo_fields: values.seo_fields,
                     status: 'active',
                     image: '',
-                    imageFile: featureImageFiles[0],
-                    featureImageFiles: featureImageFiles,
+                    imageFile: imageFile,
                 })).unwrap()
                 setDialogConfig({
                     title: 'Success',
@@ -167,8 +194,9 @@ const AddCategory: React.FC = () => {
         },
         {
             type: 'file' as const,
-            name: 'feature_images',
-            label: 'Feature Image',
+            name: 'image',
+            label: 'Image',
+            singleImage: true,
         },
         {
             type: 'custom' as const,

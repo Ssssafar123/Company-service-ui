@@ -27,6 +27,7 @@ type Field = {
   placeholder?: string;
   options?: string[] | { value: string; label: string }[];
   fullWidth?: boolean;
+  singleImage?: boolean;
   customRender?: (value: any, onChange: (value: any) => void) => React.ReactNode;
 };
 
@@ -120,6 +121,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               : (formValues[field.name] ? [formValues[field.name]] : [""])}
             onChange={(images) => handleChange(field.name, images)}
             label={field.label}
+            singleImage={field.singleImage}
           />
         );
 

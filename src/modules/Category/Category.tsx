@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from '../../store'
-import { getImageUrl } from '../../config/api'
 import {
 	fetchCategories,
 	createCategory,
@@ -65,7 +64,7 @@ const Category: React.FC = () => {
 		const mappedCategories = categoriesFromStore.map((item) => ({
 			id: item.id,
 			name: item.name,
-			image: 'binary', // Always use binary endpoint
+			image: item.image, // Always use binary endpoint
 			tripCount: (item.itineraries?.length || 0),
 			order: item.order || 0,
 		}))
@@ -228,7 +227,27 @@ const Category: React.FC = () => {
 	}
 
 	return (
-		<Box style={{ padding: '24px' }}>
+		<Box style={{ padding: '24px', position: 'relative' }}>
+			{loading && (
+				<Box style={{ 
+					position: 'absolute', 
+					top: 0, 
+					left: 0, 
+					right: 0, 
+					bottom: 0, 
+					background: 'rgba(255, 255, 255, 0.8)', 
+					zIndex: 1000, 
+					display: 'flex', 
+					alignItems: 'center', 
+					justifyContent: 'center' 
+				}}>
+					<Flex direction="column" align="center" gap="3">
+						<Spinner />
+						<Text size="3" style={{ color: 'var(--accent-11)' }}>Loading categories...</Text>
+					</Flex>
+				</Box>
+			)}
+
 			<Text
 				size="7"
 				weight="bold"
@@ -376,7 +395,7 @@ const Category: React.FC = () => {
 							}}
 						>
 							<img
-								src={getImageUrl(`/api/common/${category.id}/image?t=${Date.now()}`)}
+								src={category.image}
 								alt={category.name}
 								style={{
 									width: '100%',
@@ -525,5 +544,15 @@ const Category: React.FC = () => {
 		</Box>
 	)
 }
+
+const Spinner = () => (
+	<svg width="32" height="32" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: 'spin 1s linear infinite' }}>
+		<style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+		<path d="M8 2V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+		<path d="M8 11V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+		<path d="M3 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+		<path d="M10 8H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+	</svg>
+);
 
 export default Category
