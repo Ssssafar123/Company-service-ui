@@ -18,7 +18,7 @@ jobs:
 
       - name: SSH into VPS and pull latest changes
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}     
+          VPS_HOST: ${{ secrets.VPS_HOST }}     # eg
           VPS_USER: ${{ secrets.VPS_USER }}      # e.g., root
           VPS_PASS: ${{ secrets.VPS_PASS }}      # your VPS password
           PROJECT_DIR: ${{ secrets.PROJECT_DIR }} # e.g., /var/www/yourproject
