@@ -44,11 +44,11 @@ const AddLocation: React.FC = () => {
                 location_name: locationData.name || '',
                 short_description: locationData.short_description || locationData.shortDescription || '',
                 long_description: locationData.long_description || locationData.longDescription || '',
-                feature_images: (locationData.feature_images && locationData.feature_images.length > 0)
-                    ? locationData.feature_images 
-                    : (locationData.images && locationData.images.length > 0)
-                        ? locationData.images
-                        : (locationData.image ? [locationData.image] : ['']),
+                // Handle image: if it's a URL string (from Cloudinary), wrap it in array
+                // The ImageUpload component will display it as a preview
+                image: locationData.image && typeof locationData.image === 'string' 
+                    ? [locationData.image] 
+                    : (locationData.image ? [locationData.image] : ['']),
                 itineraries: locationData.itineraries || locationData.itineraryIds || [],
                 seo_fields: locationData.seo_fields || locationData.seoData || null,
             }
@@ -57,7 +57,7 @@ const AddLocation: React.FC = () => {
         } else {
             setIsEditMode(false)
             setInitialValues({
-                feature_images: [''],
+                image: [''],
                 itineraries: [],
                 seo_fields: null,
             })
@@ -65,11 +65,37 @@ const AddLocation: React.FC = () => {
     }, [location.state])
 
     const handleSubmit = async (values: Record<string, any>) => {
-        // Extract File objects from feature_images
-        let featureImageFiles: File[] = [];
-        if (Array.isArray(values.feature_images)) {
-            featureImageFiles = values.feature_images.filter((img: any) => img instanceof File);
+        // Extract File object from image (single image)
+        // Only send imageFile if there's actually a File object (not just a URL string)
+        let imageFile: File | undefined;
+        let imageRemoved: boolean = false;
+        
+        if (Array.isArray(values.image)) {
+            // Find the first File object in the array (if user uploaded a new image)
+            const fileImage = values.image.find((img: any) => img instanceof File);
+            imageFile = fileImage;
+            
+            // Check if image was removed: no File object and no valid URL string
+            // Valid image = File object OR non-empty URL string
+            const hasValidImage = fileImage || values.image.some((img: any) => 
+                typeof img === 'string' && img && img !== '' && img !== 'null' && img !== 'undefined'
+            );
+            
+            // In edit mode, if there was originally an image but now there's no valid image,
+            // the user removed it. In create mode, empty is normal (no image yet).
+            if (isEditMode && !hasValidImage) {
+                // User removed the image (array is empty or contains only empty strings)
+                imageRemoved = true;
+            }
+        } else if (values.image instanceof File) {
+            imageFile = values.image;
+        } else if (isEditMode && (!values.image || values.image === '' || values.image === 'null' || values.image === 'undefined')) {
+            // In edit mode, if image is explicitly null/empty (not array), it was removed
+            imageRemoved = true;
         }
+        
+        // If imageFile is undefined and imageRemoved is false, backend will keep existing image
+        // If imageRemoved is true, backend will remove the image
 
         if (isEditMode) {
             // Update location
@@ -84,9 +110,9 @@ const AddLocation: React.FC = () => {
                         itineraries: values.itineraries,
                         seo_fields: values.seo_fields,
                         status: 'active',
-                        imageFile: featureImageFiles[0],
-                        featureImageFiles: featureImageFiles,
-                    }
+                        imageFile: imageFile,
+                        imageRemoved: imageRemoved,
+                    } as any
                 })).unwrap()
                 setDialogConfig({
                     title: 'Success',
@@ -119,9 +145,8 @@ const AddLocation: React.FC = () => {
                     image: '', // Will be replaced by backend with actual binary data
                     status: 'active' as 'active',
                     country: 'India',
-                    // Pass File objects
-                    imageFile: featureImageFiles[0],
-                    featureImageFiles: featureImageFiles,
+                    // Pass File object
+                    imageFile: imageFile,
                 };
                 await dispatch(createLocation(payload)).unwrap();
                 setDialogConfig({
@@ -286,8 +311,9 @@ const AddLocation: React.FC = () => {
         },
         {
             type: 'file' as const,
-            name: 'feature_images',
-            label: 'Feature Image',
+            name: 'image',
+            label: 'Image',
+            singleImage: true, // Only allow single image upload
         },
         {
             type: 'custom' as const,

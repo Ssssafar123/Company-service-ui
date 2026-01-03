@@ -136,7 +136,7 @@ export const fetchCategoryById = createAsyncThunk(
 
 export const updateCategoryById = createAsyncThunk(
   'category/updateCategoryById',
-  async ({ id, data }: { id: string; data: Partial<Category> & { imageFile?: File, featureImageFiles?: File[] } }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: Partial<Category> & { imageFile?: File, featureImageFiles?: File[], imageRemoved?: boolean } }, { rejectWithValue }) => {
     try {
       const formData = new FormData()
       
@@ -157,10 +157,15 @@ export const updateCategoryById = createAsyncThunk(
         formData.append('seo_fields', JSON.stringify(data.seo_fields))
       }
       
-      // Add image file if present
-      if (data.imageFile) {
+      // Handle image: if removed, send empty string; if new file uploaded, send file; otherwise keep existing
+      if (data.imageRemoved === true) {
+        // User explicitly removed the image - send empty string to tell backend to remove it
+        formData.append('image', '')
+      } else if (data.imageFile) {
+        // New image file uploaded - send the file
         formData.append('image', data.imageFile)
       }
+      // If neither imageRemoved nor imageFile, don't send image field - backend will keep existing
       
       // Add feature image files if present
       if (data.featureImageFiles && data.featureImageFiles.length > 0) {

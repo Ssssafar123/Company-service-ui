@@ -62,6 +62,7 @@ const Itinerary: React.FC = () => {
     
     // Get data from Redux store
     const itinerariesFromStore = useSelector((state: RootState) => state.itinerary.itineraries)
+    const isLoading = useSelector((state: RootState) => state.itinerary.ui.loading)
 
     const [searchQuery, setSearchQuery] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
@@ -296,40 +297,29 @@ const Itinerary: React.FC = () => {
                         }
                     };
 
-                    // Fetch and convert images - images are stored as Buffer in MongoDB
-                    // We need to fetch them from the backend image endpoints
+                    // Fetch and convert images - use image URLs directly from the itinerary
                     const imageFiles: File[] = [];
                     const images = (fullItinerary as any).images || [];
                     console.log('Original images array:', Array.isArray(images) ? images.length : 'not array');
                     
-                    // If images exist (even as Buffer), fetch them from the backend endpoint
-                    // Try to fetch images from the itinerary's image endpoint
+                    // Use image URLs directly from the images property
                     if (Array.isArray(images) && images.length > 0) {
                         for (let i = 0; i < images.length; i++) {
                             try {
-                                // Construct URL to fetch image from backend
-                                const imageUrl = getImageUrl(`/api/itinerary/${itinerary.id}/image/${i}`);
-                                console.log(`Fetching image ${i} from:`, imageUrl);
-                                const file = await urlToFile(imageUrl, `image-${i}.jpg`);
-                                if (file) {
-                                    console.log(`Successfully converted image ${i} to file:`, file.name, file.size);
-                                    imageFiles.push(file);
-                                } else {
-                                    console.warn(`Failed to convert image ${i}`);
+                                const imageUrl = images[i];
+                                if (imageUrl && typeof imageUrl === 'string') {
+                                    console.log(`Using image URL ${i}:`, imageUrl);
+                                    const file = await urlToFile(imageUrl, `image-${i}.jpg`);
+                                    if (file) {
+                                        console.log(`Successfully converted image ${i} to file:`, file.name, file.size);
+                                        imageFiles.push(file);
+                                    } else {
+                                        console.warn(`Failed to convert image ${i}`);
+                                    }
                                 }
                             } catch (error) {
-                                console.warn(`Error fetching image ${i}:`, error);
+                                console.warn(`Error processing image ${i}:`, error);
                             }
-                        }
-                    } else {
-                        // Try fetching from main image endpoint (index 0)
-                        try {
-                            const imageUrl = getImageUrl(`/api/itinerary/${itinerary.id}/image/0`);
-                            console.log('Trying main image endpoint:', imageUrl);
-                            const file = await urlToFile(imageUrl, 'image-0.jpg');
-                            if (file) imageFiles.push(file);
-                        } catch (error) {
-                            console.warn('Error fetching main image:', error);
                         }
                     }
                     
@@ -794,7 +784,27 @@ const Itinerary: React.FC = () => {
     const tableRows = paginatedData.map((item) => ({ ...item, price: item.priceDisplay }))
 
     return (
-        <Box style={{ padding: '24px' }}>
+        <Box style={{ padding: '24px', position: 'relative' }}>
+            {isLoading && (
+                <Box style={{ 
+                    position: 'absolute', 
+                    top: 0, 
+                    left: 0, 
+                    right: 0, 
+                    bottom: 0, 
+                    background: 'rgba(255, 255, 255, 0.8)', 
+                    zIndex: 1000, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                }}>
+                    <Flex direction="column" align="center" gap="3">
+                        <Spinner />
+                        <Text size="3" style={{ color: 'var(--accent-11)' }}>Loading itineraries...</Text>
+                    </Flex>
+                </Box>
+            )}
+
             <Text size="7" weight="bold" style={{ color: 'var(--accent-12)', marginBottom: '24px', display: 'block' }}>
                 Manage Itinerary
             </Text>
@@ -867,5 +877,15 @@ const Itinerary: React.FC = () => {
         </Box>
     )
 }
+
+const Spinner = () => (
+    <svg width="32" height="32" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: 'spin 1s linear infinite' }}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <path d="M8 2V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M8 11V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M3 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M10 8H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+);
 
 export default Itinerary
