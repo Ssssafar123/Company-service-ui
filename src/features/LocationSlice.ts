@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface SEOFields {
   index_status?: 'index' | 'notindex'
@@ -11,17 +12,27 @@ export interface SEOFields {
 export interface Location {
   id: string
   name: string
-  image: string
-  feature_images?: string[]
   short_description?: string
   long_description?: string
   description?: string
-  state?: string
+  image?: string
+  feature_images?: string[]
+  status?: 'active' | 'inactive'
   country?: string
-  tripCount?: number
+  state?: string
   order?: number
-  status: 'active' | 'inactive'
-  seo_fields?: SEOFields
+  tripCount?: number
+  itineraries?: string[]
+  seo_fields?: {
+    meta_title?: string
+    meta_description?: string
+    meta_keywords?: string
+    og_title?: string
+    og_description?: string
+    og_image?: string
+  } | null
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface LocationState {
@@ -53,6 +64,7 @@ const mapLocation = (location: any): Location => ({
   tripCount: location.tripCount || 0,
   order: location.order || 0,
   status: location.status || 'active',
+  itineraries: location.itineraries || [],
   seo_fields: location.seo_fields,
 })
 
@@ -60,7 +72,7 @@ export const fetchLocations = createAsyncThunk(
   'location/fetchLocations',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/location', {
+      const res = await fetch(getApiUrl('location'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch locations')
@@ -80,13 +92,20 @@ export const createLocation = createAsyncThunk(
       
       // Add basic fields
       formData.append('name', location.name)
-      formData.append('status', location.status)
+      if (location.status) formData.append('status', location.status)
       if (location.short_description) formData.append('short_description', location.short_description)
       if (location.long_description) formData.append('long_description', location.long_description)
       if (location.description) formData.append('description', location.description)
       if (location.state) formData.append('state', location.state)
       if (location.country) formData.append('country', location.country)
-      if (location.order) formData.append('order', location.order.toString())
+      if (location.order !== undefined) formData.append('order', location.order.toString())
+      
+      // Add itineraries - each ID separately, not as JSON string
+      if (location.itineraries && location.itineraries.length > 0) {
+        location.itineraries.forEach((itineraryId) => {
+          formData.append('itineraries[]', itineraryId)
+        })
+      }
       
       // Add SEO fields as JSON
       if (location.seo_fields) {
@@ -105,7 +124,7 @@ export const createLocation = createAsyncThunk(
         })
       }
       
-      const res = await fetch('http://localhost:8000/api/location', {
+      const res = await fetch(getApiUrl('location'), {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -123,7 +142,7 @@ export const fetchLocationById = createAsyncThunk(
   'location/fetchLocationById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/location/${id}`, {
+      const res = await fetch(getApiUrl(`location/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch location')
@@ -151,6 +170,23 @@ export const updateLocationById = createAsyncThunk(
       if (data.country !== undefined) formData.append('country', data.country)
       if (data.order !== undefined) formData.append('order', data.order.toString())
       
+      // Add itineraries - each ID separately, not as JSON string
+      if (data.itineraries !== undefined) {
+        // Filter out empty strings and invalid values before sending
+        const validItineraries = data.itineraries.filter(id => 
+          id && id !== '' && id !== 'null' && id !== 'undefined'
+        );
+        
+        if (validItineraries.length === 0) {
+          // Don't send empty array - let backend handle it
+          // formData.append('itineraries[]', '') // Removed to avoid sending empty string
+        } else {
+          validItineraries.forEach((itineraryId) => {
+            formData.append('itineraries[]', itineraryId)
+          })
+        }
+      }
+      
       // Add SEO fields as JSON
       if (data.seo_fields !== undefined) {
         formData.append('seo_fields', JSON.stringify(data.seo_fields))
@@ -168,7 +204,7 @@ export const updateLocationById = createAsyncThunk(
         })
       }
       
-      const res = await fetch(`http://localhost:8000/api/location/${id}`, {
+      const res = await fetch(getApiUrl(`location/${id}`), {
         method: 'PUT',
         credentials: 'include',
         body: formData,
@@ -189,7 +225,7 @@ export const deleteLocationById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid location ID')
       }
-      const res = await fetch(`http://localhost:8000/api/location/${id}`, {
+      const res = await fetch(getApiUrl(`location/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

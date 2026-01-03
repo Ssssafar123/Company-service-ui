@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Review {
   id: string
@@ -48,13 +49,51 @@ export const fetchReviews = createAsyncThunk(
   'review/fetchReviews',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/review', {
+      const res = await fetch(getApiUrl('review'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch reviews')
-      const data = await res.json()
-      return data.map(mapReview)
+      const responseData = await res.json()
+      
+      console.log("Customer Reviews API Response:", responseData)
+      
+      // Handle nested response structure from backend
+      let reviewsArray = []
+      if (responseData.success && responseData.data && responseData.data.reviews) {
+        // Backend returns { success: true, data: { reviews: [...] } }
+        reviewsArray = responseData.data.reviews
+      } else if (Array.isArray(responseData)) {
+        // Direct array response (fallback)
+        reviewsArray = responseData
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        // { data: [...] } format
+        reviewsArray = responseData.data
+      }
+      
+      console.log("Reviews Array to map:", reviewsArray)
+      
+      // Map the reviews - backend returns transformed format, so we need to map it back
+      const mappedReviews = reviewsArray.map((review: any) => {
+        // Backend transforms to reviewer_name, text, etc. but frontend expects customerName, reviewText
+        return {
+          id: review.id || review._id || '',
+          customerName: review.reviewer_name || review.customerName || '',
+          rating: review.rating || 0,
+          reviewText: review.text || review.reviewText || '',
+          date: review.date || review.createdAt || new Date().toISOString(),
+          status: review.status || 'Pending',
+          packageName: review.packageName,
+          packageCode: review.packageCode,
+          reviewerImageUrl: review.reviewer_image || review.reviewerImageUrl,
+          itineraryId: review.itineraryId || review.itinerary_id,
+          bookingId: review.bookingId || review.booking_id,
+        }
+      })
+      
+      console.log("Mapped Customer Reviews:", mappedReviews)
+      return mappedReviews
     } catch (err) {
+      console.error("Fetch reviews error:", err)
       return rejectWithValue((err as Error).message)
     }
   }
@@ -64,7 +103,7 @@ export const createReview = createAsyncThunk(
   'review/createReview',
   async (review: Omit<Review, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/review', {
+      const res = await fetch(getApiUrl('review'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -83,7 +122,7 @@ export const fetchReviewById = createAsyncThunk(
   'review/fetchReviewById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/review/${id}`, {
+      const res = await fetch(getApiUrl(`review/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch review')
@@ -99,7 +138,7 @@ export const updateReviewById = createAsyncThunk(
   'review/updateReviewById',
   async ({ id, data }: { id: string; data: Partial<Review> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/review/${id}`, {
+      const res = await fetch(getApiUrl(`review/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -121,7 +160,7 @@ export const deleteReviewById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid review ID')
       }
-      const res = await fetch(`http://localhost:8000/api/review/${id}`, {
+      const res = await fetch(getApiUrl(`review/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

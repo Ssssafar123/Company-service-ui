@@ -1,5 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import bookingReducer from './features/BookingSlice'
+import customerReducer from './features/CustomerSlice'
+import batchReducer from './features/BatchSlice'
 import itineraryReducer from './features/ItinerarySlice'
 
 // Website module
@@ -7,6 +9,10 @@ import categoryReducer from './features/CategorySlice'
 import locationReducer from './features/LocationSlice'
 import reviewReducer from './features/ReviewSlice'
 import contentReducer from './features/ContentSlice'
+import userReducer from './features/UserSlice'
+import roleReducer from './features/RoleSlice'
+import heroReducer from './features/HeroSlice'
+import cancellationPolicyReducer from './features/CancellationPolicySlice'
 
 // Leads module
 import leadReducer from './features/LeadSlice'
@@ -27,6 +33,8 @@ import localSupportReducer from './features/LocalSupportSlice'
 export const store = configureStore({
   reducer: {
     booking: bookingReducer,
+    customer: customerReducer,
+    batch: batchReducer,
     itinerary: itineraryReducer,
     
     // Website
@@ -34,6 +42,10 @@ export const store = configureStore({
     location: locationReducer,
     review: reviewReducer,
     content: contentReducer,
+    user: userReducer,
+    role: roleReducer,
+    hero: heroReducer, // added hero slice here
+    cancellationPolicy: cancellationPolicyReducer,
     
     // Leads
     lead: leadReducer,

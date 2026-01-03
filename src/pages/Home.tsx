@@ -1,30 +1,10 @@
-import React, { useState } from "react";
 import { Box, Button, Card, Container, Flex, Grid, Heading, Text, Section } from "@radix-ui/themes";
 import { useNavigate } from "react-router-dom";
-import { DashboardIcon, PersonIcon, RocketIcon, BarChartIcon } from "@radix-ui/react-icons";
-import Sidebar from "../components/Sidebar/Sidebar";
+import { PersonIcon, RocketIcon, BarChartIcon } from "@radix-ui/react-icons";
 import Navbar from "../components/Navbar/Navbar";
-
-type Permission = "read" | "write" | "create" | "delete" | "admin";
-
-const menuItems = [
-  { id: "home", label: "Home", path: "/" },
-  { id: "form", label: "Form", path: "/test-form" },
-  { id: "table", label: "Table", path: "/table" },
-  { id: "test2", label: "Test 2", path: "/test2" },
-  { id: "admin", label: "Admin", path: "/admin", permission: "admin" as Permission },
-];
-
-const user = {
-  name: "Rohit Sharma",
-  email: "rohit.sharma@example.com",
-  permissions: ["read", "write", "admin"] as Permission[],
-  avatar: "https://i.pravatar.cc/40?img=3",
-};
 
 export default function MyApp() {
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div>
@@ -41,8 +21,8 @@ export default function MyApp() {
               Your all-in-one travel CRM solution. Manage leads, track conversions, and grow your business effortlessly.
             </Text>
             <Flex gap="4" mt="4">
-              <Button size="4" onClick={() => navigate("/dashboard")} style={{ cursor: "pointer" }}>
-                <DashboardIcon /> Go to Dashboard
+              <Button size="4" onClick={() => navigate("/login")} style={{ cursor: "pointer" }}>
+                Login
               </Button>
               <Button size="4" variant="soft" style={{ cursor: "pointer" }}>
                 Learn More

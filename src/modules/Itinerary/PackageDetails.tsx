@@ -315,7 +315,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 							</Text>
 						</Box>
 					) : (
-						packages.pickup_point.map((point) => (
+						packages.pickup_point.map((point, index) => (
 							<Box
 								key={point.id}
 								style={{
@@ -399,7 +399,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 							</Text>
 						</Box>
 					) : (
-						packages.drop_point.map((point) => (
+						packages.drop_point.map((point, index) => (
 							<Box
 								key={point.id}
 								style={{

@@ -1,19 +1,23 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Booking {
   id: string
-  bookingId: string
-  customerName: string
-  customerEmail: string
-  customerPhone: string
-  itinerary: string
-  bookingDate: string
-  travelDate: string
-  numberOfTravelers: number
-  totalAmount: number
-  status: 'confirmed' | 'pending' | 'cancelled' | 'completed'
-  paymentStatus?: 'paid' | 'pending' | 'refunded'
+  customer?: string // ObjectId reference
+  people_count: number
+  travellers: string[] // Array of ObjectId references
+  itinerary_id: string // ObjectId reference
+  batch_id: string // ObjectId reference
+  total_price: number
+  paid_amount: number
+  invoice_link?: string
+  transaction?: string // ObjectId reference
+  txn_id: string
+  transaction_status?: 'INITIATED' | 'SUCCESS' | 'FAILED'
+  deleted?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface PaginationData {
@@ -55,24 +59,27 @@ const initialState: AppState = {
 // Helper function to map _id to id
 const mapBooking = (booking: any): Booking => ({
   id: booking._id || booking.id,
-  bookingId: booking.bookingId,
-  customerName: booking.customerName,
-  customerEmail: booking.customerEmail,
-  customerPhone: booking.customerPhone,
-  itinerary: booking.itinerary,
-  bookingDate: booking.bookingDate,
-  travelDate: booking.travelDate,
-  numberOfTravelers: booking.numberOfTravelers,
-  totalAmount: booking.totalAmount,
-  status: booking.status,
-  paymentStatus: booking.paymentStatus,
+  customer: booking.customer || '',
+  people_count: booking.people_count || 0,
+  travellers: booking.travellers || [],
+  itinerary_id: booking.itinerary_id,
+  batch_id: booking.batch_id || '',
+  total_price: booking.total_price || 0,
+  paid_amount: booking.paid_amount || 0,
+  invoice_link: booking.invoice_link || '',
+  transaction: booking.transaction || '',
+  txn_id: booking.txn_id || '',
+  transaction_status: booking.transaction_status,
+  deleted: booking.deleted || false,
+  createdAt: booking.createdAt,
+  updatedAt: booking.updatedAt,
 })
 
 export const fetchBookings = createAsyncThunk(
   'app/fetchBookings',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/booking', {
+      const res = await fetch(getApiUrl('booking'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch bookings')
@@ -91,7 +98,7 @@ export const fetchBookingsByPage = createAsyncThunk(
     try {
       // Use query parameters on base endpoint instead of /page route
       // This avoids conflict with /api/booking/:id route
-      const res = await fetch(`http://localhost:8000/api/booking?page=${page}&limit=${limit}`, {
+      const res = await fetch(getApiUrl(`booking?page=${page}&limit=${limit}`), {
         credentials: 'include',
       })
       
@@ -151,7 +158,7 @@ export const createBooking = createAsyncThunk(
   'app/createBooking',
   async (booking: Omit<Booking, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/booking', {
+      const res = await fetch(getApiUrl('booking'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -170,7 +177,7 @@ export const fetchBookingById = createAsyncThunk(
   'app/fetchBookingById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/booking/${id}`, {
+      const res = await fetch(getApiUrl(`booking/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch booking')
@@ -186,7 +193,7 @@ export const updateBookingById = createAsyncThunk(
   'app/updateBookingById',
   async ({ id, data }: { id: string; data: Partial<Booking> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/booking/${id}`, {
+      const res = await fetch(getApiUrl(`booking/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -208,7 +215,7 @@ export const deleteBookingById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid booking ID')
       }
-      const res = await fetch(`http://localhost:8000/api/booking/${id}`, { 
+      const res = await fetch(getApiUrl(`booking/${id}`), { 
         method: 'DELETE',
         credentials: 'include',
       })

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Flex,
@@ -23,30 +23,10 @@ import SEOFields from '../../modules/Itinerary/SEOFields'
 type Field = {
   name: string;
   label: string;
-  type:
-    | "text"
-    | "email"
-    | "password"
-    | "textarea"
-    | "checkbox"
-    | "radio"
-    | "select"
-    | "switch"
-    | "richtext"
-    | "file"
-    | "number"
-    | "multiselect"
-    | "daywise"
-    | "hotels"
-    | "packages"
-    | "batches"
-    | "custom"
-    | "seo"
-    | "date";
+  type: "text" | "email" | "password" | "textarea" | "checkbox" | "radio" | "select" | "switch" | "richtext" | "file" | "number" | "multiselect" | "daywise" | "hotels" | "packages" | "batches" | "custom" | "seo" | "date";
   placeholder?: string;
   options?: string[] | { value: string; label: string }[];
   fullWidth?: boolean;
-  required?: boolean;   
   customRender?: (value: any, onChange: (value: any) => void) => React.ReactNode;
 };
 
@@ -64,6 +44,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   initialValues = {},
 }) => {
   const [formValues, setFormValues] = useState<Record<string, any>>(initialValues);
+
+  // Update form values when initialValues prop changes
+  useEffect(() => {
+    if (initialValues && Object.keys(initialValues).length > 0) {
+      setFormValues(initialValues);
+    }
+  }, [initialValues]);
 
   const handleChange = (name: string, value: any) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -128,7 +115,9 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       case "file":
         return (
           <ImageUpload
-            images={formValues[field.name] || [""]}
+            images={Array.isArray(formValues[field.name]) 
+              ? formValues[field.name] 
+              : (formValues[field.name] ? [formValues[field.name]] : [""])}
             onChange={(images) => handleChange(field.name, images)}
             label={field.label}
           />
@@ -183,40 +172,61 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           );
 
       case "multiselect":
-        // Simple multi-select implementation
+        // Multi-select implementation with checkboxes
+        const selectedValues = Array.isArray(formValues[field.name]) ? formValues[field.name] : (formValues[field.name] ? [formValues[field.name]] : []);
+        const selectedLabels = field.options
+          ?.filter((option) => {
+            const optValue = typeof option === "string" ? option : option.value;
+            return selectedValues.includes(optValue);
+          })
+          .map((option) => {
+            const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? "");
+            return optLabel;
+          })
+          .join(", ") || "";
+        
         return (
-          <Select.Root
-            value={Array.isArray(formValues[field.name]) && formValues[field.name].length > 0
-              ? formValues[field.name][0]
-              : undefined}
-            onValueChange={(value) => {
-              const current = formValues[field.name] || [];
-              const newValue = Array.isArray(current)
-                ? current.includes(value)
+          <Box>
+            <Select.Root
+              value={selectedValues.length > 0 ? selectedValues[0] : undefined}
+              onValueChange={(value) => {
+                const current = Array.isArray(formValues[field.name]) ? formValues[field.name] : (formValues[field.name] ? [formValues[field.name]] : []);
+                const newValue = current.includes(value)
                   ? current.filter((v) => v !== value)
-                  : [...current, value]
-                : [value];
-              handleChange(field.name, newValue);
-            }}
-          >
-            <Select.Trigger placeholder={field.placeholder} />
-            <Select.Content>
-              {field.options
-                ?.filter((option) => {
-                  const optValue = typeof option === "string" ? option : option.value;
-                  return optValue !== "";
-                })
-                .map((option) => {
-                  const optValue = typeof option === "string" ? option : option.value;
-                  const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? ""); // Fixed to always be string
-                  return (
-                    <Select.Item key={optValue} value={optValue}>
-                      {optLabel}
-                    </Select.Item>
-                  );
-                })}
-            </Select.Content>
-          </Select.Root>
+                  : [...current, value];
+                handleChange(field.name, newValue);
+              }}
+            >
+              <Select.Trigger placeholder={field.placeholder}>
+                {selectedLabels || field.placeholder}
+              </Select.Trigger>
+              <Select.Content>
+                {field.options
+                  ?.filter((option) => {
+                    const optValue = typeof option === "string" ? option : option.value;
+                    return optValue !== "";
+                  })
+                  .map((option) => {
+                    const optValue = typeof option === "string" ? option : option.value;
+                    const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? "");
+                    const isSelected = selectedValues.includes(optValue);
+                    return (
+                      <Select.Item key={optValue} value={optValue}>
+                        <Flex align="center" gap="2">
+                          <Checkbox checked={isSelected} readOnly />
+                          <Text>{optLabel}</Text>
+                        </Flex>
+                      </Select.Item>
+                    );
+                  })}
+              </Select.Content>
+            </Select.Root>
+            {selectedLabels && (
+              <Text size="1" style={{ color: 'var(--accent-11)', marginTop: '4px' }}>
+                Selected: {selectedLabels}
+              </Text>
+            )}
+          </Box>
         );
 
         case "radio":

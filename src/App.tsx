@@ -22,10 +22,15 @@ import ActivitiesPage from './pages/Dashboard/Activities'
 import ReviewPage from './pages/Dashboard/Review' 
 import BookingsPage from './pages/Dashboard/Bookings'
 import ContentPage from './pages/Dashboard/Content'
+import EditHeroImage from './modules/Content/EditHeroImage.js'
 import PaymentPage from './pages/Dashboard/Payment.js'
 import Invoice from './pages/Dashboard/Invoice.js'
 import AddInvoice from './pages/Dashboard/AddInvoice.js'
 import LedgerPage from './pages/Dashboard/Ledger'
+import UserPage from './pages/Dashboard/User'
+import RolePage from './pages/Dashboard/Role'
+import AddUser from './modules/User/AddUser'
+import AddRole from './modules/Role/AddRole'
 const App = () => {
   return (
     <div>
@@ -75,6 +80,12 @@ const App = () => {
         <Route path='payment' element={<PaymentPage />} />
         <Route path='addInvoice' element={<AddInvoice/>}/>
         <Route path='ledger' element={<LedgerPage />} />
+        <Route path='user' element={<UserPage />} />
+        <Route path='role' element={<RolePage />} />
+        <Route path='add-user' element={<AddUser />} />
+        <Route path='edit-user' element={<AddUser />} />
+        <Route path='add-role' element={<AddRole />} />
+        <Route path='edit-role' element={<AddRole />} />
 
 
         </Route>

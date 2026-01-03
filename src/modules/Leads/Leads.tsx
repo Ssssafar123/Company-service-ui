@@ -54,13 +54,6 @@ const Leads: React.FC = () => {
     dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
   }, [dispatch, currentPage, itemsPerPage])
 
-  // Update current page when pagination changes from Redux
-  useEffect(() => {
-    if (pagination.page !== currentPage) {
-      setCurrentPage(pagination.page)
-    }
-  }, [pagination.page, currentPage])
-
   // Calculate statistics from leads
   const totalLeads = pagination.totalRecords || 0
   const todayLeads = leads.filter(lead => {
@@ -70,7 +63,7 @@ const Leads: React.FC = () => {
   }).length
   const convertedLeads = leads.filter(lead => lead.contacted === 'Booked').length
 
-  // Filter leads based on search query
+  // Filter leads based on search query (only for display, pagination is handled by backend)
   const filteredLeads = leads.filter((lead) => {
     if (!searchQuery) return true
     
@@ -87,12 +80,12 @@ const Leads: React.FC = () => {
     )
   })
 
-  // Calculate pagination values
-  const totalItems = filteredLeads.length
-  const totalPages = pagination.totalPages || Math.ceil(totalItems / itemsPerPage)
+  // Use pagination from backend (already paginated)
+  const totalItems = pagination.totalRecords || 0
+  const totalPages = pagination.totalPages || 1
+  const currentLeads = filteredLeads // Backend already returns paginated data, just filter for search
   const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentLeads = filteredLeads.slice(startIndex, endIndex)
+  const endIndex = Math.min(startIndex + currentLeads.length, totalItems)
 
   // Reset to page 1 when items per page changes
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
@@ -142,7 +135,13 @@ const Leads: React.FC = () => {
   // Handle search input change
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
-    setCurrentPage(1)
+    // Reset to page 1 and refetch when search changes
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+    } else {
+      // If already on page 1, still refetch to ensure fresh data
+      dispatch(fetchLeadsByPage({ page: 1, limit: itemsPerPage }) as any)
+    }
   }
 
   // Handle open remark modal
@@ -571,7 +570,11 @@ const Leads: React.FC = () => {
           <span style={{ fontWeight: 'bold', color: '#000' }}>{totalPages}</span>
         </Text>
         <Flex style={{ gap: '8px', alignItems: 'center', flex: '1 1 auto', justifyContent: 'flex-end', minWidth: '200px' }}>
-          <Box onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} style={{ width: '35px', height: '35px', border: '1px solid #e5e7eb', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, backgroundColor: 'white', transition: 'all 0.2s' }}>
+          <Box onClick={() => {
+            if (currentPage > 1) {
+              setCurrentPage(currentPage - 1)
+            }
+          }} style={{ width: '35px', height: '35px', border: '1px solid #e5e7eb', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, backgroundColor: 'white', transition: 'all 0.2s' }}>
             <ChevronLeftIcon width="18" height="18" />
           </Box>
           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -586,12 +589,20 @@ const Leads: React.FC = () => {
               pageNum = currentPage - 2 + i
             }
             return (
-              <Box key={pageNum} onClick={() => setCurrentPage(pageNum)} style={{ width: '35px', height: '35px', border: '1px solid #e5e7eb', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: currentPage === pageNum ? '#000' : '#fff', color: currentPage === pageNum ? '#fff' : '#000', fontWeight: currentPage === pageNum ? 'bold' : 'normal', fontSize: '14px', transition: 'all 0.2s' }}>
+              <Box key={pageNum} onClick={() => {
+            if (pageNum !== currentPage) {
+              setCurrentPage(pageNum)
+            }
+          }} style={{ width: '35px', height: '35px', border: '1px solid #e5e7eb', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: currentPage === pageNum ? '#000' : '#fff', color: currentPage === pageNum ? '#fff' : '#000', fontWeight: currentPage === pageNum ? 'bold' : 'normal', fontSize: '14px', transition: 'all 0.2s' }}>
                 {pageNum}
               </Box>
             )
           })}
-          <Box onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} style={{ width: '35px', height: '35px', border: '1px solid #e5e7eb', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, backgroundColor: 'white', transition: 'all 0.2s' }}>
+          <Box onClick={() => {
+            if (currentPage < totalPages) {
+              setCurrentPage(currentPage + 1)
+            }
+          }} style={{ width: '35px', height: '35px', border: '1px solid #e5e7eb', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, backgroundColor: 'white', transition: 'all 0.2s' }}>
             <ChevronRightIcon width="18" height="18" />
           </Box>
         </Flex>

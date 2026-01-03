@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Content {
   id: string
@@ -10,7 +11,7 @@ export interface Content {
   images?: string[]
   headlines?: string
   termsCondition?: string
-  cancellationPolicy?: string
+  cancellationPolicy?: string | string[]
   description?: string
   discountPercentage?: number
   discountAmount?: number
@@ -45,7 +46,9 @@ const mapContent = (content: any): Content => ({
   images: content.images || [],
   headlines: content.headlines,
   termsCondition: content.termsCondition,
-  cancellationPolicy: content.cancellationPolicy,
+  cancellationPolicy: Array.isArray(content.cancellationPolicy) 
+    ? content.cancellationPolicy 
+    : (content.cancellationPolicy || ''),
   description: content.description,
   discountPercentage: content.discountPercentage,
   discountAmount: content.discountAmount,
@@ -58,7 +61,7 @@ export const fetchContents = createAsyncThunk(
   'content/fetchContents',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/content', {
+      const res = await fetch(getApiUrl('content'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch contents')
@@ -74,7 +77,7 @@ export const createContent = createAsyncThunk(
   'content/createContent',
   async (content: Omit<Content, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/content', {
+      const res = await fetch(getApiUrl('content'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -93,7 +96,7 @@ export const fetchContentById = createAsyncThunk(
   'content/fetchContentById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/content/${id}`, {
+      const res = await fetch(getApiUrl(`content/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch content')
@@ -109,7 +112,7 @@ export const updateContentById = createAsyncThunk(
   'content/updateContentById',
   async ({ id, data }: { id: string; data: Partial<Content> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/content/${id}`, {
+      const res = await fetch(getApiUrl(`content/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -131,7 +134,7 @@ export const deleteContentById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid content ID')
       }
-      const res = await fetch(`http://localhost:8000/api/content/${id}`, {
+      const res = await fetch(getApiUrl(`content/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

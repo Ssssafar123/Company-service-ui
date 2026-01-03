@@ -1,10 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea } from '@radix-ui/themes'
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } from '@radix-ui/react-icons'
+import { useDispatch, useSelector } from 'react-redux'
+import { fetchCustomizeLeads, updateCustomizeLeadById, type CustomizeLead } from '../../features/CustomizeLeadSlice'
+import type { AppDispatch, RootState } from '../../store'
 
 // Define Lead type
 interface Lead {
-    id: number
+    id: string // Changed from number to string
     name: string
     badgeType: string
     leadId: string
@@ -18,20 +21,96 @@ interface Lead {
     assignedTo: string
     savedRemarks?: string[]
     reminder?: string | null // NEW: store reminder as datetime-local string (e.g. "2025-11-16T13:30")
+    customizeLeadId?: string
 }
 
 const Leads: React.FC = () => {
-    // Dummy data for statistics
-    const totalLeads = 10
-    const todayLeads = 2
-    const convertedLeads = 1
+    const dispatch = useDispatch<AppDispatch>()
+    
+    // Get customize leads from Redux store
+    const { customizeLeads, ui } = useSelector((state: RootState) => state.customizeLead)
+    
+    // Map CustomizeLead data to Lead format
+    const leadsData: Lead[] = useMemo(() => {
+        return customizeLeads.map((cl: CustomizeLead) => {
+            const lead = cl.lead // Get populated lead data
+            
+            if (!lead || typeof lead === 'string') {
+                // If lead is not populated, return a placeholder
+                return {
+                    id: cl.id,
+                    name: 'Unknown',
+                    badgeType: 'website',
+                    leadId: typeof cl.leadId === 'string' ? cl.leadId : '',
+                    time: new Date().toISOString(),
+                    phone: '',
+                    destination: '',
+                    packageCode: '',
+                    remarks: cl.customNotes || '',
+                    status: cl.customStatus || 'Warm',
+                    contacted: 'New Enquiry',
+                    assignedTo: 'Unassigned',
+                    customizeLeadId: cl.id
+                }
+            }
+            
+            // Format time
+            const createdAt = lead.createdAt 
+                ? new Date(lead.createdAt) 
+                : new Date()
+            
+            const time = createdAt.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            })
+            
+            return {
+                id: cl.id, // Use CustomizeLead _id
+                name: lead.name || 'Unknown',
+                badgeType: lead.badgeType || 'website',
+                leadId: lead.leadId || lead._id?.toString() || lead.id || '',
+                time: time,
+                phone: lead.phone || '',
+                destination: lead.destination || '',
+                packageCode: lead.packageCode || '',
+                remarks: cl.customNotes || lead.remarks || '',
+                status: cl.customStatus || lead.status || 'Warm',
+                contacted: lead.contacted || 'New Enquiry',
+                assignedTo: lead.assignedTo || 'Unassigned',
+                savedRemarks: lead.savedRemarks || [],
+                reminder: cl.followUpDate ? new Date(cl.followUpDate).toISOString().slice(0, 16) : null,
+                customizeLeadId: cl.id
+            }
+        })
+    }, [customizeLeads])
+
+    // Fetch data on component mount
+    useEffect(() => {
+        dispatch(fetchCustomizeLeads())
+    }, [dispatch])
+
+    // Update statistics based on actual data
+    const totalLeads = leadsData.length
+    const todayLeads = leadsData.filter(lead => {
+        try {
+            const leadDate = new Date(lead.time)
+            const today = new Date()
+            return leadDate.toDateString() === today.toDateString()
+        } catch {
+            return false
+        }
+    }).length
+    const convertedLeads = leadsData.filter(lead => lead.contacted === 'Booked').length
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     
-    // Checkbox state
-    const [selectedLeads, setSelectedLeads] = useState<number[]>([])
+    // Checkbox state - changed to string[]
+    const [selectedLeads, setSelectedLeads] = useState<string[]>([])
     const [selectAll, setSelectAll] = useState(false)
 
     // Active filter state
@@ -39,7 +118,7 @@ const Leads: React.FC = () => {
 
     // Remark modal state
     const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false)
-    const [selectedLeadForRemark, setSelectedLeadForRemark] = useState<number | null>(null)
+    const [selectedLeadForRemark, setSelectedLeadForRemark] = useState<string | null>(null) // Changed to string
     const [remarkText, setRemarkText] = useState("")
     // NEW: Reminder states for modal
     const [isReminderEnabled, setIsReminderEnabled] = useState(false)
@@ -81,232 +160,6 @@ const Leads: React.FC = () => {
         { label: 'Future Prospect', description: "You've tried contacting but they're looking for some future dates." },
     ]
 
-    // Initial leads data
-    const initialLeadsData: Lead[] = [
-        {
-            id: 1,
-            name: 'Priyanshu',
-            badgeType: 'instalink',
-            leadId: '2142599',
-            time: 'Today at 7:15 PM',
-            phone: '6367710137',
-            destination: 'Manali & Kasol | Group',
-            packageCode: '#MKP02',
-            remarks: 'interested',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Rohit',
-        },
-        {
-            id: 2,
-            name: 'Aarav Kumar',
-            badgeType: 'itinerary',
-            leadId: '2142600',
-            time: 'Today at 6:30 PM',
-            phone: '9876543210',
-            destination: 'Goa Beach | Solo',
-            packageCode: '#GB01',
-            remarks: 'wants discount',
-            status: 'Warm',
-            contacted: 'Not Contacted',
-            assignedTo: 'Shivam',
-        },
-        {
-            id: 3,
-            name: 'Sneha Patel',
-            badgeType: 'itinerary',
-            leadId: '2142601',
-            time: 'Today at 5:45 PM',
-            phone: '8765432109',
-            destination: 'Kerala Backwaters | Family',
-            packageCode: '#KB03',
-            remarks: 'budget friendly',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Sonia',
-        },
-        {
-            id: 4,
-            name: 'Rahul Singh',
-            leadId: '2142602',
-            badgeType: 'itinerary',
-            time: 'Today at 4:20 PM',
-            phone: '7654321098',
-            destination: 'Ladakh Adventure | Group',
-            packageCode: '#LA05',
-            remarks: 'needs info',
-            status: 'Cold',
-            contacted: 'Not Contacted',
-            assignedTo: 'Rohit',
-        },
-        {
-            id: 5,
-            name: 'Priya Sharma',
-            badgeType: 'itinerary',
-            leadId: '2142603',
-            time: 'Today at 3:10 PM',
-            phone: '6543210987',
-            destination: 'Rajasthan Heritage | Couple',
-            packageCode: '#RH07',
-            remarks: 'ready to book',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Shivam',
-        },
-        {
-            id: 6,
-            name: 'Vikram Reddy',
-            badgeType: 'itinerary',
-            leadId: '2142604',
-            time: 'Today at 2:05 PM',
-            phone: '5432109876',
-            destination: 'Shimla Manali | Family',
-            packageCode: '#SM09',
-            remarks: 'comparing prices',
-            status: 'Warm',
-            contacted: 'Not Contacted',
-            assignedTo: 'Sonia',
-        },
-        {
-            id: 7,
-            name: 'Ananya Verma',
-            badgeType: 'itinerary',
-            leadId: '2142605',
-            time: 'Today at 1:30 PM',
-            phone: '4321098765',
-            destination: 'Andaman Islands | Honeymoon',
-            packageCode: '#AI11',
-            remarks: 'interested in luxury',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Rohit',
-        },
-        {
-            id: 8,
-            name: 'Karan Mehta',
-            leadId: '2142606',
-            badgeType: 'instalink',
-            time: 'Today at 12:15 PM',
-            phone: '3210987654',
-            destination: 'Darjeeling Tea Gardens | Solo',
-            packageCode: '#DT13',
-            remarks: 'price too high',
-            status: 'Cold',
-            contacted: 'Not Contacted',
-            assignedTo: 'Shivam',
-        },
-        {
-            id: 9,
-            name: 'Divya Nair',
-            badgeType: 'instalink',
-            leadId: '2142607',
-            time: 'Today at 11:00 AM',
-            phone: '2109876543',
-            destination: 'Udaipur Palace Tour | Couple',
-            packageCode: '#UP15',
-            remarks: 'wants customization',
-            status: 'Warm',
-            contacted: 'Contacted',
-            assignedTo: 'Sonia',
-        },
-        {
-            id: 11,
-            name: 'Arjun Gupta',
-            badgeType: 'itinerary',
-            leadId: '2142608',
-            time: 'Today at 10:00 AM',
-            phone: '1098765432',
-            destination: 'Rishikesh Rafting | Group',
-            packageCode: '#RR17',
-            remarks: 'confirm availability',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Rohit',
-        },
-        {
-            id: 12,
-            name: 'Arjun Gupta',
-            badgeType: 'itinerary',
-            leadId: '2142608',
-            time: 'Today at 10:00 AM',
-            phone: '1098765432',
-            destination: 'Rishikesh Rafting | Group',
-            packageCode: '#RR17',
-            remarks: 'confirm availability',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Rohit',
-        },
-        {
-            id: 13,
-            name: 'Arjun Gupta',
-            badgeType: 'itinerary',
-            leadId: '2142608',
-            time: 'Today at 10:00 AM',
-            phone: '1098765432',
-            destination: 'Rishikesh Rafting | Group',
-            packageCode: '#RR17',
-            remarks: 'confirm availability',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Rohit',
-        },
-        {
-            id: 14,
-            name: 'Arjun Gupta',
-            badgeType: 'itinerary',
-            leadId: '2142608',
-            time: 'Today at 10:00 AM',
-            phone: '1098765432',
-            destination: 'Rishikesh Rafting | Group',
-            packageCode: '#RR17',
-            remarks: 'confirm availability',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Rohit',
-        },
-        {
-            id: 15,
-            name: 'Arjun Gupta',
-            badgeType: 'itinerary',
-            leadId: '2142608',
-            time: 'Today at 10:00 AM',
-            phone: '1098765432',
-            destination: 'Rishikesh Rafting | Group',
-            packageCode: '#RR17',
-            remarks: 'confirm availability',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Rohit',
-        },
-        {
-            id: 16,
-            name: 'Arjun Gupta',
-            badgeType: 'instalink',
-            leadId: '2142608',
-            time: 'Today at 10:00 AM',
-            phone: '1098765432',
-            destination: 'Rishikesh Rafting | Group',
-            packageCode: '#RR17',
-            remarks: 'confirm availability',
-            status: 'Hot',
-            contacted: 'Contacted',
-            assignedTo: 'Rohit',
-        },
-    ]
-
-    // Leads data state with localStorage support (including reminders)
-    const [leadsData, setLeadsData] = useState<Lead[]>(() => {
-        const savedRemarks = localStorage.getItem('leadRemarks')
-        const savedReminders = localStorage.getItem('leadReminders')
-        const remarksMap = savedRemarks ? JSON.parse(savedRemarks as string) : {}
-        const remindersMap = savedReminders ? JSON.parse(savedReminders as string) : {}
-        return initialLeadsData.map(lead => ({
-            ...lead,
-            savedRemarks: remarksMap[lead.id] || [],
-            reminder: remindersMap[lead.id] || null,
-        }))
-    })
 
     // Filter leads based on search query
     const filteredLeads = leadsData.filter((lead) => {
@@ -340,7 +193,7 @@ const Leads: React.FC = () => {
 
     // Handle refresh button
     const handleRefresh = () => {
-        window.location.reload()
+        dispatch(fetchCustomizeLeads())
     }
 
     // Handle select all checkbox
@@ -355,7 +208,7 @@ const Leads: React.FC = () => {
     }
 
     // Handle individual checkbox
-    const handleSelectLead = (leadId: number, checked: boolean) => {
+    const handleSelectLead = (leadId: string, checked: boolean) => {
         if (checked) {
             setSelectedLeads(prev => [...prev, leadId])
         } else {
@@ -384,82 +237,74 @@ const Leads: React.FC = () => {
     }
 
     // Handle open remark modal
-    const handleOpenRemarkModal = (leadId: number) => {
+    const handleOpenRemarkModal = (leadId: string) => {
         setSelectedLeadForRemark(leadId)
-        setRemarkText("")
-        // initialize reminder modal values if already set on lead
+        // initialize remark and reminder modal values if already set on lead
         const lead = leadsData.find(l => l.id === leadId)
+        setRemarkText(lead?.remarks || "")
         setIsReminderEnabled(Boolean(lead?.reminder))
         setReminderDateTime(lead?.reminder ?? "")
         setIsRemarkModalOpen(true)
     }
 
-    const handleAssignedToChange = (leadId: number, newAssignee: string) => {
-        const updatedLeads = leadsData.map(lead => (lead.id === leadId ? { ...lead, assignedTo: newAssignee } : lead))
-        setLeadsData(updatedLeads)
+    const handleAssignedToChange = async (leadId: string, newAssignee: string) => {
+        // Note: This would need to update the Lead, not CustomizeLead
+        // For now, just refresh the data
+        console.log('Update assignedTo for lead:', leadId, newAssignee)
+        dispatch(fetchCustomizeLeads())
     }
 
     // NEW: Remove reminder
-    const handleRemoveReminder = (leadId: number) => {
-        const updatedLeads = leadsData.map(lead => (lead.id === leadId ? { ...lead, reminder: undefined } : lead))
-        setLeadsData(updatedLeads)
-        // persist reminders map
-        const remindersMap: Record<number, string> = {}
-        updatedLeads.forEach(lead => {
-            if (lead.reminder) remindersMap[lead.id] = lead.reminder
-        })
-        localStorage.setItem('leadReminders', JSON.stringify(remindersMap))
+    const handleRemoveReminder = async (leadId: string) => {
+        try {
+            await dispatch(updateCustomizeLeadById({
+                id: leadId,
+                data: {
+                    followUpDate: undefined
+                }
+            })).unwrap()
+            dispatch(fetchCustomizeLeads())
+        } catch (error) {
+            console.error('Failed to remove reminder:', error)
+        }
     }
 
     // Handle save remark (allow saving reminder even if remark is empty)
-    const handleSaveRemark = () => {
+    const handleSaveRemark = async () => {
         if (!selectedLeadForRemark) return
         // If both remark and reminder are empty, do nothing
         if (!remarkText.trim() && !(isReminderEnabled && reminderDateTime)) return
 
-        // Get current timestamp
-        const timestamp = new Date().toLocaleString()
-        const newRemark = remarkText.trim() ? `${timestamp}: ${remarkText}` : undefined
-
-        // Update leads data
-        const updatedLeads = leadsData.map(lead => {
-            if (lead.id === selectedLeadForRemark) {
-                const updatedSavedRemarks = newRemark ? [...(lead.savedRemarks || []), newRemark] : (lead.savedRemarks || [])
-                return {
-                    ...lead,
-                    savedRemarks: updatedSavedRemarks,
-                    reminder: isReminderEnabled && reminderDateTime ? reminderDateTime : undefined,
-                }
+        try {
+            const updateData: any = {}
+            
+            if (remarkText.trim()) {
+                updateData.customNotes = remarkText.trim()
             }
-            return lead
-        })
-
-        setLeadsData(updatedLeads)
-
-        // Save saved remarks to localStorage (as before)
-        const remarksMap: Record<number, string[]> = {}
-        updatedLeads.forEach(lead => {
-            if (lead.savedRemarks && lead.savedRemarks.length > 0) {
-                remarksMap[lead.id] = lead.savedRemarks
+            
+            if (isReminderEnabled && reminderDateTime) {
+                updateData.followUpDate = new Date(reminderDateTime).toISOString()
+            } else if (!isReminderEnabled) {
+                updateData.followUpDate = undefined
             }
-        })
-        localStorage.setItem('leadRemarks', JSON.stringify(remarksMap))
 
-        // Save reminders to localStorage
-        const remindersMap: Record<number, string> = {}
-        updatedLeads.forEach(lead => {
-            if (lead.reminder) {
-                remindersMap[lead.id] = lead.reminder
-            }
-        })
-        localStorage.setItem('leadReminders', JSON.stringify(remindersMap))
+            await dispatch(updateCustomizeLeadById({
+                id: selectedLeadForRemark,
+                data: updateData
+            })).unwrap()
 
-        // Close modal and reset
-        setIsRemarkModalOpen(false)
-        setSelectedLeadForRemark(null)
-        setRemarkText("")
-        setIsReminderEnabled(false)
-        setReminderDateTime("")
+            // Close modal and reset
+            setIsRemarkModalOpen(false)
+            setSelectedLeadForRemark(null)
+            setRemarkText("")
+            setIsReminderEnabled(false)
+            setReminderDateTime("")
+            
+            // Refresh data
+            dispatch(fetchCustomizeLeads())
+        } catch (error) {
+            console.error('Failed to save remark:', error)
+        }
     }
 
     // Handle save new enquiry
@@ -468,26 +313,9 @@ const Leads: React.FC = () => {
             alert('Please fill in all required fields')
             return
         }
-
-        const timestamp = new Date().toLocaleString()
-        const newLead: Lead = {
-            id: leadsData.length + 1,
-            name: newEnquiry.name,
-            badgeType: newEnquiry.badgeType,
-            leadId: newEnquiry.leadId || `${Math.floor(Math.random() * 9000000) + 1000000}`,
-            time: timestamp,
-            phone: newEnquiry.phone,
-            destination: newEnquiry.destination,
-            packageCode: newEnquiry.packageCode,
-            remarks: newEnquiry.remarks,
-            status: newEnquiry.status,
-            contacted: newEnquiry.contacted,
-            assignedTo: newEnquiry.assignedTo,
-            savedRemarks: [],
-            reminder: undefined,
-        }
-
-        setLeadsData([newLead, ...leadsData])
+        // Note: Creating new enquiry would require creating both Lead and CustomizeLead
+        // This functionality should be implemented through the API
+        alert('Creating new customize enquiry requires API integration. Please use the regular Leads module to create leads first.')
         setIsAddEnquiryModalOpen(false)
         setNewEnquiry({
             name: '',
@@ -638,12 +466,39 @@ const Leads: React.FC = () => {
         'Future Prospect',
     ]
 
+    // Handle status change
+    const handleStatusChange = async (leadId: string, newStatus: string) => {
+        try {
+            await dispatch(updateCustomizeLeadById({
+                id: leadId,
+                data: {
+                    customStatus: newStatus
+                }
+            })).unwrap()
+            // Refresh data
+            dispatch(fetchCustomizeLeads())
+        } catch (error) {
+            console.error('Failed to update status:', error)
+        }
+    }
+
     // Handle contacted change
-    const handleContactedChange = (leadId: number, newContacted: string) => {
-        const updatedLeads = leadsData.map(lead => 
-            lead.id === leadId ? { ...lead, contacted: newContacted } : lead
-        )
-        setLeadsData(updatedLeads)
+    const handleContactedChange = async (leadId: string, newContacted: string) => {
+        const customizeLead = customizeLeads.find((cl: CustomizeLead) => cl.id === leadId)
+        if (!customizeLead) return
+
+        try {
+            await dispatch(updateCustomizeLeadById({
+                id: leadId,
+                data: {
+                    customStatus: newContacted
+                }
+            })).unwrap()
+            // Refresh data
+            dispatch(fetchCustomizeLeads())
+        } catch (error) {
+            console.error('Failed to update contacted status:', error)
+        }
     }
 
     return (
@@ -657,6 +512,20 @@ const Leads: React.FC = () => {
                 overflowY: 'visible',
             }}
         >
+            {/* Loading State */}
+            {ui.loading && (
+                <Box style={{ padding: '20px', textAlign: 'center', marginBottom: '20px' }}>
+                    <Text>Loading customize leads...</Text>
+                </Box>
+            )}
+            
+            {/* Error State */}
+            {ui.error && (
+                <Box style={{ padding: '20px', background: '#fee', color: '#c00', marginBottom: '20px', borderRadius: '5px' }}>
+                    <Text>Error: {ui.error}</Text>
+                </Box>
+            )}
+
             {/* Title */}
             <Text size="8" weight="regular" style={{ color: 'var(--accent-12)', marginBottom: '24px', display: 'block' }}>
                 Customize Leads
@@ -1224,7 +1093,8 @@ const Leads: React.FC = () => {
 							>
 								<select
 									id={`status-${lead.id}`}
-									defaultValue=""
+									value={lead.status}
+									onChange={(e) => handleStatusChange(lead.id, e.target.value)}
 									style={{
 										width: '100%',
 										maxWidth: '110px',
@@ -1235,9 +1105,6 @@ const Leads: React.FC = () => {
 										padding: '4px 8px',
 									}}
 								>
-									<option value="" disabled>
-										Lead Status
-									</option>
 									<option value="Hot">
 										Hot
 									</option>

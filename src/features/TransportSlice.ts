@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Transport {
   id: string
@@ -62,7 +63,7 @@ export const fetchTransports = createAsyncThunk(
   'transport/fetchTransports',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/transport', {
+      const res = await fetch(getApiUrl('transport'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch transports')
@@ -78,7 +79,7 @@ export const createTransport = createAsyncThunk(
   'transport/createTransport',
   async (transport: Omit<Transport, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/transport', {
+      const res = await fetch(getApiUrl('transport'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -97,7 +98,7 @@ export const fetchTransportById = createAsyncThunk(
   'transport/fetchTransportById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/transport/${id}`, {
+      const res = await fetch(getApiUrl(`transport/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch transport')
@@ -113,7 +114,7 @@ export const updateTransportById = createAsyncThunk(
   'transport/updateTransportById',
   async ({ id, data }: { id: string; data: Partial<Transport> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/transport/${id}`, {
+      const res = await fetch(getApiUrl(`transport/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -135,7 +136,7 @@ export const deleteTransportById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid transport ID')
       }
-      const res = await fetch(`http://localhost:8000/api/transport/${id}`, {
+      const res = await fetch(getApiUrl(`transport/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

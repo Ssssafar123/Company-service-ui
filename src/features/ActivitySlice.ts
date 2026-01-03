@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface AgeRestriction {
   minAge?: number
@@ -59,7 +60,7 @@ export const fetchActivities = createAsyncThunk(
   'activity/fetchActivities',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/activity' , {method : "GET" , credentials : "include"})
+      const res = await fetch(getApiUrl('activity') , {method : "GET" , credentials : "include"})
       if (!res.ok) throw new Error('Failed to fetch activities')
       const data = await res.json()
       return data.map(mapActivity)
@@ -73,7 +74,7 @@ export const createActivity = createAsyncThunk(
   'activity/createActivity',
   async (activity: Omit<Activity, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/activity', {
+      const res = await fetch(getApiUrl('activity'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -92,7 +93,7 @@ export const fetchActivityById = createAsyncThunk(
   'activity/fetchActivityById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/activity/${id}`, {
+      const res = await fetch(getApiUrl(`activity/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch activity')
@@ -108,7 +109,7 @@ export const updateActivityById = createAsyncThunk(
   'activity/updateActivityById',
   async ({ id, data }: { id: string; data: Partial<Activity> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/activity/${id}`, {
+      const res = await fetch(getApiUrl(`activity/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -130,7 +131,7 @@ export const deleteActivityById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid activity ID')
       }
-      const res = await fetch(`http://localhost:8000/api/activity/${id}`, {
+      const res = await fetch(getApiUrl(`activity/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

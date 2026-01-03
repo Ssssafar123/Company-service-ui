@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Payment {
   id: string
@@ -80,7 +81,7 @@ export const fetchPayments = createAsyncThunk(
   'payment/fetchPayments',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/payment', {
+      const res = await fetch(getApiUrl('payment'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch payments')
@@ -96,7 +97,7 @@ export const fetchPaymentsByPage = createAsyncThunk(
   'payment/fetchPaymentsByPage',
   async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/payment/page?page=${page}&limit=${limit}`, {
+      const res = await fetch(getApiUrl(`payment/page?page=${page}&limit=${limit}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch payments')
@@ -118,7 +119,7 @@ export const createPayment = createAsyncThunk(
   'payment/createPayment',
   async (payment: Omit<Payment, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/payment', {
+      const res = await fetch(getApiUrl('payment'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -137,7 +138,7 @@ export const fetchPaymentById = createAsyncThunk(
   'payment/fetchPaymentById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/payment/${id}`, {
+      const res = await fetch(getApiUrl(`payment/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch payment')
@@ -153,7 +154,7 @@ export const updatePaymentById = createAsyncThunk(
   'payment/updatePaymentById',
   async ({ id, data }: { id: string; data: Partial<Payment> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/payment/${id}`, {
+      const res = await fetch(getApiUrl(`payment/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -175,7 +176,7 @@ export const deletePaymentById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid payment ID')
       }
-      const res = await fetch(`http://localhost:8000/api/payment/${id}`, {
+      const res = await fetch(getApiUrl(`payment/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

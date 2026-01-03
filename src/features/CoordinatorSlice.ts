@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../config/api'
 
 export interface Coordinator {
   id: string
@@ -54,7 +55,7 @@ export const fetchCoordinators = createAsyncThunk(
   'coordinator/fetchCoordinators',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/coordinator', {
+      const res = await fetch(getApiUrl('coordinator'), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch coordinators')
@@ -70,7 +71,7 @@ export const createCoordinator = createAsyncThunk(
   'coordinator/createCoordinator',
   async (coordinator: Omit<Coordinator, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch('http://localhost:8000/api/coordinator', {
+      const res = await fetch(getApiUrl('coordinator'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -89,7 +90,7 @@ export const fetchCoordinatorById = createAsyncThunk(
   'coordinator/fetchCoordinatorById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/coordinator/${id}`, {
+      const res = await fetch(getApiUrl(`coordinator/${id}`), {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to fetch coordinator')
@@ -105,7 +106,7 @@ export const updateCoordinatorById = createAsyncThunk(
   'coordinator/updateCoordinatorById',
   async ({ id, data }: { id: string; data: Partial<Coordinator> }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/coordinator/${id}`, {
+      const res = await fetch(getApiUrl(`coordinator/${id}`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -127,7 +128,7 @@ export const deleteCoordinatorById = createAsyncThunk(
       if (!id || id === 'undefined') {
         throw new Error('Invalid coordinator ID')
       }
-      const res = await fetch(`http://localhost:8000/api/coordinator/${id}`, {
+      const res = await fetch(getApiUrl(`coordinator/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

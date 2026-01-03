@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from '../../store'
+import { getImageUrl } from '../../config/api'
 import {
 	fetchLocations,
 	createLocation,
@@ -64,9 +65,8 @@ const Location: React.FC = () => {
 		const mappedLocations = locationsFromStore.map((item) => ({
 			id: item.id,
 			name: item.name,
-			// Set image to 'has-image' if binary data exists, empty otherwise
-			image: 'binary', // Always use binary endpoint
-			tripCount: item.tripCount || 0,
+			image: 'binary',
+			tripCount: item.itineraries?.length || 0,
 			order: item.order || 0,
 		}))
 		setLocations(mappedLocations)
@@ -388,7 +388,7 @@ const handleEdit = (location: LocationData) => {
 							}}
 						>
 							<img
-								src={`http://localhost:8000/api/location/${location.id}/image?t=${Date.now()}`}
+								src={getImageUrl(`/api/location/${location.id}/image?t=${Date.now()}`)}
 								alt={location.name}
 								style={{
 									width: '100%',

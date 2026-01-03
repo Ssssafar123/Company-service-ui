@@ -15,7 +15,6 @@ export const useThemeToggle = () => {
 };
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Initialize theme from localStorage or default to light mode
   const [isDark, setIsDark] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme === 'dark';
