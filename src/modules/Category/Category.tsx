@@ -376,7 +376,7 @@ const Category: React.FC = () => {
 							}}
 						>
 							<img
-								src={getImageUrl(`/api/category/${category.id}/image?t=${Date.now()}`)}
+								src={getImageUrl(`/api/common/${category.id}/image?t=${Date.now()}`)}
 								alt={category.name}
 								style={{
 									width: '100%',

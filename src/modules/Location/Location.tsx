@@ -388,7 +388,7 @@ const handleEdit = (location: LocationData) => {
 							}}
 						>
 							<img
-								src={getImageUrl(`/api/location/${location.id}/image?t=${Date.now()}`)}
+								src={getImageUrl(`/api/common/${location.id}/image?t=${Date.now()}`)}
 								alt={location.name}
 								style={{
 									width: '100%',
