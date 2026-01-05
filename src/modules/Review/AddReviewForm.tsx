@@ -1,17 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import type { AppDispatch } from '../../store'
-import { createReview } from '../../features/ReviewSlice'
 import {
 	Box,
 	Flex,
 	Text,
-	TextField,
 	IconButton,
-	Select,
 } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
-import { fetchLocations } from '../../features/LocationSlice'
 import { fetchItineraries } from '../../features/ItinerarySlice'
 import { useSelector } from 'react-redux'
 import type { RootState } from '../../store'
@@ -28,6 +24,7 @@ type AddReviewFormProps = {
 		rating?: number
 		itineraryId?: string
 		packageName?: string
+		isLandingPage?: boolean
 	} | null
 }
 
@@ -36,25 +33,15 @@ type AddReviewFormProps = {
 
 const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
     const dispatch = useDispatch<AppDispatch>()
-    const [rating, setRating] = useState<number>(initialData?.rating || 5)
 
 	const itineraries = useSelector((state : RootState) => state.itinerary.itineraries)
-	const itinerariesLoading = useSelector((state: RootState) => state.itinerary.ui.loading)
 
 
 	// Prevent body scroll when form is open
 	useEffect(() => {
 		if (isOpen) {
 			document.body.style.overflow = 'hidden'
-			// Reset rating when form opens
-			if (initialData?.rating) {
-				setRating(initialData.rating)
-			} else {
-				setRating(5)
-			}
-
 			dispatch(fetchItineraries());
-
 		} else {
 			document.body.style.overflow = 'unset'
 		}
@@ -63,7 +50,7 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 		return () => {
 			document.body.style.overflow = 'unset'
 		}
-	}, [isOpen, initialData , dispatch])
+	}, [isOpen, dispatch])
 
 	// Star Rating Component
 	const StarRating = ({ value, onChange }: { value: number; onChange: (rating: number) => void }) => {
@@ -125,9 +112,8 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 			fullWidth: true,
 			customRender: (value: any, onChange: (value: any) => void) => (
 				<StarRating
-					value={rating}
+					value={value || 5}
 					onChange={(newRating) => {
-						setRating(newRating)
 						onChange(newRating)
 					}}
 				/>
@@ -141,6 +127,12 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 			options: itineraryOptions,
 			fullWidth: true,
 		},
+		{
+			name: 'isLandingPage',
+			label: 'Show on Website',
+			type: 'checkbox' as const,
+			fullWidth: true,
+		},
 	]
 
 	const handleFormSubmit = async (values: Record<string, any>) => {
@@ -151,13 +143,13 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 		
 		const formData = {
 			...values,
-			rating: rating,
+			rating: values.rating || 5,
 			itineraryId: itineraryId, // Pass null if empty
 		}
 		
 		// Don't dispatch here - parent handles it
 		onSubmit(formData)
-		onClose()
+		// Don't close here - let parent handle it after success
 	}
 
 	if (!isOpen) return null
@@ -262,6 +254,7 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 				<Box style={{ padding: '24px', flex: 1 }}>
 					<Box style={{ maxWidth: '100%' }}>
 						<DynamicForm
+							key={initialData?.id || 'new'}
 							fields={formFields}
 							buttonText={initialData ? 'Update Review' : 'Add Review'}
 							onSubmit={handleFormSubmit}
@@ -271,6 +264,7 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ isOpen, onClose, onSubmit
 								reviewText: initialData?.reviewText || '',
 								rating: initialData?.rating || 5,
 								itineraryId: initialData?.itineraryId || '',
+								isLandingPage: initialData?.isLandingPage || false,
 							}}
 						/>
 					</Box>

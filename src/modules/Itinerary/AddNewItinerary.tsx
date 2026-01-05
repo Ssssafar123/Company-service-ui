@@ -40,9 +40,14 @@ const AddNewItinerary: React.FC = () => {
     }
 
 	useEffect(() => {
-		dispatch(fetchCategories())
-		dispatch(fetchLocations())
-	}, [dispatch])
+		// Only fetch if data doesn't exist in Redux store
+		if (locations.length === 0) {
+			dispatch(fetchLocations())
+		}
+		if (categories.length === 0) {
+			dispatch(fetchCategories())
+		}
+	}, [dispatch, locations.length, categories.length])
 
     // Check if we're in edit mode based on location state
     useEffect(() => {

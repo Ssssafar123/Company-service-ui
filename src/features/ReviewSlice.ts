@@ -13,6 +13,7 @@ export interface Review {
   reviewerImageUrl?: string
   itineraryId?: string
   bookingId?: string
+  isLandingPage?: boolean
 }
 
 interface ReviewState {
@@ -43,6 +44,7 @@ const mapReview = (review: any): Review => ({
   reviewerImageUrl: review.reviewerImageUrl,
   itineraryId: review.itineraryId,
   bookingId: review.bookingId,
+  isLandingPage: review.isLandingPage || false,
 })
 
 export const fetchReviews = createAsyncThunk(
@@ -87,6 +89,7 @@ export const fetchReviews = createAsyncThunk(
           reviewerImageUrl: review.reviewer_image || review.reviewerImageUrl,
           itineraryId: review.itineraryId || review.itinerary_id,
           bookingId: review.bookingId || review.booking_id,
+          isLandingPage: review.isLandingPage || false,
         }
       })
       
