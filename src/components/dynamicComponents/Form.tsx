@@ -20,6 +20,7 @@ import HotelDetails from '../../modules/Itinerary/HotelDetails'
 import PackageDetails from '../../modules/Itinerary/PackageDetails'
 import BatchManagement from '../../modules/Itinerary/BatchManagement'
 import SEOFields from '../../modules/Itinerary/SEOFields'
+
 type Field = {
   name: string;
   label: string;
@@ -28,7 +29,7 @@ type Field = {
   options?: string[] | { value: string; label: string }[];
   fullWidth?: boolean;
   singleImage?: boolean;
-  required?: boolean; 
+  required?: boolean;
   customRender?: (value: any, onChange: (value: any) => void) => React.ReactNode;
 };
 
@@ -37,6 +38,7 @@ type DynamicFormProps = {
   buttonText?: string;
   onSubmit?: (values: Record<string, any>) => void;
   initialValues?: Record<string, any>;
+  isSubmitting?: boolean;
 };
 
 const DynamicForm: React.FC<DynamicFormProps> = ({
@@ -44,8 +46,11 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   buttonText = "Submit",
   onSubmit,
   initialValues = {},
+  isSubmitting = false,
 }) => {
   const [formValues, setFormValues] = useState<Record<string, any>>(initialValues);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Update form values when initialValues prop changes
   useEffect(() => {
@@ -56,10 +61,121 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
   const handleChange = (name: string, value: any) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validation function
+  const validateField = (field: Field, value: any): string | null => {
+    if (!field.required) return null;
+
+    // Check if field is empty
+    if (value === null || value === undefined || value === '') {
+      return `${field.label} is required`;
+    }
+
+    // Special validation for arrays
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return `${field.label} is required`;
+      }
+      // For file arrays, check if there's at least one non-empty value
+      if (field.type === 'file') {
+        const hasFile = value.some((item: any) => {
+          if (item instanceof File) return true;
+          if (typeof item === 'string' && item.trim() !== '') return true;
+          return false;
+        });
+        if (!hasFile) {
+          return `${field.label} is required`;
+        }
+      }
+    }
+
+    // Special validation for objects (package_details)
+    if (field.type === 'packages' && typeof value === 'object') {
+      const hasBasePackages = value.base_packages && Array.isArray(value.base_packages) && value.base_packages.length > 0;
+      if (!hasBasePackages) {
+        return `${field.label} must have at least one base package`;
+      }
+    }
+
+    // Special validation for batches
+    if (field.type === 'batches' && Array.isArray(value)) {
+      if (value.length === 0) {
+        return `${field.label} must have at least one batch`;
+      }
+    }
+
+    // Special validation for richtext (strip HTML tags)
+    if (field.type === 'richtext' && typeof value === 'string') {
+      const textContent = value.replace(/<[^>]*>/g, '').trim();
+      if (textContent === '') {
+        return `${field.label} is required`;
+      }
+    }
+
+    return null;
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    let isValid = true;
+
+    fields.forEach((field) => {
+      if (field.type === 'custom' || field.name.startsWith('_')) {
+        return; // Skip custom render fields and separators
+      }
+
+      const value = formValues[field.name];
+      const error = validateField(field, value);
+
+      if (error) {
+        newErrors[field.name] = error;
+        isValid = false;
+      }
+    });
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent submission if already submitting
+    if (isSubmitting) {
+      return;
+    }
+    
+    // Mark all fields as touched
+    const allTouched: Record<string, boolean> = {};
+    fields.forEach((field) => {
+      if (field.type !== 'custom' && !field.name.startsWith('_')) {
+        allTouched[field.name] = true;
+      }
+    });
+    setTouched(allTouched);
+
+    // Validate form
+    if (!validateForm()) {
+      // Scroll to first error
+      const firstErrorField = Object.keys(errors)[0];
+      if (firstErrorField) {
+        const element = document.querySelector(`[name="${firstErrorField}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+      return;
+    }
+
     onSubmit?.(formValues);
   };
 
@@ -71,59 +187,95 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       );
     }
 
+    const fieldError = errors[field.name];
+    const isTouched = touched[field.name];
+
     switch (field.type) {
       case "text":
       case "email":
       case "password":
         return (
-          <TextField.Root
-            type={field.type}
-            placeholder={field.placeholder}
-            value={formValues[field.name] || ""}
-            onChange={(e) => handleChange(field.name, e.target.value)}
-          />
+          <Box>
+            <TextField.Root
+              type={field.type}
+              placeholder={field.placeholder}
+              value={formValues[field.name] || ""}
+              onChange={(e) => handleChange(field.name, e.target.value)}
+              color={fieldError && isTouched ? "red" : undefined}
+            />
+            {fieldError && isTouched && (
+              <Text size="1" style={{ color: 'var(--red-9)', marginTop: '4px', display: 'block' }}>
+                {fieldError}
+              </Text>
+            )}
+          </Box>
         );
 
       case "number":
         return (
-          <TextField.Root
-            type="number"
-            placeholder={field.placeholder}
-            value={formValues[field.name] || ""}
-            onChange={(e) => handleChange(field.name, e.target.value)}
-          />
+          <Box>
+            <TextField.Root
+              type="number"
+              placeholder={field.placeholder}
+              value={formValues[field.name] || ""}
+              onChange={(e) => handleChange(field.name, e.target.value)}
+              color={fieldError && isTouched ? "red" : undefined}
+            />
+            {fieldError && isTouched && (
+              <Text size="1" style={{ color: 'var(--red-9)', marginTop: '4px', display: 'block' }}>
+                {fieldError}
+              </Text>
+            )}
+          </Box>
         );
 
       case "textarea":
         return (
-          <TextArea
-            placeholder={field.placeholder}
-            value={formValues[field.name] || ""}
-            onChange={(e) => handleChange(field.name, e.target.value)}
-            style={{ minHeight: "80px" }}
-          />
+          <Box>
+            <TextArea
+              placeholder={field.placeholder}
+              value={formValues[field.name] || ""}
+              onChange={(e) => handleChange(field.name, e.target.value)}
+              style={{ minHeight: "80px" }}
+            />
+            {fieldError && isTouched && (
+              <Text size="1" style={{ color: 'var(--red-9)', marginTop: '4px', display: 'block' }}>
+                {fieldError}
+              </Text>
+            )}
+          </Box>
         );
 
       case "richtext":
         return (
-          <RichTextEditor
-            value={formValues[field.name] || ""}
-            onChange={(value) => handleChange(field.name, value)}
-            placeholder={field.placeholder}
-            label={field.label}
-          />
+          <Box>
+            <RichTextEditor
+              value={formValues[field.name] || ""}
+              onChange={(value) => handleChange(field.name, value)}
+              placeholder={field.placeholder}
+              label={field.label}
+            />
+            {fieldError && isTouched && (
+              <Text size="1" style={{ color: 'var(--red-9)', marginTop: '4px', display: 'block' }}>
+                {fieldError}
+              </Text>
+            )}
+          </Box>
         );
 
       case "file":
         return (
-          <ImageUpload
-            images={Array.isArray(formValues[field.name]) 
-              ? formValues[field.name] 
-              : (formValues[field.name] ? [formValues[field.name]] : [""])}
-            onChange={(images) => handleChange(field.name, images)}
-            label={field.label}
-            singleImage={field.singleImage}
-          />
+          <Box>
+            <ImageUpload
+              images={Array.isArray(formValues[field.name]) 
+                ? formValues[field.name] 
+                : (formValues[field.name] ? [formValues[field.name]] : [""])}
+              onChange={(images) => handleChange(field.name, images)}
+              label={field.label}
+              singleImage={field.singleImage}
+              error={fieldError && isTouched ? fieldError : undefined}
+            />
+          </Box>
         );
 
       case "checkbox":
@@ -148,8 +300,9 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           </Flex>
         );
 
-        case "select":
-          return (
+      case "select":
+        return (
+          <Box>
             <Select.Root
               value={formValues[field.name] || undefined}
               onValueChange={(value) => handleChange(field.name, value)}
@@ -163,7 +316,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                   })
                   .map((option) => {
                     const optValue = typeof option === "string" ? option : option.value;
-                    const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? ""); // Fixed to always be string
+                    const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? "");
                     return (
                       <Select.Item key={optValue} value={optValue}>
                         {optLabel}
@@ -172,10 +325,15 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                   })}
               </Select.Content>
             </Select.Root>
-          );
+            {fieldError && isTouched && (
+              <Text size="1" style={{ color: 'var(--red-9)', marginTop: '4px', display: 'block' }}>
+                {fieldError}
+              </Text>
+            )}
+          </Box>
+        );
 
       case "multiselect":
-        // Multi-select implementation with checkboxes
         const selectedValues = Array.isArray(formValues[field.name]) ? formValues[field.name] : (formValues[field.name] ? [formValues[field.name]] : []);
         const selectedLabels = field.options
           ?.filter((option) => {
@@ -195,8 +353,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               onValueChange={(value) => {
                 const current = Array.isArray(formValues[field.name]) ? formValues[field.name] : (formValues[field.name] ? [formValues[field.name]] : []);
                 const newValue = current.includes(value)
-                ? current.filter((v: string) => v !== value)
-               : [...current, value];
+                  ? current.filter((v: string) => v !== value)
+                  : [...current, value];
                 handleChange(field.name, newValue);
               }}
             >
@@ -216,7 +374,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                     return (
                       <Select.Item key={optValue} value={optValue}>
                         <Flex align="center" gap="2">
-                         <Checkbox checked={isSelected} disabled />
+                          <Checkbox checked={isSelected} disabled />
                           <Text>{optLabel}</Text>
                         </Flex>
                       </Select.Item>
@@ -224,6 +382,11 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                   })}
               </Select.Content>
             </Select.Root>
+            {fieldError && isTouched && (
+              <Text size="1" style={{ color: 'var(--red-9)', marginTop: '4px', display: 'block' }}>
+                {fieldError}
+              </Text>
+            )}
             {selectedLabels && (
               <Text size="1" style={{ color: 'var(--accent-11)', marginTop: '4px' }}>
                 Selected: {selectedLabels}
@@ -232,40 +395,41 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           </Box>
         );
 
-        case "radio":
-          return (
-            <RadioGroup.Root
-              value={formValues[field.name] || undefined}
-              onValueChange={(value) => handleChange(field.name, value)}
-            >
-              <Flex direction="column" gap="2">
-                {field.options
-                  ?.filter((option) => {
-                    const optValue = typeof option === "string" ? option : option.value;
-                    return optValue !== "";
-                  })
-                  .map((option) => {
-                    const optValue = typeof option === "string" ? option : option.value;
-                    const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? ""); // Fixed to always be string
-                    return (
-                      <Flex key={optValue} align="center" gap="2">
-                        <RadioGroup.Item value={optValue} id={`${field.name}-${optValue}`} />
-                        <Text as="label" size="2" htmlFor={`${field.name}-${optValue}`}>
-                          {optLabel}
-                        </Text>
-                      </Flex>
-                    );
-                  })}
-              </Flex>
-            </RadioGroup.Root>
-          );
-        case "daywise":
+      case "radio":
+        return (
+          <RadioGroup.Root
+            value={formValues[field.name] || undefined}
+            onValueChange={(value) => handleChange(field.name, value)}
+          >
+            <Flex direction="column" gap="2">
+              {field.options
+                ?.filter((option) => {
+                  const optValue = typeof option === "string" ? option : option.value;
+                  return optValue !== "";
+                })
+                .map((option) => {
+                  const optValue = typeof option === "string" ? option : option.value;
+                  const optLabel: string = typeof option === "string" ? option : (option.label ?? option.value ?? "");
+                  return (
+                    <Flex key={optValue} align="center" gap="2">
+                      <RadioGroup.Item value={optValue} id={`${field.name}-${optValue}`} />
+                      <Text as="label" size="2" htmlFor={`${field.name}-${optValue}`}>
+                        {optLabel}
+                      </Text>
+                    </Flex>
+                  );
+                })}
+            </Flex>
+          </RadioGroup.Root>
+        );
+
+      case "daywise":
         return (
           <DaywiseActivities
             activities={formValues[field.name] || []}
             onChange={(activities) => handleChange(field.name, activities)}
             label={field.label}
-            error={undefined}
+            error={fieldError && isTouched ? fieldError : undefined}
           />
         );
 
@@ -275,58 +439,68 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             hotels={formValues[field.name] || []}
             onChange={(hotels) => handleChange(field.name, hotels)}
             label={field.label}
-            error={undefined}
+            error={fieldError && isTouched ? fieldError : undefined}
           />
         );
 
       case "packages":
         return (
-          <PackageDetails
-            packages={formValues[field.name] || {
-              base_packages: [],
-              pickup_point: [],
-              drop_point: [],
-            }}
-            onChange={(packages) => handleChange(field.name, packages)}
-            label={field.label}
-            error={undefined}
-          />
+          <Box>
+            <PackageDetails
+              packages={formValues[field.name] || {
+                base_packages: [],
+                pickup_point: [],
+                drop_point: [],
+              }}
+              onChange={(packages) => handleChange(field.name, packages)}
+              label={field.label}
+              error={fieldError && isTouched ? fieldError : undefined}
+            />
+          </Box>
         );
 
       case "batches":
         return (
-          <BatchManagement
-            batches={formValues[field.name] || []}
-            onChange={(batches) => handleChange(field.name, batches)}
+          <Box>
+            <BatchManagement
+              batches={formValues[field.name] || []}
+              onChange={(batches) => handleChange(field.name, batches)}
+              label={field.label}
+              error={fieldError && isTouched ? fieldError : undefined}
+            />
+          </Box>
+        );
+
+      case "seo":
+        return (
+          <SEOFields
+            seoData={formValues[field.name] || null}
+            onChange={(seoData) => handleChange(field.name, seoData)}
             label={field.label}
-            error={undefined}
+            error={fieldError && isTouched ? fieldError : undefined}
           />
         );
 
-        case "seo":
-          return (
-            <SEOFields
-              seoData={formValues[field.name] || null}
-              onChange={(seoData) => handleChange(field.name, seoData)}
-              label={field.label}
-              error={undefined}
+      case "date":
+        return (
+          <Box style={{ position: 'relative' }}>
+            <TextField.Root
+              name={field.name}
+              type="date"
+              value={formValues[field.name] || ''}
+              onChange={(e) => handleChange(field.name, e.target.value)}
+              placeholder={field.placeholder}
+              color={fieldError && isTouched ? "red" : undefined}
+              style={{
+                width: '100%',
+                paddingRight: '40px',
+              }}
             />
-          );
-
-          case "date":
-            return (
-              <Box style={{ position: 'relative' }}>
-                <TextField.Root
-                  name={field.name}
-                  type="date"
-                  value={formValues[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                  style={{
-                    width: '100%',
-                    paddingRight: '40px',
-                  }}
-                />
+            {fieldError && isTouched && (
+              <Text size="1" style={{ color: 'var(--red-9)', marginTop: '4px', display: 'block' }}>
+                {fieldError}
+              </Text>
+            )}
             <Box
               style={{
                 position: 'absolute',
@@ -379,7 +553,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             field.type === "daywise" || 
             field.type === "hotels" || 
             field.type === "packages" || 
-            field.type === "batches";
+            field.type === "batches" ||
             field.type === "seo";
             const gridColumn = shouldSpanFullWidth ? "1 / -1" : "auto";
             
@@ -397,6 +571,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 {!["checkbox", "switch", "richtext", "file", "daywise", "hotels", "packages", "batches", "custom", "seo"].includes(field.type) && (
                   <Text as="label" size="2" weight="medium" style={{ color: "var(--accent-12)" }}>
                     {field.label}
+                    {field.required && <Text style={{ color: 'var(--red-9)' }}> *</Text>}
                   </Text>
                 )}
                 
@@ -408,8 +583,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         
         {/* Submit Button - Always full width */}
         <Box style={{ gridColumn: "1 / -1", marginTop: "24px" }}>
-          <Button type="submit" size="3" style={{ width: "100%" }}>
-            {buttonText}
+          <Button 
+            type="submit" 
+            size="3" 
+            style={{ width: "100%" }}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Submitting...' : buttonText}
           </Button>
         </Box>
       </form>
