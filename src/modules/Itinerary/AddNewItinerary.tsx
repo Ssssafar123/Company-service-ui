@@ -18,10 +18,10 @@ const AddNewItinerary: React.FC = () => {
     const [initialValues, setInitialValues] = useState<any>({})
     const [isEditMode, setIsEditMode] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false) // ADD THIS LINE
 	const dispatch = useDispatch<AppDispatch>()
 	const locations = useSelector((state : RootState) => state.location.locations)
 	const categories = useSelector((state : RootState) => state.category.categories)
-    // Add dialog state
     const [dialogOpen, setDialogOpen] = useState(false)
     const [dialogConfig, setDialogConfig] = useState<{
         title: string
@@ -308,6 +308,13 @@ const AddNewItinerary: React.FC = () => {
     }, [location.state, locations])
 
     const handleSubmit = async (values: Record<string, any>) => {
+		// Prevent double submission
+		if (isSubmitting) {
+			return
+		}
+
+		setIsSubmitting(true)
+		
 		try {
 			// Get location name from Redux state
 			const selectedLocation = locations.find(loc => loc.id === values.travel_location)
@@ -722,6 +729,8 @@ if (Array.isArray(values.day_details)) {
 				},
 			})
 			setDialogOpen(true)
+		} finally {
+			setIsSubmitting(false)
 		}
 	}
 
@@ -746,6 +755,7 @@ if (Array.isArray(values.day_details)) {
 			label: 'Itinerary Name',
 			type: 'text' as const,
 			placeholder: 'Enter name of Itinerary',
+			required: true, 
 		},
 		{
 			name: 'travel_location',
@@ -753,6 +763,7 @@ if (Array.isArray(values.day_details)) {
 			type: 'select' as const,
 			placeholder: 'Select Travel Location',
 			options: locations.map(loc => ({value: loc.id, label: loc.name})),
+			required: true, 
 		},
 		{
 			name: 'categories',
@@ -760,6 +771,7 @@ if (Array.isArray(values.day_details)) {
 			type: 'multiselect' as const,
 			placeholder: 'Select Categories',
 			options: categories.map(cat => ({value: String(cat.id), label: cat.name})),
+			required: true,
 		},
 
 		// Section 2: Images (Full Width)
@@ -768,6 +780,7 @@ if (Array.isArray(values.day_details)) {
 			label: 'View Images',
 			type: 'file' as const,
 			fullWidth: true,
+			required: true, 
 		},
 
 		// Section 3: Descriptions (Full Width)
@@ -777,6 +790,7 @@ if (Array.isArray(values.day_details)) {
 			type: 'richtext' as const,
 			placeholder: 'Enter short description about the itinerary',
 			fullWidth: true,
+			required: true, 
 		},
 		{
 			name: 'iti_desc',
@@ -784,6 +798,7 @@ if (Array.isArray(values.day_details)) {
 			type: 'richtext' as const,
 			placeholder: 'Add detailed description about the itinerary',
 			fullWidth: true,
+			required: true,
 		},
 
 		// Section 4: Additional Details
@@ -803,6 +818,7 @@ if (Array.isArray(values.day_details)) {
 			label: 'Duration (In Days)',
 			type: 'number' as const,
 			placeholder: 'Add Duration',
+			required: true,
 		},
 		{
 			name: 'iti_altitude',
@@ -821,18 +837,6 @@ if (Array.isArray(values.day_details)) {
 			label: 'Cultural Site',
 			type: 'text' as const,
 			placeholder: 'Add Cultural Site',
-		},
-		{
-			name: 'start_date',
-			label: 'Start Date',
-			type: 'date' as const,
-			placeholder: 'Select start date',
-		},
-		{
-			name: 'end_date',
-			label: 'End Date',
-			type: 'date' as const,
-			placeholder: 'Select end date',
 		},
 		{
 			name: 'price',
@@ -868,6 +872,7 @@ if (Array.isArray(values.day_details)) {
 			type: 'text' as const,
 			placeholder: 'Paste the Drive link to Brochure',
 			fullWidth: true,
+			required: true,
 		},
 
 		{
@@ -929,6 +934,7 @@ if (Array.isArray(values.day_details)) {
 			type: 'richtext' as const,
 			placeholder: 'Enter inclusions separated by full stops (.)',
 			fullWidth: true,
+			required: true,
 		},
 		{
 			name: 'iti_exclusion',
@@ -936,6 +942,7 @@ if (Array.isArray(values.day_details)) {
 			type: 'richtext' as const,
 			placeholder: 'Enter exclusions separated by full stops (.)',
 			fullWidth: true,
+			required: true,
 		},
 
 		// Section 7: Notes (Full Width)
@@ -965,6 +972,7 @@ if (Array.isArray(values.day_details)) {
 			label: 'Package Details',
 			type: 'packages' as const,
 			fullWidth: true,
+			required: true,
 		},
 
 		{
@@ -984,6 +992,7 @@ if (Array.isArray(values.day_details)) {
 			label: 'Batch Management',
 			type: 'batches' as const,
 			fullWidth: true,
+			required: true,
 		},
 
 		{
@@ -1056,6 +1065,7 @@ if (Array.isArray(values.day_details)) {
 				buttonText={isEditMode ? 'Update Itinerary' : 'Create New Itinerary'}
 				onSubmit={handleSubmit}
 				initialValues={initialValues}
+				isSubmitting={isSubmitting}
 			/>
 			
 			{/* Controlled AlertDialog */}
