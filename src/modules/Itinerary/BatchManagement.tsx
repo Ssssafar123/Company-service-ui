@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Box, Flex, Text, TextField, Button, TextArea, Checkbox } from '@radix-ui/themes'
+import BulkEditDialog from './BulkEditDialog'
 
 export type Batch = {
 	id: string
@@ -38,6 +39,8 @@ const BatchManagement: React.FC<BatchManagementProps> = ({
 	label,
 	error,
 }) => {
+	const [showBulkEdit, setShowBulkEdit] = useState(false)
+
 	const addBatch = () => {
 		const newBatch: Batch = {
 			id: Date.now().toString(),
@@ -66,6 +69,24 @@ const BatchManagement: React.FC<BatchManagementProps> = ({
 		updateBatch(id, 'extra_amount', numValue)
 	}
 
+	const handleBulkEditApply = (newBatches: Batch[]) => {
+		// Combine existing and new batches, removing duplicates
+		const combinedBatches = [...batches, ...newBatches]
+		
+		// Remove duplicates by start_date
+		const uniqueBatches = Object.values(
+			combinedBatches.reduce((acc, batch) => {
+				const key = batch.start_date
+				if (!acc[key]) {
+					acc[key] = batch
+				}
+				return acc
+			}, {} as Record<string, Batch>)
+		)
+		
+		onChange(uniqueBatches)
+	}
+
 	return (
 		<Box>
 			{label && (
@@ -73,9 +94,20 @@ const BatchManagement: React.FC<BatchManagementProps> = ({
 					<Text size="3" weight="medium" style={{ color: 'var(--accent-12)' }}>
 						{label}
 					</Text>
-					<Button type="button" variant="soft" size="2" onClick={addBatch}>
-						+ Add Batch
-					</Button>
+					<Flex gap="2">
+					<Button 
+                         type="button" 
+                         variant="soft" 
+                         size="2" 
+                         onClick={() => setShowBulkEdit(true)}
+                         style={{ backgroundColor: 'var(--accent-9)', color: 'white' }}
+                     >
+                       Bulk Generate
+                         </Button>
+						<Button type="button" variant="soft" size="2" onClick={addBatch}>
+							+ Add Batch
+						</Button>
+					</Flex>
 				</Flex>
 			)}
 			<Flex direction="column" gap="4">
@@ -89,7 +121,7 @@ const BatchManagement: React.FC<BatchManagementProps> = ({
 						}}
 					>
 						<Text size="2" style={{ color: 'var(--accent-11)' }}>
-							No batches added yet. Click "Add Batch" to start.
+							No batches added yet. Click "Add Batch" or "Bulk Generate" to start.
 						</Text>
 					</Box>
 				) : (
@@ -213,6 +245,13 @@ const BatchManagement: React.FC<BatchManagementProps> = ({
 					{error}
 				</Text>
 			)}
+
+			{/* Bulk Edit Dialog */}
+			<BulkEditDialog
+				open={showBulkEdit}
+				onClose={() => setShowBulkEdit(false)}
+				onApply={handleBulkEditApply}
+			/>
 		</Box>
 	)
 }
