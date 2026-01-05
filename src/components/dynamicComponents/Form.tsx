@@ -28,6 +28,7 @@ type Field = {
   options?: string[] | { value: string; label: string }[];
   fullWidth?: boolean;
   singleImage?: boolean;
+  required?: boolean; 
   customRender?: (value: any, onChange: (value: any) => void) => React.ReactNode;
 };
 
@@ -194,8 +195,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               onValueChange={(value) => {
                 const current = Array.isArray(formValues[field.name]) ? formValues[field.name] : (formValues[field.name] ? [formValues[field.name]] : []);
                 const newValue = current.includes(value)
-                  ? current.filter((v) => v !== value)
-                  : [...current, value];
+                ? current.filter((v: string) => v !== value)
+               : [...current, value];
                 handleChange(field.name, newValue);
               }}
             >
@@ -215,7 +216,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                     return (
                       <Select.Item key={optValue} value={optValue}>
                         <Flex align="center" gap="2">
-                          <Checkbox checked={isSelected} readOnly />
+                         <Checkbox checked={isSelected} disabled />
                           <Text>{optLabel}</Text>
                         </Flex>
                       </Select.Item>
@@ -312,21 +313,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             />
           );
 
-      case "date":
-        return (
-          <Box style={{ position: 'relative' }}>
-            <TextField.Root
-              name={field.name}
-              type="date"
-              value={formValues[field.name] || ''}
-              onChange={(e) => handleChange(field.name, e.target.value)}
-              placeholder={field.placeholder}
-              required={field.required}
-              style={{
-                width: '100%',
-                paddingRight: '40px',
-              }}
-            />
+          case "date":
+            return (
+              <Box style={{ position: 'relative' }}>
+                <TextField.Root
+                  name={field.name}
+                  type="date"
+                  value={formValues[field.name] || ''}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  placeholder={field.placeholder}
+                  style={{
+                    width: '100%',
+                    paddingRight: '40px',
+                  }}
+                />
             <Box
               style={{
                 position: 'absolute',
