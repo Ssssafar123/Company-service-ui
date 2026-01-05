@@ -3,7 +3,7 @@ import { Box, Flex, Text, TextField, Button, Separator, Select } from '@radix-ui
 
 export type BasePackage = {
 	id: string
-	type: string // Changed from name to type
+	type: string
 	original_price: number
 	discounted_price: number
 }
@@ -27,13 +27,18 @@ type PackageDetailsProps = {
 	error?: string
 }
 
-// Dummy package types (same as locations)
+// Package types matching the old system
 const packageTypes = [
-	{ value: 'standard', label: 'Standard' },
-	{ value: 'deluxe', label: 'Deluxe' },
-	{ value: 'premium', label: 'Premium' },
-	{ value: 'luxury', label: 'Luxury' },
-	{ value: 'budget', label: 'Budget' },
+	{ value: 'Double Sharing', label: 'Double Sharing' },
+	{ value: 'Triple Sharing', label: 'Triple Sharing' },
+	{ value: 'Quad Sharing', label: 'Quad Sharing' },
+	{ value: 'Seat in Coach', label: 'Seat in Coach' },
+	{ value: 'Own on Bike&fuel', label: 'Own on Bike&fuel' },
+	{ value: 'Dual Rider', label: 'Dual Rider' },
+	{ value: 'Solo Rider', label: 'Solo Rider' },
+	{ value: 'Customize Trip 2 Pax', label: 'Customize Trip 2 Pax' },
+	{ value: 'With Flight', label: 'With Flight' },
+	{ value: 'Without Flight', label: 'Without Flight' },
 ]
 
 // Format number with commas
@@ -60,8 +65,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 	// Base Packages
 	const addBasePackage = () => {
 		const newPackage: BasePackage = {
-			id: Date.now().toString(),
-			type: '', // Changed from name to type
+			id: `base-pkg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			type: '',
 			original_price: 0,
 			discounted_price: 0,
 		}
@@ -79,11 +84,17 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 	}
 
 	const updateBasePackage = (id: string, field: keyof BasePackage, value: string | number) => {
+		// Create a new array with updated package to ensure React detects the change
+		const updatedPackages = packages.base_packages.map((pkg) => {
+			if (pkg.id === id) {
+				return { ...pkg, [field]: value }
+			}
+			return { ...pkg } // Return a copy of unchanged packages
+		})
+		
 		onChange({
 			...packages,
-			base_packages: packages.base_packages.map((pkg) =>
-				pkg.id === id ? { ...pkg, [field]: value } : pkg
-			),
+			base_packages: updatedPackages,
 		})
 	}
 
@@ -93,7 +104,6 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 		field: 'original_price' | 'discounted_price',
 		value: string
 	) => {
-		const formatted = formatPrice(value)
 		const numValue = parsePrice(value)
 		updateBasePackage(id, field, numValue)
 	}
@@ -101,7 +111,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 	// Pickup Points
 	const addPickupPoint = () => {
 		const newPoint: PickupDropPoint = {
-			id: Date.now().toString(),
+			id: `pickup-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
 			name: '',
 			price: 0,
 		}
@@ -119,16 +129,21 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 	}
 
 	const updatePickupPoint = (id: string, field: keyof PickupDropPoint, value: string | number) => {
+		// Create a new array with updated point to ensure React detects the change
+		const updatedPoints = packages.pickup_point.map((point) => {
+			if (point.id === id) {
+				return { ...point, [field]: value }
+			}
+			return { ...point } // Return a copy of unchanged points
+		})
+		
 		onChange({
 			...packages,
-			pickup_point: packages.pickup_point.map((point) =>
-				point.id === id ? { ...point, [field]: value } : point
-			),
+			pickup_point: updatedPoints,
 		})
 	}
 
 	const handlePickupPriceChange = (id: string, value: string) => {
-		const formatted = formatPrice(value)
 		const numValue = parsePrice(value)
 		updatePickupPoint(id, 'price', numValue)
 	}
@@ -136,7 +151,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 	// Drop Points
 	const addDropPoint = () => {
 		const newPoint: PickupDropPoint = {
-			id: Date.now().toString(),
+			id: `drop-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
 			name: '',
 			price: 0,
 		}
@@ -154,16 +169,21 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 	}
 
 	const updateDropPoint = (id: string, field: keyof PickupDropPoint, value: string | number) => {
+		// Create a new array with updated point to ensure React detects the change
+		const updatedPoints = packages.drop_point.map((point) => {
+			if (point.id === id) {
+				return { ...point, [field]: value }
+			}
+			return { ...point } // Return a copy of unchanged points
+		})
+		
 		onChange({
 			...packages,
-			drop_point: packages.drop_point.map((point) =>
-				point.id === id ? { ...point, [field]: value } : point
-			),
+			drop_point: updatedPoints,
 		})
 	}
 
 	const handleDropPriceChange = (id: string, value: string) => {
-		const formatted = formatPrice(value)
 		const numValue = parsePrice(value)
 		updateDropPoint(id, 'price', numValue)
 	}
@@ -315,7 +335,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 							</Text>
 						</Box>
 					) : (
-						packages.pickup_point.map((point, index) => (
+						packages.pickup_point.map((point) => (
 							<Box
 								key={point.id}
 								style={{
@@ -399,7 +419,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 							</Text>
 						</Box>
 					) : (
-						packages.drop_point.map((point, index) => (
+						packages.drop_point.map((point) => (
 							<Box
 								key={point.id}
 								style={{

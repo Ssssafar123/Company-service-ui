@@ -180,38 +180,54 @@ const AddNewItinerary: React.FC = () => {
                         }));
                     })(),
                     package_details: (() => {
-                        const pkgData = (itineraryData as any).packages 
-                            || (itineraryData as any).package_details 
-                            || {};
-                        
-                        return {
-                            base_packages: Array.isArray(pkgData.basePackages) 
-                                ? pkgData.basePackages.map((pkg: any) => ({
-                                    type: pkg.name || pkg.packageType || '',
-                                    original_price: pkg.original_price || pkg.originalPrice || 0,
-                                    discounted_price: pkg.price || pkg.discounted_price || 0,
-                                }))
-                                : (Array.isArray(pkgData.base_packages) 
-                                    ? pkgData.base_packages 
-                                    : []),
-                            pickup_point: Array.isArray(pkgData.pickupPoint) 
-                                ? pkgData.pickupPoint.map((point: any) => ({
-                                    name: point.name || '',
-                                    price: point.price || 0,
-                                }))
-                                : (Array.isArray(pkgData.pickup_point) 
-                                    ? pkgData.pickup_point 
-                                    : []),
-                            drop_point: Array.isArray(pkgData.dropPoint) 
-                                ? pkgData.dropPoint.map((point: any) => ({
-                                    name: point.name || '',
-                                    price: point.price || 0,
-                                }))
-                                : (Array.isArray(pkgData.drop_point) 
-                                    ? pkgData.drop_point 
-                                    : []),
-                        };
-                    })(),
+						const pkgData = (itineraryData as any).packages 
+							|| (itineraryData as any).package_details 
+							|| {};
+						
+						return {
+							base_packages: Array.isArray(pkgData.basePackages) 
+								? pkgData.basePackages.map((pkg: any, index: number) => ({
+									id: pkg.id || pkg._id || `base-pkg-${index}-${Date.now()}`,
+									type: pkg.name || pkg.packageType || '',
+									original_price: pkg.original_price || pkg.originalPrice || 0,
+									discounted_price: pkg.price || pkg.discounted_price || 0,
+								}))
+								: (Array.isArray(pkgData.base_packages) 
+									? pkgData.base_packages.map((pkg: any, index: number) => ({
+										id: pkg.id || `base-pkg-${index}-${Date.now()}`,
+										type: pkg.type || '',
+										original_price: pkg.original_price || 0,
+										discounted_price: pkg.discounted_price || 0,
+									}))
+									: []),
+							pickup_point: Array.isArray(pkgData.pickupPoint) 
+								? pkgData.pickupPoint.map((point: any, index: number) => ({
+									id: point.id || point._id || `pickup-${index}-${Date.now()}`,
+									name: point.name || '',
+									price: point.price || 0,
+								}))
+								: (Array.isArray(pkgData.pickup_point) 
+									? pkgData.pickup_point.map((point: any, index: number) => ({
+										id: point.id || `pickup-${index}-${Date.now()}`,
+										name: point.name || '',
+										price: point.price || 0,
+									}))
+									: []),
+							drop_point: Array.isArray(pkgData.dropPoint) 
+								? pkgData.dropPoint.map((point: any, index: number) => ({
+									id: point.id || point._id || `drop-${index}-${Date.now()}`,
+									name: point.name || '',
+									price: point.price || 0,
+								}))
+								: (Array.isArray(pkgData.drop_point) 
+									? pkgData.drop_point.map((point: any, index: number) => ({
+										id: point.id || `drop-${index}-${Date.now()}`,
+										name: point.name || '',
+										price: point.price || 0,
+									}))
+									: []),
+						};
+					})(),
                     batches: (() => {
                         const batchData = (itineraryData as any).batches || [];
                         if (!Array.isArray(batchData)) return [];

@@ -183,34 +183,48 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 										onChange={(e) => handleFileChange(index, e)}
 									/>
 									<Flex align="center" gap="2">
-										<Button
-											type="button"
-											variant="soft"
-											size="2"
-											onClick={() => {
-												const input = fileInputRefs.current[index] || document.getElementById(`image-upload-${index}`) as HTMLInputElement
-												if (input) {
-													input.click()
-												}
-											}}
-										>
-											{hasImagePreview ? 'Change Image' : 'Browse...'}
-										</Button>
-										<Text size="2" style={{ color: 'var(--accent-11)' }}>
-											{getFileDisplayName(image)}
-										</Text>
-										{hasImagePreview && (
-											<Button
-												type="button"
-												variant="soft"
-												color="red"
-												size="1"
-												onClick={() => removeImage(index)}
-											>
-												{singleImage ? 'Clear' : 'Remove'}
-											</Button>
-										)}
-									</Flex>
+    <Button
+        type="button"
+        variant="soft"
+        size="2"
+        onClick={() => {
+            const input = fileInputRefs.current[index] || document.getElementById(`image-upload-${index}`) as HTMLInputElement
+            if (input) {
+                input.click()
+            }
+        }}
+    >
+        {hasImagePreview ? 'Change Image' : 'Browse...'}
+    </Button>
+    <Text size="2" style={{ color: 'var(--accent-11)' }}>
+        {getFileDisplayName(image)}
+    </Text>
+    {/* Show Remove button if image exists, or Cancel button if it's an empty slot */}
+    {hasImagePreview ? (
+        <Button
+            type="button"
+            variant="soft"
+            color="red"
+            size="1"
+            onClick={() => removeImage(index)}
+        >
+            {singleImage ? 'Clear' : 'Remove'}
+        </Button>
+    ) : (
+        // Show Cancel button for empty slots, but only if there's more than one slot
+        !singleImage && displayImages.length > 1 && (
+            <Button
+                type="button"
+                variant="soft"
+                color="gray"
+                size="1"
+                onClick={() => removeImage(index)}
+            >
+                Cancel
+            </Button>
+        )
+    )}
+</Flex>
 								</Box>
 							</Flex>
 						</Flex>
