@@ -29,9 +29,12 @@ const AddLocation: React.FC = () => {
     } | null>(null)
 
     // Fetch itineraries on component mount
-    useEffect(() => {
+    // Fetch itineraries only if not already loaded
+useEffect(() => {
+    if (itineraries.length === 0) {
         dispatch(fetchItineraries())
-    }, [dispatch])
+    }
+}, [dispatch, itineraries.length])
 
     // Check if we're in edit mode based on location state
     useEffect(() => {
@@ -239,7 +242,7 @@ const AddLocation: React.FC = () => {
                                                 e.stopPropagation()
                                             }}
                                         />
-                                        <Box style={{ flex: 1 }}>
+                                     <Box style={{ flex: 1 }}>
                                             <Text
                                                 size="3"
                                                 weight="medium"

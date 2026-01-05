@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   Flex,
@@ -51,11 +51,19 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   const [formValues, setFormValues] = useState<Record<string, any>>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const prevInitialValuesRef = useRef<string>('');
 
-  // Update form values when initialValues prop changes
+  // Update form values when initialValues prop changes (only on mount or when key changes)
   useEffect(() => {
-    if (initialValues && Object.keys(initialValues).length > 0) {
-      setFormValues(initialValues);
+    // Create a string representation of initialValues to detect actual changes
+    const currentInitialValuesStr = JSON.stringify(initialValues);
+    
+    // Only update if this is the first render or if initialValues actually changed
+    if (prevInitialValuesRef.current === '' || prevInitialValuesRef.current !== currentInitialValuesStr) {
+      if (Object.keys(initialValues).length > 0) {
+        setFormValues(initialValues);
+        prevInitialValuesRef.current = currentInitialValuesStr;
+      }
     }
   }, [initialValues]);
 

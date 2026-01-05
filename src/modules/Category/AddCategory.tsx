@@ -179,12 +179,14 @@ const AddCategory: React.FC = () => {
             label: 'Category Name',
             placeholder: 'Enter category name',
             fullWidth: true,
+            required: true,
         },
         {
             type: 'richtext' as const,
             name: 'short_description',
             label: 'Short Description',
             placeholder: 'Enter short description...',
+            required: true,
         },
         {
             type: 'richtext' as const,
@@ -197,6 +199,7 @@ const AddCategory: React.FC = () => {
             name: 'image',
             label: 'Image',
             singleImage: true,
+            required: true,
         },
         {
             type: 'custom' as const,

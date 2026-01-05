@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from '../../store'
+import { getApiUrl } from '../../config/api'
 
 import {
     fetchReviews,
@@ -27,12 +27,15 @@ import Table from '../../components/dynamicComponents/Table'
 import AddReviewForm from './AddReviewForm'
 
 type GoogleReviewData = {
+    id?: string
     author_name: string
     rating: number
     text: string
     time: number
     profile_photo_url?: string
     relative_time_description?: string
+    status?: 'Approved' | 'Pending' | 'Rejected'
+    isLandingPage?: boolean
 }
 
 type ReviewData = {
@@ -46,13 +49,12 @@ type ReviewData = {
     packageCode?: string
     reviewerImageUrl?: string
     itineraryId?: string
+    isLandingPage?: boolean
 }
 
 const Review: React.FC = () => {
-    const navigate = useNavigate()
     const dispatch = useDispatch<AppDispatch>()
     const reviews = useSelector((state: RootState) => state.review.reviews)
-    const itineraries = useSelector((state: RootState) => state.itinerary.itineraries)
     const loading = useSelector((state: RootState) => state.review.ui.loading)
     const error = useSelector((state: RootState) => state.review.ui.error)
     
@@ -88,35 +90,64 @@ const Review: React.FC = () => {
         const googleReviews = async () => {
             try {
                 const response = await fetch(
-                    getApiUrl("googleReview")
+                    getApiUrl("googleReview"),
+                    {
+                        credentials: 'include',  // ADD THIS
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
                 )
+                
+                if (!response.ok) {
+                    console.error("Google Reviews API Error:", response.status, response.statusText)
+                    setGoogleReview([])
+                    return
+                }
+                
                 const data = await response.json()
                 
                 // Extract reviews from the nested response structure
                 console.log("Google Reviews API Response:", data)
                 
-                if (data.success && data.data && data.data.reviews) {
-                    // Map the transformed reviews to match GoogleReviewData type
-                    const googleReviewsData = data.data.reviews.map((review: any) => ({
-                        author_name: review.reviewer_name || review.customerName || review.author_name || 'Anonymous',
-                        rating: review.rating || 0,
-                        text: review.text || review.reviewText || '',
-                        time: review.time || Date.now(),
-                        profile_photo_url: review.reviewer_image || review.reviewerImageUrl || review.profile_photo_url,
-                        relative_time_description: review.relative_time_description || ''
-                    }))
-                    console.log("Mapped Google Reviews:", googleReviewsData)
-                    setGoogleReview(googleReviewsData)
-                } else {
-                    console.error("No reviews found in response. Response structure:", data)
-                    setGoogleReview([])
+                // Handle different response structures
+                let reviews = []
+                
+                if (data.success && data.data) {
+                    // Structure: { success: true, data: { reviews: [...] } }
+                    reviews = data.data.reviews || data.data || []
+                } else if (Array.isArray(data)) {
+                    // Structure: [{...}, {...}]
+                    reviews = data
+                } else if (data.reviews && Array.isArray(data.reviews)) {
+                    // Structure: { reviews: [...] }
+                    reviews = data.reviews
+                } else if (data.data && Array.isArray(data.data)) {
+                    // Structure: { data: [...] }
+                    reviews = data.data
                 }
+                
+                // Map the reviews to match GoogleReviewData type
+                const googleReviewsData = reviews.map((review: any) => ({
+                    id: review.id || review._id,
+                    author_name: review.reviewer_name || review.customerName || review.author_name || 'Anonymous',
+                    rating: review.rating || 0,
+                    text: review.text || review.reviewText || '',
+                    time: review.time || review.timestamp || Date.now(),
+                    profile_photo_url: review.reviewer_image || review.reviewerImageUrl || review.profile_photo_url,
+                    relative_time_description: review.relative_time_description || review.date || '',
+                    status: review.status || 'Pending',
+                    isLandingPage: review.isLandingPage || false,
+                }))
+                
+                console.log("Mapped Google Reviews:", googleReviewsData)
+                setGoogleReview(googleReviewsData)
             } catch (error) {
                 console.error("Failed to fetch Google reviews:", error)
                 setGoogleReview([])
             }
         }
-
+    
         googleReviews()
         dispatch(fetchReviews())
         dispatch(fetchItineraries())
@@ -208,8 +239,33 @@ const Review: React.FC = () => {
         })
     }
 
-    const handleEdit = (review: ReviewData) => {
-        setEditingReview(review)
+    // Helper function to check if ID is a valid MongoDB ObjectId
+    const isValidObjectId = (id: string): boolean => {
+        if (!id || typeof id !== 'string') return false
+        // MongoDB ObjectId is 24 hex characters
+        return /^[0-9a-fA-F]{24}$/.test(id)
+    }
+
+    const handleEdit = (review: ReviewData | GoogleReviewData) => {
+        // Convert GoogleReviewData to ReviewData format if needed
+        if ('author_name' in review) {
+            // It's a GoogleReviewData - Google reviews can't be edited directly
+            // We'll create a new review from it instead
+            const googleReview = review as GoogleReviewData
+            setEditingReview({
+                id: '', // Empty ID means it will be created as new review
+                customerName: googleReview.author_name,
+                rating: googleReview.rating,
+                reviewText: googleReview.text,
+                date: googleReview.relative_time_description || new Date(googleReview.time * 1000).toISOString(),
+                status: 'Pending', // New reviews start as Pending
+                reviewerImageUrl: googleReview.profile_photo_url,
+                isLandingPage: googleReview.isLandingPage || false,
+            })
+        } else {
+            // It's a ReviewData
+            setEditingReview(review as ReviewData)
+        }
         setIsFormOpen(true)
     }
 
@@ -228,7 +284,8 @@ const Review: React.FC = () => {
         const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
         try {
-            if (editingReview) {
+            if (editingReview && editingReview.id && isValidObjectId(editingReview.id)) {
+                // Only update if we have a valid ObjectId (regular review)
                 await dispatch(updateReviewById({
                     id: editingReview.id,
                     data: {
@@ -238,6 +295,7 @@ const Review: React.FC = () => {
                         rating: values.rating || 5,
                         itineraryId: itineraryId,
                         packageName: packageName,
+                        isLandingPage: values.isLandingPage || false,
                     },
                 })).unwrap()
                 setDialogConfig({
@@ -245,9 +303,13 @@ const Review: React.FC = () => {
                     description: `Review updated successfully!`,
                     actionText: 'OK',
                     color: 'green',
-                    onConfirm: () => setDialogOpen(false),
+                    onConfirm: () => {
+                        setDialogOpen(false)
+                        dispatch(fetchReviews())
+                    },
                 })
             } else {
+                // Create new review (either new review or converting Google review to regular review)
                 await dispatch(createReview({
                     customerName: values.reviewerName || '',
                     reviewerImageUrl: values.reviewerImageUrl || '',
@@ -257,13 +319,19 @@ const Review: React.FC = () => {
                     status: 'Pending',
                     packageName: packageName,
                     itineraryId: itineraryId,
+                    isLandingPage: values.isLandingPage || false,
                 })).unwrap()
                 setDialogConfig({
                     title: 'Success',
-                    description: `Review added successfully!`,
+                    description: editingReview && !isValidObjectId(editingReview.id) 
+                        ? `Google review converted to regular review successfully!` 
+                        : `Review added successfully!`,
                     actionText: 'OK',
                     color: 'green',
-                    onConfirm: () => setDialogOpen(false),
+                    onConfirm: () => {
+                        setDialogOpen(false)
+                        dispatch(fetchReviews())
+                    },
                 })
             }
             setDialogOpen(true)
@@ -297,7 +365,10 @@ const Review: React.FC = () => {
                         description: `Review deleted successfully!`,
                         actionText: 'OK',
                         color: 'green',
-                        onConfirm: () => setDialogOpen(false),
+                        onConfirm: () => {
+                            setDialogOpen(false)
+                            dispatch(fetchReviews())
+                        },
                     })
                     setDialogOpen(true)
                 } catch (error: any) {
@@ -316,10 +387,29 @@ const Review: React.FC = () => {
         setDialogOpen(true)
     }
 
-    const handleStatusChange = async (review: ReviewData, newStatus: 'Approved' | 'Pending' | 'Rejected') => {
+    const handleStatusChange = async (review: ReviewData | GoogleReviewData, newStatus: 'Approved' | 'Pending' | 'Rejected') => {
         try {
+            const reviewId = 'id' in review ? review.id : (review as GoogleReviewData).id
+            if (!reviewId) {
+                throw new Error('Review ID is missing')
+            }
+            
+            // Check if it's a valid ObjectId (regular review) or Google review
+            if (!isValidObjectId(reviewId)) {
+                // Google reviews can't be updated directly - show message
+                setDialogConfig({
+                    title: 'Info',
+                    description: 'Google reviews cannot be approved/rejected directly. Please convert it to a regular review first by editing it.',
+                    actionText: 'OK',
+                    color: 'blue',
+                    onConfirm: () => setDialogOpen(false),
+                })
+                setDialogOpen(true)
+                return
+            }
+            
             await dispatch(updateReviewById({
-                id: review.id,
+                id: reviewId,
                 data: { status: newStatus },
             })).unwrap()
             setDialogConfig({
@@ -327,7 +417,52 @@ const Review: React.FC = () => {
                 description: `Review status updated to "${newStatus}"!`,
                 actionText: 'OK',
                 color: 'green',
-                onConfirm: () => setDialogOpen(false),
+                onConfirm: () => {
+                    setDialogOpen(false)
+                    dispatch(fetchReviews())
+                    // Refresh Google reviews
+                    const googleReviews = async () => {
+                        try {
+                            const response = await fetch(
+                                getApiUrl("googleReview"),
+                                {
+                                    credentials: 'include',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                }
+                            )
+                            if (response.ok) {
+                                const data = await response.json()
+                                let reviews = []
+                                if (data.success && data.data) {
+                                    reviews = data.data.reviews || data.data || []
+                                } else if (Array.isArray(data)) {
+                                    reviews = data
+                                } else if (data.reviews && Array.isArray(data.reviews)) {
+                                    reviews = data.reviews
+                                } else if (data.data && Array.isArray(data.data)) {
+                                    reviews = data.data
+                                }
+                                const googleReviewsData = reviews.map((review: any) => ({
+                                    id: review.id || review._id,
+                                    author_name: review.reviewer_name || review.customerName || review.author_name || 'Anonymous',
+                                    rating: review.rating || 0,
+                                    text: review.text || review.reviewText || '',
+                                    time: review.time || review.timestamp || Date.now(),
+                                    profile_photo_url: review.reviewer_image || review.reviewerImageUrl || review.profile_photo_url,
+                                    relative_time_description: review.relative_time_description || review.date || '',
+                                    status: review.status || 'Pending',
+                                    isLandingPage: review.isLandingPage || false,
+                                }))
+                                setGoogleReview(googleReviewsData)
+                            }
+                        } catch (error) {
+                            console.error("Failed to refresh Google reviews:", error)
+                        }
+                    }
+                    googleReviews()
+                },
             })
             setDialogOpen(true)
         } catch (error: any) {
@@ -340,6 +475,53 @@ const Review: React.FC = () => {
             })
             setDialogOpen(true)
         }
+    }
+
+    // Google review actions
+    const renderGoogleActions = (review: GoogleReviewData) => {
+        return (
+            <DropdownMenu.Root>
+                <DropdownMenu.Trigger>
+                    <IconButton variant="ghost" size="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="12" cy="5" r="1" />
+                            <circle cx="12" cy="19" r="1" />
+                        </svg>
+                    </IconButton>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content>
+                    <DropdownMenu.Item onClick={() => handleEdit(review)}>
+                        <Flex align="center" gap="2">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M11.5 2.5L13.5 4.5L4.5 13.5H2.5V11.5L11.5 2.5Z" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <Text size="2">Edit</Text>
+                        </Flex>
+                    </DropdownMenu.Item>
+                    {review.status !== 'Approved' && (
+                        <DropdownMenu.Item onClick={() => handleStatusChange(review, 'Approved')}>
+                            <Flex align="center" gap="2">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                    <path d="M13.5 4.5L6 12L2.5 8.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                <Text size="2">Approve</Text>
+                            </Flex>
+                        </DropdownMenu.Item>
+                    )}
+                    {review.status !== 'Rejected' && (
+                        <DropdownMenu.Item color="red" onClick={() => handleStatusChange(review, 'Rejected')}>
+                            <Flex align="center" gap="2">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                    <path d="M4 4L12 12M12 4L4 12" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                <Text size="2">Reject</Text>
+                            </Flex>
+                        </DropdownMenu.Item>
+                    )}
+                </DropdownMenu.Content>
+            </DropdownMenu.Root>
+        )
     }
 
     // Render rating
@@ -461,6 +643,9 @@ const Review: React.FC = () => {
                     <img 
                         src={review.profile_photo_url} 
                         alt={review.author_name}
+                        onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                        }}
                         style={{ 
                             width: '32px', 
                             height: '32px', 
@@ -489,6 +674,9 @@ const Review: React.FC = () => {
                         <img 
                             src={row.reviewerImageUrl} 
                             alt={row.customerName}
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none'
+                            }}
                             style={{ 
                                 width: '32px', 
                                 height: '32px', 
@@ -576,7 +764,7 @@ const Review: React.FC = () => {
             label: 'Review',
             width: '400px',
             sortable: false,
-            render: (row: GoogleReviewData) => renderGoogleReviewText(row.text), // Use row.text, not row.reviewText
+            render: (row: GoogleReviewData) => renderGoogleReviewText(row.text),
         },
         {
             key: 'relative_time_description',
@@ -588,6 +776,20 @@ const Review: React.FC = () => {
                     {row.relative_time_description || new Date(row.time * 1000).toLocaleDateString()}
                 </Text>
             ),
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            width: '120px',
+            sortable: true,
+            render: (row: GoogleReviewData) => renderStatus(row.status || 'Pending'),
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            width: '80px',
+            sortable: false,
+            render: (row: GoogleReviewData) => renderGoogleActions(row),
         },
     ]
 
@@ -608,6 +810,7 @@ const Review: React.FC = () => {
                     rating: editingReview.rating,
                     itineraryId: editingReview.itineraryId,
                     packageName: editingReview.packageName,
+                    isLandingPage: editingReview.isLandingPage,
                 } : null}
             />
 
