@@ -47,22 +47,26 @@ const Navbar: React.FC<{ onSidebarToggle?: () => void }> = ({ onSidebarToggle })
           )}
 
   
-<Text 
-  size="5" 
-  weight="bold" 
-  style={{ 
-    fontFamily: "'Playfair Display', 'Georgia', serif",
+<Text
+  size="5"
+  style={{
+    fontFamily: "'Montserrat', sans-serif",
     background: "linear-gradient(135deg, var(--accent-11) 0%, var(--accent-9) 100%)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     backgroundClip: "text",
     letterSpacing: "0.02em",
-    fontSize: "24px",
-    fontWeight: 700,
+    fontSize: "28px",
   }}
 >
-  Safar Wanderlust
+  <span style={{ fontWeight: 700 }}>
+    Safar
+  </span>{' '}
+  <span style={{ fontWeight: 700 }}>
+    Wanderlust
+  </span>
 </Text>
+
 
 
           {/* Desktop Navigation */}

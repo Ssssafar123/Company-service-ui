@@ -336,17 +336,30 @@ const AddLocation: React.FC = () => {
 
     return (
         <Box style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-            <Text
-                size="7"
-                weight="bold"
-                style={{
-                    color: 'var(--accent-12)',
-                    marginBottom: '24px',
-                    display: 'block',
-                }}
-            >
-                {isEditMode ? 'Update Location' : 'Add New Location'}
-            </Text>
+            <Flex justify="between" align="center" style={{ marginBottom: '24px' }}>
+                <Text
+                    size="7"
+                    weight="bold"
+                    style={{
+                        color: 'var(--accent-12)',
+                        display: 'block',
+                    }}
+                >
+                    {isEditMode ? 'Update Location' : 'Add New Location'}
+                </Text>
+                
+                <Button
+                    variant="soft"
+                    size="2"
+                    onClick={() => navigate('/dashboard/location')}
+                    style={{
+                        color: 'white',
+                        backgroundColor: 'var(--accent-9)',
+                    }}
+                >
+                    Back to List
+                </Button>
+            </Flex>
 
             <DynamicForm
                 key={isEditMode ? `edit-${location.state?.locationData?.id}` : 'new'}
