@@ -1018,31 +1018,29 @@ if (Array.isArray(values.day_details)) {
 	return (
 		<Box style={{ padding: '24px' }}>
 			<Flex justify="between" align="center" style={{ marginBottom: '24px' }}>
-				<Text
-					size="7"
-					weight="bold"
-					style={{
-						color: 'var(--accent-12)',
-						display: 'block',
-					}}
-				>
-					{isEditMode ? 'Update Itinerary' : 'Add New Itinerary'}
-				</Text>
-				
-				{isEditMode && (
-					<Button
-						variant="soft"
-						size="2"
-						onClick={() => navigate('/dashboard/itinerary')}
-						style={{
-							color: 'white',
-							backgroundColor: 'var(--accent-9)',
-						}}
-					>
-						Back to List
-					</Button>
-				)}
-			</Flex>
+    <Text
+        size="7"
+        weight="bold"
+        style={{
+            color: 'var(--accent-12)',
+            display: 'block',
+        }}
+    >
+        {isEditMode ? 'Update Itinerary' : 'Add New Itinerary'}
+    </Text>
+    
+    <Button
+        variant="soft"
+        size="2"
+        onClick={() => navigate('/dashboard/itinerary')}
+        style={{
+            color: 'white',
+            backgroundColor: 'var(--accent-9)',
+        }}
+    >
+        Back to List
+    </Button>
+</Flex>
 
 			{/* Show loading or error state if needed */}
 			{isEditMode && !location.state?.itineraryData && (
