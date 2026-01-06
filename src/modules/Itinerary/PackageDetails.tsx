@@ -25,6 +25,7 @@ type PackageDetailsProps = {
 	onChange: (packages: PackageDetails) => void
 	label?: string
 	error?: string
+	required?: boolean
 }
 
 // Package types matching the old system
@@ -61,6 +62,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 	onChange,
 	label,
 	error,
+	required,
 }) => {
 	// Base Packages
 	const addBasePackage = () => {
@@ -193,6 +195,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 			{label && (
 				<Text size="3" weight="medium" style={{ color: 'var(--accent-12)', marginBottom: '16px', display: 'block' }}>
 					{label}
+					{required && <Text style={{ color: 'var(--red-9)' }}> *</Text>}
 				</Text>
 			)}
 
