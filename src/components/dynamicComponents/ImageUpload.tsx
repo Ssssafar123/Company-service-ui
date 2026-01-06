@@ -53,26 +53,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 	const handleFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) {
-			if (singleImage) {
-				// For single image, just set the one image
-				onChange([file])
-			} else {
-				const newImages = [...images]
-				newImages[index] = file
-				onChange(newImages)
-			}
+		  // Check file size (10MB = 10 * 1024 * 1024 bytes)
+		  const maxSize = 10 * 1024 * 1024; // 10MB
+		  if (file.size > maxSize) {
+			alert(`File size exceeds 10MB limit. Please select a smaller image.`);
+			e.target.value = ''; // Reset input
+			return;
+		  }
+		  
+		  if (singleImage) {
+			// For single image, just set the one image
+			onChange([file])
+		  } else {
+			const newImages = [...images]
+			newImages[index] = file
+			onChange(newImages)
+		  }
 		}
-		// Reset the input value so the same file can be selected again
 		if (e.target) {
-			e.target.value = ''
+		  e.target.value = ''
 		}
-	}
+	  }
 
-	const addImageSlot = () => {
-		onChange([...images, ''])
-	}
-
-	const removeImage = (index: number) => {
+	  const removeImage = (index: number) => {
 		// Clean up preview URL if it's a blob URL
 		if (previewUrls[index] && previewUrls[index].startsWith('blob:')) {
 			URL.revokeObjectURL(previewUrls[index])
@@ -87,6 +90,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 			// Clear the ref for removed index
 			delete fileInputRefs.current[index]
 		}
+	}
+
+	const addImageSlot = () => {
+		onChange([...images, ''])
 	}
 
 	const getFileDisplayName = (image: File | string): string => {
