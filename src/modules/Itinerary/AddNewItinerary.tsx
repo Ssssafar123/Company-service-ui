@@ -1033,7 +1033,7 @@ if (Array.isArray(values.day_details)) {
     >
         {isEditMode ? 'Update Itinerary' : 'Add New Itinerary'}
     </Text>
-    
+				
     <Button
         variant="soft"
         size="2"
