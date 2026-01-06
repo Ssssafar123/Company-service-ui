@@ -161,9 +161,12 @@ export const createItinerary = createAsyncThunk(
         });
       }
       
-      // Append brochure banner file
+      // Append brochure banner file or URL
       if (data.brochureBannerFile) {
         formData.append('brochureBanner', data.brochureBannerFile);
+      } else if (data.payload.brochureBanner && typeof data.payload.brochureBanner === 'string' && data.payload.brochureBanner.trim() !== '') {
+        // If no file but URL string exists, append the URL
+        formData.append('brochureBanner', data.payload.brochureBanner);
       }
 
       // Append hotel images
@@ -262,9 +265,9 @@ export const updateItineraryById = createAsyncThunk(
       Object.keys(data).forEach(key => {
         const value = (data as any)[key];
         
-        // Skip image fields - we'll append them as files separately
+        // Skip image fields - we'll handle them separately
         if (key === 'images' || key === 'brochureBanner') {
-          return;
+          return; // Skip these - handle separately below
         }
         
         // Handle arrays and objects - stringify them
@@ -288,12 +291,19 @@ export const updateItineraryById = createAsyncThunk(
         imageFiles.forEach((file) => {
           formData.append('images', file);
         });
+      } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+        // If no new files but existing URLs, append URLs
+        data.images.forEach((url: string) => {
+          formData.append('images', url);
+        });
       }
       
-      // Append brochure banner file
-           // Append brochure banner file
+      // Append brochure banner file or URL (handle separately to avoid duplicates)
       if (brochureBannerFile) {
         formData.append('brochureBanner', brochureBannerFile);
+      } else if (data.brochureBanner && typeof data.brochureBanner === 'string' && data.brochureBanner.trim() !== '') {
+        // If no file but URL string exists, append the URL
+        formData.append('brochureBanner', data.brochureBanner);
       }
 
       // Append hotel images

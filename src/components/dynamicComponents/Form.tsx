@@ -83,7 +83,41 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   const validateField = (field: Field, value: any): string | null => {
     if (!field.required) return null;
 
-    // Check if field is empty
+    // Special validation for packages - check this FIRST to handle null/undefined properly
+    if (field.type === 'packages') {
+      if (value === null || value === undefined || (typeof value === 'object' && Object.keys(value).length === 0)) {
+        // Only require base packages, not drop points or pickup points
+        return `${field.label} must have at least one base package`;
+      }
+      if (typeof value === 'object') {
+        const hasBasePackages = value.base_packages && Array.isArray(value.base_packages) && value.base_packages.length > 0;
+        if (!hasBasePackages) {
+          return `${field.label} must have at least one base package`;
+        }
+        // Drop points and pickup points are optional - no validation needed
+        return null; // Return null here to prevent further validation
+      }
+    }
+
+    // Special validation for text fields - check URLs FIRST before empty check
+    if (field.type === 'text') {
+      const stringValue = typeof value === 'string' ? value.trim() : String(value || '').trim();
+      
+      // Check for URLs first (these are always valid)
+      if (stringValue.startsWith('http://') || stringValue.startsWith('https://')) {
+        return null; // URL is valid
+      }
+      
+      // Then check if empty
+      if (stringValue === '') {
+        return `${field.label} is required`;
+      }
+      
+      // Non-empty string is valid
+      return null;
+    }
+
+    // Check if field is empty (for non-text, non-packages fields)
     if (value === null || value === undefined || value === '') {
       return `${field.label} is required`;
     }
@@ -103,14 +137,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         if (!hasFile) {
           return `${field.label} is required`;
         }
-      }
-    }
-
-    // Special validation for objects (package_details)
-    if (field.type === 'packages' && typeof value === 'object') {
-      const hasBasePackages = value.base_packages && Array.isArray(value.base_packages) && value.base_packages.length > 0;
-      if (!hasBasePackages) {
-        return `${field.label} must have at least one base package`;
       }
     }
 
@@ -463,6 +489,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               onChange={(packages) => handleChange(field.name, packages)}
               label={field.label}
               error={fieldError && isTouched ? fieldError : undefined}
+              required={field.required}
             />
           </Box>
         );

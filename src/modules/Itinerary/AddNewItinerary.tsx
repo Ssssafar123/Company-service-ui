@@ -134,7 +134,7 @@ const AddNewItinerary: React.FC = () => {
                     iti_altitude: (itineraryData as any).altitude || '',
                     iti_scenary: (itineraryData as any).scenary || '',
                     iti_cultural_site: (itineraryData as any).culturalSite || (itineraryData as any).cultural_site || '',
-                    iti_brochure_banner: (itineraryData as any).brochureBanner || (itineraryData as any).brochure_banner || '',
+					iti_brochure_banner: (itineraryData as any).brochureBanner || (itineraryData as any).brochure_banner || '',
                     iti_is_customize: (itineraryData as any).isCustomize || (itineraryData as any).is_customize || 'not_specified',
                     trending: itineraryData.trending || 'No',
                     // Map complex fields - safely handle undefined
@@ -360,6 +360,7 @@ const AddNewItinerary: React.FC = () => {
 			if (values.iti_brochure_banner instanceof File) {
 				brochureBannerFile = values.iti_brochure_banner
 			}
+			// Note: If it's a URL string (from edit mode), we'll include it in the payload below
 
 			// Extract hotel images for FormData
 const hotelImageFiles: { hotelIndex: number, imageIndex: number, file: File }[] = []
@@ -480,7 +481,12 @@ if (Array.isArray(values.day_details)) {
 				// Only include travelLocation if it's a valid ObjectId string, not null or empty
 				...(values.travel_location && values.travel_location !== 'null' && values.travel_location !== '' && { travelLocation: values.travel_location }),
 				categories: processedCategories,
-				// Don't include images or brochureBanner in payload - they'll be sent as files
+				// Include brochureBanner URL only if no new file is being uploaded (for edit mode preservation)
+				...(brochureBannerFile 
+					? {} 
+					: (values.iti_brochure_banner && typeof values.iti_brochure_banner === 'string' && values.iti_brochure_banner.trim() !== '' 
+						? { brochureBanner: values.iti_brochure_banner.trim() } 
+						: {})),
 				altitude: values.iti_altitude || '',
 				scenary: values.iti_scenary || '',
 				culturalSite: values.iti_cultural_site || '',
