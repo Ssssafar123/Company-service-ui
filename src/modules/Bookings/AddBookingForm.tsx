@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from '../../store'
 import { Box, Flex, Text, TextField, Button, Select } from '@radix-ui/themes'
 import type { Booking } from '../../features/BookingSlice'
+import type { Batch } from '../../features/BatchSlice'
 import { fetchCustomers } from '../../features/CustomerSlice'
-import { fetchItineraries } from '../../features/ItinerarySlice'
-import { fetchBatches } from '../../features/BatchSlice'
+import { fetchItineraries, fetchItineraryById } from '../../features/ItinerarySlice'
 
 interface AddBookingFormProps {
   isOpen: boolean
@@ -15,7 +15,12 @@ interface AddBookingFormProps {
   initialData?: Booking | null
 }
 
-type BookingFormData = Omit<Booking, 'id'>
+// Form data type that allows empty strings for number fields
+type BookingFormData = Omit<Booking, 'id' | 'total_price' | 'paid_amount' | 'people_count'> & {
+  total_price: number | ''
+  paid_amount: number | ''
+  people_count: number | ''
+}
 
 const AddBookingForm: React.FC<AddBookingFormProps> = ({
   isOpen,
@@ -28,19 +33,19 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
   // Fetch data from Redux store
   const customers = useSelector((state: RootState) => state.customer.customers)
   const itineraries = useSelector((state: RootState) => state.itinerary.itineraries)
-  const batches = useSelector((state: RootState) => state.batch.batches)
   const customersLoading = useSelector((state: RootState) => state.customer.ui.loading)
   const itinerariesLoading = useSelector((state: RootState) => state.itinerary.ui.loading)
-  const batchesLoading = useSelector((state: RootState) => state.batch.ui.loading)
   
-  // Debug logs
-  console.log('Customers in state:', customers)
-  console.log('Customers count:', customers.length)
+  // State for selected itinerary data (with batches)
+  const [selectedItineraryData, setSelectedItineraryData] = useState<any>(null)
+  const [loadingBatches, setLoadingBatches] = useState(false)
 
   const {
     control,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<BookingFormData>({
     defaultValues: {
@@ -48,8 +53,8 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
       travellers: [],
       itinerary_id: '',
       batch_id: '',
-      total_price: 0,
-      paid_amount: 0,
+      total_price: '',
+      paid_amount: '',
       invoice_link: '',
       txn_id: '',
       transaction_status: 'INITIATED',
@@ -57,12 +62,62 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
     },
   })
 
+  // Watch itinerary_id to fetch batches
+  const selectedItineraryId = watch('itinerary_id')
+
+  // Transform itinerary batches to Batch interface format
+  const getBatchesFromItinerary = (itinerary: any): Batch[] => {
+    if (!itinerary || !itinerary.batches || !Array.isArray(itinerary.batches)) {
+      return []
+    }
+
+    return itinerary.batches.map((batch: any) => ({
+      id: batch._id || batch.id || '',
+      start_date: batch.startDate || batch.start_date || '',
+      end_date: batch.endDate || batch.end_date || '',
+      is_sold: batch.sold_out || batch.is_sold || false,
+      extra_amount: batch.price || batch.extra_amount || 0,
+      extra_reason: batch.extra_amount_reason || batch.extra_reason || '',
+      itineraryId: itinerary.id || itinerary._id || '',
+      createdAt: batch.createdAt || '',
+      updatedAt: batch.updatedAt || '',
+    }))
+  }
+
+  // Filter batches based on selected itinerary
+  const filteredBatches = selectedItineraryData
+    ? getBatchesFromItinerary(selectedItineraryData)
+    : []
+
+  // Fetch full itinerary data when itinerary is selected
+  useEffect(() => {
+    if (selectedItineraryId) {
+      setLoadingBatches(true)
+      setSelectedItineraryData(null)
+      setValue('batch_id', '')
+      
+      dispatch(fetchItineraryById(selectedItineraryId))
+        .unwrap()
+        .then((itinerary: any) => {
+          setSelectedItineraryData(itinerary)
+          setLoadingBatches(false)
+        })
+        .catch((err) => {
+          console.error('Failed to fetch itinerary:', err)
+          setSelectedItineraryData(null)
+          setLoadingBatches(false)
+        })
+    } else {
+      setSelectedItineraryData(null)
+      setLoadingBatches(false)
+    }
+  }, [selectedItineraryId, dispatch, setValue])
+
   // Fetch data on component mount
   useEffect(() => {
     if (isOpen) {
       dispatch(fetchCustomers())
       dispatch(fetchItineraries())
-      dispatch(fetchBatches())
     }
   }, [dispatch, isOpen])
 
@@ -88,8 +143,8 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
         travellers: [],
         itinerary_id: '',
         batch_id: '',
-        total_price: 0,
-        paid_amount: 0,
+        total_price: '',
+        paid_amount: '',
         invoice_link: '',
         txn_id: '',
         transaction_status: 'INITIATED',
@@ -104,12 +159,14 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
 
   const handleFormSubmit = (data: BookingFormData) => {
     // Clean up the data before submitting
-    const cleanedData: any = {
-      people_count: data.people_count,
+    const cleanedData: Omit<Booking, 'id'> = {
+      people_count: data.people_count === '' ? 1 : Number(data.people_count),
+      travellers: data.travellers || [],
       itinerary_id: data.itinerary_id,
       batch_id: data.batch_id,
-      total_price: data.total_price,
-      paid_amount: data.paid_amount,
+      // Convert empty strings to numbers for price fields
+      total_price: data.total_price === '' ? 0 : Number(data.total_price),
+      paid_amount: data.paid_amount === '' ? 0 : Number(data.paid_amount),
       txn_id: data.txn_id,
       transaction_status: data.transaction_status,
       deleted: data.deleted || false,
@@ -128,9 +185,6 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
     if (data.invoice_link && data.invoice_link.trim()) {
       cleanedData.invoice_link = data.invoice_link
     }
-
-    // Include travellers array
-    cleanedData.travellers = data.travellers || []
 
     onSubmit(cleanedData)
     reset()
@@ -202,14 +256,39 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
               <Controller
                 name="people_count"
                 control={control}
-                rules={{ required: 'People count is required', min: 1 }}
+                rules={{ 
+                  required: 'People count is required', 
+                  min: { value: 1, message: 'People count must be at least 1' },
+                  validate: (value: number | '') => {
+                    if (value === '' || value === null || value === undefined) {
+                      return 'People count is required'
+                    }
+                    const numValue = Number(value)
+                    if (isNaN(numValue) || numValue < 1) {
+                      return 'People count must be at least 1'
+                    }
+                    return true
+                  }
+                }}
                 render={({ field }) => (
                   <TextField.Root
                     type="number"
                     min="1"
-                    value={field.value}
+                    value={field.value ?? ''}
                     placeholder="Enter number of people"
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value === '' || value === null || value === undefined) {
+                        field.onChange('')
+                      } else {
+                        const intValue = parseInt(value)
+                        if (!isNaN(intValue)) {
+                          field.onChange(intValue)
+                        } else {
+                          field.onChange('')
+                        }
+                      }
+                    }}
                   />
                 )}
               />
@@ -258,15 +337,28 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
                 control={control}
                 rules={{ required: 'Batch is required' }}
                 render={({ field }) => (
-                  <Select.Root value={field.value} onValueChange={field.onChange}>
+                  <Select.Root 
+                    value={field.value || undefined} 
+                    onValueChange={field.onChange}
+                    disabled={!selectedItineraryId}
+                  >
                     <Select.Trigger 
-                      placeholder={batchesLoading ? 'Loading batches...' : 'Select batch'}
+                      placeholder={
+                        !selectedItineraryId 
+                          ? 'Please select itinerary first'
+                          : loadingBatches 
+                          ? 'Loading batches...' 
+                          : filteredBatches.length === 0
+                          ? 'No batches available'
+                          : 'Select batch'
+                      }
                       style={{ width: '100%' }}
                     />
                     <Select.Content>
-                      {batches.map((batch) => (
+                      {filteredBatches.map((batch) => (
                         <Select.Item key={batch.id} value={batch.id}>
                           {new Date(batch.start_date).toLocaleDateString()} - {new Date(batch.end_date).toLocaleDateString()}
+                          {batch.extra_amount > 0 && ` (₹${batch.extra_amount})`}
                         </Select.Item>
                       ))}
                     </Select.Content>
@@ -286,15 +378,40 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
               <Controller
                 name="total_price"
                 control={control}
-                rules={{ required: 'Total price is required', min: 0 }}
+                rules={{ 
+                  required: 'Total price is required', 
+                  min: { value: 0, message: 'Total price must be 0 or greater' },
+                  validate: (value: number | '') => {
+                    if (value === '' || value === null || value === undefined) {
+                      return 'Total price is required'
+                    }
+                    const numValue = Number(value)
+                    if (isNaN(numValue) || numValue < 0) {
+                      return 'Total price must be 0 or greater'
+                    }
+                    return true
+                  }
+                }}
                 render={({ field }) => (
                   <TextField.Root
                     type="number"
                     min="0"
                     step="0.01"
-                    value={field.value}
+                    value={field.value ?? ''}
                     placeholder="Enter total price"
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value === '' || value === null || value === undefined) {
+                        field.onChange('')
+                      } else {
+                        const numValue = parseFloat(value)
+                        if (!isNaN(numValue)) {
+                          field.onChange(numValue)
+                        } else {
+                          field.onChange('')
+                        }
+                      }
+                    }}
                   />
                 )}
               />
@@ -311,15 +428,40 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
               <Controller
                 name="paid_amount"
                 control={control}
-                rules={{ required: 'Paid amount is required', min: 0 }}
+                rules={{ 
+                  required: 'Paid amount is required', 
+                  min: { value: 0, message: 'Paid amount must be 0 or greater' },
+                  validate: (value: number | '') => {
+                    if (value === '' || value === null || value === undefined) {
+                      return 'Paid amount is required'
+                    }
+                    const numValue = Number(value)
+                    if (isNaN(numValue) || numValue < 0) {
+                      return 'Paid amount must be 0 or greater'
+                    }
+                    return true
+                  }
+                }}
                 render={({ field }) => (
                   <TextField.Root
                     type="number"
                     min="0"
                     step="0.01"
-                    value={field.value}
+                    value={field.value ?? ''}
                     placeholder="Enter paid amount"
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value === '' || value === null || value === undefined) {
+                        field.onChange('')
+                      } else {
+                        const numValue = parseFloat(value)
+                        if (!isNaN(numValue)) {
+                          field.onChange(numValue)
+                        } else {
+                          field.onChange('')
+                        }
+                      }
+                    }}
                   />
                 )}
               />
