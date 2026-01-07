@@ -67,6 +67,13 @@ const Content: React.FC = () => {
         (state: RootState) => state.cancellationPolicy.ui.loading
     )
 
+    const [messageDialogOpen, setMessageDialogOpen] = useState(false)
+    const [messageDialogConfig, setMessageDialogConfig] = useState<{
+        title: string
+        message: string
+        type: 'success' | 'error'
+    } | null>(null)
+
     
     // Offer Details State
     const [offerDetails, setOfferDetails] = useState<OfferDetails>({
@@ -360,7 +367,7 @@ useEffect(() => {
     }
 
      // Add this new handler function
-    const handleSaveCancellationPolicy = async (policies: string[]) => {
+     const handleSaveCancellationPolicy = async (policies: string[]) => {
         try {
             // Update local state immediately
             setOfferDetails(prev => ({
@@ -401,7 +408,12 @@ useEffect(() => {
                     // Refresh contents
                     await dispatch(fetchContents())
                 } catch (createError: any) {
-                    alert('Failed to create content. Please create a content/offer first.')
+                    setMessageDialogConfig({
+                        title: 'Error',
+                        message: 'Failed to create content. Please create a content/offer first.',
+                        type: 'error'
+                    })
+                    setMessageDialogOpen(true)
                     return
                 }
             }
@@ -416,13 +428,23 @@ useEffect(() => {
                 // Refresh contents to get updated data
                 await dispatch(fetchContents())
                 
-                // Show success message
-                alert('Cancellation policy saved successfully!')
+                // Show success message using dialog
+                setMessageDialogConfig({
+                    title: 'Success',
+                    message: 'Cancellation policy saved successfully!',
+                    type: 'success'
+                })
+                setMessageDialogOpen(true)
             } else {
                 throw new Error('Unable to determine content ID')
             }
         } catch (error: any) {
-            alert(error.message || 'Failed to save cancellation policy. Please check the console for details.')
+            setMessageDialogConfig({
+                title: 'Error',
+                message: error.message || 'Failed to save cancellation policy. Please check the console for details.',
+                type: 'error'
+            })
+            setMessageDialogOpen(true)
         }
     }
     // Table columns
@@ -1011,17 +1033,41 @@ useEffect(() => {
                 </AlertDialog.Content>
             </AlertDialog.Root>
 
-            {/* HERO EDIT MODAL */}
-            {heroOpen && heroContentId && (
-  <AlertDialog.Root open={heroOpen} onOpenChange={setHeroOpen}>
-    <AlertDialog.Content maxWidth="600px">
-      <AlertDialog.Title>
-        <VisuallyHidden>Edit Hero Section</VisuallyHidden>
-      </AlertDialog.Title>
+            {/* Success/Error Message Dialog */}
+            {messageDialogConfig && (
+                <AlertDialog.Root open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
+                    <AlertDialog.Content maxWidth="400px">
+                        <AlertDialog.Title>
+                            {messageDialogConfig.title}
+                        </AlertDialog.Title>
+                        <AlertDialog.Description>
+                            {messageDialogConfig.message}
+                        </AlertDialog.Description>
+                        <Flex gap="3" mt="4" justify="end">
+                            <AlertDialog.Action>
+                                <Button 
+                                    color={messageDialogConfig.type === 'success' ? 'green' : 'red'}
+                                    onClick={() => setMessageDialogOpen(false)}
+                                >
+                                    OK
+                                </Button>
+                            </AlertDialog.Action>
+                        </Flex>
+                    </AlertDialog.Content>
+                </AlertDialog.Root>
+            )}
 
-      <AlertDialog.Description>
-        Update hero title, description, background image, and cards.
-      </AlertDialog.Description>
+                       {/* HERO EDIT MODAL */}
+            {heroOpen && heroContentId && (
+            <AlertDialog.Root open={heroOpen} onOpenChange={setHeroOpen}>
+            <AlertDialog.Content maxWidth="600px">
+            <AlertDialog.Title>
+           <VisuallyHidden>Edit Hero Section</VisuallyHidden>
+           </AlertDialog.Title>
+
+             <AlertDialog.Description>
+              Update hero title, description, background image, and cards.
+             </AlertDialog.Description>
 
       <EditHeroImage
         contentId={heroContentId}
