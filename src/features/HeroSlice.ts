@@ -28,14 +28,13 @@ const initialState: HeroState = {
 
 // Map API response to HeroSlide interface
 const mapHeroSlide = (slide: any): HeroSlide => ({
-  id: slide.id,                // ✅ ONLY UUID
+  id: slide.id,
   heroType: slide.heroType || '',
   title: slide.title || '',
   description: slide.description || '',
   bgImage: slide.bgImage || '',
   cards: slide.cards || [],
 })
-
 
 // Get auth token from localStorage
 const getAuthToken = () => {
@@ -76,22 +75,47 @@ export const fetchHeroSlides = createAsyncThunk(
     }
   }
 )
+
 /* CREATE SINGLE HERO SLIDE */
 export const createHeroSlide = createAsyncThunk(
   'hero/createHeroSlide',
-  async (slide: Omit<HeroSlide, 'id'>, { rejectWithValue }) => {
+  async (slideData: {
+    heroType?: string
+    title: string
+    description?: string
+    bgImageFile: File
+    cardImageFiles: File[]  // Array of 3 File objects
+  }, { rejectWithValue }) => {
     try {
       const token = getAuthToken()
+      const formData = new FormData()
+      
+      // Append basic fields
+      formData.append('heroType', slideData.heroType || 'banner')
+      formData.append('title', slideData.title)
+      formData.append('description', slideData.description || '')
+      
+      // Append background image file
+      formData.append('bgImage', slideData.bgImageFile)
+      slideData.cardImageFiles.forEach((file, index) => {
+        formData.append('cards', file)
+      })
+      
       const res = await fetch(`${API_BASE}/api/hero-slides`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type - browser will set it with boundary
         },
         credentials: 'include',
-        body: JSON.stringify(slide),
+        body: formData,
       })
-      if (!res.ok) throw new Error('Failed to create hero slide')
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create hero slide')
+      }
+      
       const data = await res.json()
       return mapHeroSlide(data)
     } catch (err) {
@@ -126,19 +150,73 @@ export const fetchHeroSlideById = createAsyncThunk(
 /* UPDATE HERO SLIDE BY ID */
 export const updateHeroSlideById = createAsyncThunk(
   'hero/updateHeroSlideById',
-  async ({ id, data }: { id: string; data: Partial<HeroSlide> }, { rejectWithValue }) => {
+  async ({ 
+    id, 
+    data,
+    bgImageFile,
+    cardImageFiles,
+  }: { 
+    id: string
+    data: {
+      heroType?: string
+      title?: string
+      description?: string
+      bgImage?: string  
+      cards?: string[]  
+    }
+    bgImageFile?: File  
+    cardImageFiles?: File[]  
+  }, { rejectWithValue }) => {
     try {
       const token = getAuthToken()
+      const formData = new FormData()
+      
+      // Append basic fields
+      if (data.heroType !== undefined) {
+        formData.append('heroType', data.heroType)
+      }
+      if (data.title !== undefined) {
+        formData.append('title', data.title)
+      }
+      if (data.description !== undefined) {
+        formData.append('description', data.description)
+      }
+      
+      // Handle background image
+      if (bgImageFile) {
+        // New file is being uploaded - append as file
+        formData.append('bgImage', bgImageFile)
+      }
+      // Note: If bgImageFile is not provided, backend will keep existing image
+      // Backend controller expects file upload, so we don't send existing URL in body
+      
+      // Handle card images
+      if (cardImageFiles && cardImageFiles.length > 0) {
+        // New files are being uploaded - append as files
+        cardImageFiles.forEach((file) => {
+          formData.append('cards', file)
+        })
+      } else if (data.cards && data.cards.length > 0) {
+        // No new files, but we might need to preserve existing URLs
+        // Backend expects files, so existing URLs are preserved automatically
+        // We don't send existing URLs in body per backend controller logic
+      }
+      
       const res = await fetch(`${API_BASE}/api/hero-slides/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type - browser will set it with boundary
         },
         credentials: 'include',
-        body: JSON.stringify(data),
+        body: formData,
       })
-      if (!res.ok) throw new Error('Failed to update hero slide')
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to update hero slide')
+      }
+      
       const responseData = await res.json()
       return mapHeroSlide(responseData)
     } catch (err) {
@@ -172,7 +250,6 @@ export const deleteHeroSlideById = createAsyncThunk(
 )
 
 /* SAVE MULTIPLE HERO SLIDES (batch) */
-/* SAVE MULTIPLE HERO SLIDES (batch) */
 export const saveHeroSlides = createAsyncThunk(
   'hero/saveHeroSlides',
   async (slides: HeroSlide[], { rejectWithValue }) => {
@@ -205,6 +282,7 @@ export const saveHeroSlides = createAsyncThunk(
     }
   }
 )
+
 const heroSlice = createSlice({
   name: 'hero',
   initialState,
