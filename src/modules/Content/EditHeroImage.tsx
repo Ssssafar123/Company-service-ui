@@ -11,12 +11,14 @@ type Props = {
 }
 
 type Slide = {
-  id?: string              // ✅ IMPORTANT (for update)
+  id?: string
   heroType: string
   title: string
   description: string
-  bgPreview: string
-  cards: string[]
+  bgPreview: string | File  // Can be URL string or File object
+  bgImageFile?: File  // New file to upload
+  cards: (string | File)[]  // Can be URL strings or File objects
+  cardImageFiles?: File[]  // New files to upload
 }
 
 const emptySlide: Slide = {
@@ -27,12 +29,9 @@ const emptySlide: Slide = {
   cards: ['', '', ''],
 }
 
-
-
 const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
   const dispatch = useDispatch<AppDispatch>()
 
-  
   const existingHeroSlides = useSelector((state: RootState) => state.hero.slides || [])
   const loading = useSelector((state: RootState) => state.hero.ui.loading)
   const error = useSelector((state: RootState) => state.hero.ui.error)
@@ -46,68 +45,52 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
   }, [dispatch])
 
   useEffect(() => {
-  if (existingHeroSlides.length > 0 && slides.every(s => !s.id)) {
-    setSlides(
-      existingHeroSlides.map((s) => ({
-        id: s.id,
+    if (existingHeroSlides.length > 0) {
+      const mappedSlides = existingHeroSlides.map((s) => ({
+        id: s.id, // Ensure id is always set
         heroType: s.heroType || '',
         title: s.title || '',
         description: s.description || '',
-        bgPreview: s.bgImage || '', // ✅ Cloudinary URL will be stored here
-        cards: s.cards?.length ? s.cards : ['', '', ''],
+        bgPreview: s.bgImage || '', // Cloudinary URL string
+        cards: s.cards?.length ? s.cards : ['', '', ''], // Array of URL strings
+        // Don't initialize cardImageFiles or bgImageFile - these are only for new uploads
       }))
-    )
-  }
-}, [existingHeroSlides])
-
-
-  /* ✅ IMPROVED: Convert File to Base64 with compression */
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => {
-        const base64String = reader.result as string
-        
-        // ✅ Compress image by re-encoding through canvas
-        const img = new Image()
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          const maxWidth = 800
-          const maxHeight = 600
-          let width = img.width
-          let height = img.height
-
-          if (width > height) {
-            if (width > maxWidth) {
-              height *= maxWidth / width
-              width = maxWidth
-            }
-          } else {
-            if (height > maxHeight) {
-              width *= maxHeight / height
-              height = maxHeight
-            }
-          }
-
-          canvas.width = width
-          canvas.height = height
-          const ctx = canvas.getContext('2d')
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height)
-            // ✅ Compress to 0.7 quality (70%)
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7)
-            resolve(compressedBase64)
-          } else {
-            resolve(base64String)
-          }
+      
+      setSlides(prevSlides => {
+        // Check if we need to update
+        if (prevSlides.length !== mappedSlides.length) {
+          return mappedSlides
         }
-        img.onerror = () => resolve(base64String)
-        img.src = base64String
-      }
-      reader.onerror = (error) => reject(error)
-    })
-  }
+        
+        // Check if any slide changed significantly
+        const needsUpdate = prevSlides.some((prev, idx) => {
+          const mapped = mappedSlides[idx]
+          return !mapped || 
+                 prev.id !== mapped.id || 
+                 prev.bgPreview !== mapped.bgPreview ||
+                 JSON.stringify(prev.cards) !== JSON.stringify(mapped.cards)
+        })
+        
+        if (needsUpdate) {
+          // Preserve any File objects that might have been selected
+          return mappedSlides.map((mapped, idx) => {
+            const prev = prevSlides[idx]
+            if (prev && prev.id === mapped.id) {
+              // Preserve any new file uploads
+              return {
+                ...mapped,
+                bgImageFile: prev.bgImageFile,
+                cardImageFiles: prev.cardImageFiles,
+              }
+            }
+            return mapped
+          })
+        }
+        
+        return prevSlides
+      })
+    }
+  }, [existingHeroSlides])
 
   const updateSlide = (index: number, key: keyof Slide, value: any) => {
     setSlides((prev) => {
@@ -117,33 +100,63 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
     })
   }
 
-  const handleBgChange = async (slideIndex: number, file?: File) => {
+  // Handle background image file selection
+  const handleBgChange = (slideIndex: number, file?: File) => {
     if (!file) return
-    try {
-      const base64 = await fileToBase64(file)
-      updateSlide(slideIndex, 'bgPreview', base64)
-    } catch (err) {
-      setSaveError('Failed to process background image')
-    }
+    
+    // Store the File object separately and create preview URL
+    const previewUrl = URL.createObjectURL(file)
+    
+    setSlides((prev) => {
+      const updated = [...prev]
+      updated[slideIndex] = {
+        ...updated[slideIndex], 
+        bgPreview: previewUrl,
+        bgImageFile: file, 
+      }
+      return updated
+    })
   }
 
-  const handleCardChange = async (
+  // Handle card image file selection
+  const handleCardChange = (
     slideIndex: number,
     cardIndex: number,
     file?: File
   ) => {
     if (!file) return
-    try {
-      const base64 = await fileToBase64(file)
-      setSlides((prev) => {
-        const updated = [...prev]
-        updated[slideIndex].cards = [...updated[slideIndex].cards]
-        updated[slideIndex].cards[cardIndex] = base64
-        return updated
-      })
-    } catch (err) {
-      setSaveError('Failed to process card image')
+    
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file)
+    
+    setSlides((prev) => {
+      const updated = [...prev]
+      const newCards = [...updated[slideIndex].cards]
+      newCards[cardIndex] = previewUrl // Preview URL for display
+      
+      // Store File objects separately
+      if (!updated[slideIndex].cardImageFiles) {
+        updated[slideIndex].cardImageFiles = []
+      }
+      const cardFiles = [...(updated[slideIndex].cardImageFiles || [])]
+      cardFiles[cardIndex] = file // File object for upload
+      
+      updated[slideIndex] = {
+        ...updated[slideIndex],
+        cards: newCards,
+        cardImageFiles: cardFiles,
+      }
+      return updated
+    })
+  }
+
+  // Get preview URL for display (handles both File objects and URL strings)
+  const getPreviewUrl = (value: string | File): string => {
+    if (!value) return ''
+    if (value instanceof File) {
+      return URL.createObjectURL(value)
     }
+    return value
   }
 
   const addSlide = () => {
@@ -151,72 +164,110 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
   }
 
   const deleteSlide = async (index: number) => {
-  const slide = slides[index]
+    const slide = slides[index]
 
-  if (slide.id) {
-    await dispatch(deleteHeroSlideById(slide.id)).unwrap()
+    if (slide.id) {
+      try {
+        await dispatch(deleteHeroSlideById(slide.id)).unwrap()
+      } catch (err: any) {
+        setSaveError(err.message || 'Failed to delete slide')
+        return
+      }
+    }
+
+    setSlides((prev) => prev.filter((_, i) => i !== index))
   }
-
-  setSlides((prev) => prev.filter((_, i) => i !== index))
-}
-
 
   const saveSlide = async (slide: Slide, index: number) => {
-  try {
-    setSaveError(null)
+    try {
+      setSaveError(null)
 
-    if (!slide.title.trim()) {
-      setSaveError('Hero title is required')
-      return
+      if (!slide.title.trim()) {
+        setSaveError('Hero title is required')
+        return
+      }
+
+      // Check if background image exists (either existing URL or new file)
+      if (!slide.bgPreview && !slide.bgImageFile) {
+        setSaveError('Background image is required')
+        return
+      }
+
+      // Prepare File objects for upload
+      const bgImageFile = slide.bgImageFile || undefined
+      const cardImageFiles = slide.cardImageFiles || []
+
+    
+      if (slide.id) {
+        const cardValidation = slide.cards.every((card, idx) => {
+          const hasExistingUrl = typeof card === 'string' && card.trim() !== '' && !card.startsWith('blob:')
+          const hasNewFile = cardImageFiles[idx] instanceof File
+          return hasExistingUrl || hasNewFile
+        })
+
+        if (!cardValidation) {
+          setSaveError('All 3 card images are required. Please ensure each card has an image (existing or new).')
+          return
+        }
+
+        // Prepare data payload for update
+        const dataPayload = {
+          heroType: slide.heroType || 'banner',
+          title: slide.title,
+          description: slide.description || '',
+        }
+
+        await dispatch(
+          updateHeroSlideById({ 
+            id: slide.id, 
+            data: dataPayload,
+            bgImageFile: bgImageFile,
+            cardImageFiles: cardImageFiles.length > 0 ? cardImageFiles : undefined,
+          })
+        ).unwrap()
+      }
+      // ✅ CREATE NEW
+      else {
+        // For create, bgImageFile is required
+        if (!bgImageFile) {
+          setSaveError('Background image file is required for new slides')
+          return
+        }
+
+        // All card files are required for create (must be File objects)
+        if (cardImageFiles.length !== 3 || cardImageFiles.some(f => !f || !(f instanceof File))) {
+          setSaveError('All 3 card image files are required for new slides')
+          return
+        }
+
+        const created = await dispatch(
+          createHeroSlide({
+            heroType: slide.heroType || 'banner',
+            title: slide.title,
+            description: slide.description || '',
+            bgImageFile: bgImageFile,
+            cardImageFiles: cardImageFiles,
+          })
+        ).unwrap()
+
+        // Attach id back to UI slide
+        setSlides((prev) => {
+          const copy = [...prev]
+          copy[index] = { ...copy[index], id: created.id }
+          return copy
+        })
+      }
+
+      setSaveSuccess(true)
+      setTimeout(() => setSaveError(null), 1500)
+      
+      
+      dispatch(fetchHeroSlides())
+    } catch (err: any) {
+      setSaveError(err.message || 'Save failed')
     }
-
-    if (!slide.bgPreview) {
-      setSaveError('Background image is required')
-      return
-    }
-
-    if (slide.cards.some((c) => !c)) {
-      setSaveError('All 3 card images are required')
-      return
-    }
-
-    const payload = {
-      heroType: slide.heroType || 'banner',
-      title: slide.title,
-      description: slide.description,
-      bgImage: slide.bgPreview,
-      cards: slide.cards,
-    }
-
-    // ✅ UPDATE EXISTING
-    if (slide.id) {
-      await dispatch(
-        updateHeroSlideById({ id: slide.id, data: payload })
-      ).unwrap()
-    }
-    // ✅ CREATE NEW
-    else {
-      const created = await dispatch(
-        createHeroSlide(payload)
-      ).unwrap()
-
-      // attach id back to UI slide
-      setSlides((prev) => {
-        const copy = [...prev]
-        copy[index] = { ...copy[index], id: created.id }
-        return copy
-      })
-    }
-
-    setSaveSuccess(true)
-    setTimeout(() => setSaveSuccess(false), 1500)
-  } catch (err: any) {
-    setSaveError(err.message || 'Save failed')
   }
-}
 
-
-  
   return (
     <Card style={{ padding: 20 }}>
       <Flex justify="between" align="center" mb="4">
@@ -232,8 +283,6 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
       {error && <Text color="red" mb="3">Error: {error}</Text>}
       {saveError && <Text color="red" mb="3">Save Error: {saveError}</Text>}
       {saveSuccess && <Text color="green" mb="3">✓ Slide saved successfully!</Text>}
-
-      
 
       <Text weight="bold" mb="3">Add New Slide</Text>
       {slides.map((slide, slideIndex) => (
@@ -285,7 +334,7 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
           <Flex gap="5" align="start" style={{ marginBottom: 12 }}>
             <Box flexGrow="2">
               <Text weight="medium" mb="1">
-                Background Image * {slide.bgPreview && slide.bgPreview.startsWith('http') ? '(Cloudinary URL)' : '(Will be compressed)'}
+                Background Image * {slide.bgPreview && typeof slide.bgPreview === 'string' && slide.bgPreview.startsWith('http') ? '(Cloudinary URL)' : slide.bgImageFile ? '(New file selected)' : ''}
               </Text>
               <input
                 type="file"
@@ -294,9 +343,9 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
                   e.target.files && handleBgChange(slideIndex, e.target.files[0])
                 }
               />
-              {slide.bgPreview && (
+                {slide.bgPreview && (
                 <img
-                  src={slide.bgPreview}
+                  src={getPreviewUrl(slide.bgPreview)}
                   alt="Background preview"
                   style={{
                     width: '100%',
@@ -307,7 +356,6 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
                   }}
                   onError={(e) => {
                     console.error('Failed to load background image:', slide.bgPreview)
-                    // Hide broken image but keep the container
                     e.currentTarget.style.display = 'none'
                   }}
                 />
@@ -330,7 +378,7 @@ const EditHeroImage: React.FC<Props> = ({ contentId, onClose }) => {
                 />
                 {slide.cards[cardIndex] && (
                   <img
-                    src={slide.cards[cardIndex]}
+                    src={getPreviewUrl(slide.cards[cardIndex])}
                     alt={`Card ${cardIndex + 1} preview`}
                     style={{
                       width: 120,
