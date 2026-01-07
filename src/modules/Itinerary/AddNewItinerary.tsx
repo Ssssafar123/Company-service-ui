@@ -68,122 +68,158 @@ const AddNewItinerary: React.FC = () => {
                       }).filter((id: string) => id && id !== '')
                     : []
                 
-                const mappedValues: any = {
-                    iti_name: itineraryData.name || '',
-                    travel_location: findLocationIdByCity(itineraryData.city || '') || '',
-                    categories: mappedCategories,
-                    iti_desc: itineraryData.description || '',
-                    iti_short_desc: (itineraryData as any).shortDescription || (itineraryData as any).short_description || '',
-                    iti_duration: itineraryData.duration || '',
-                    price: typeof itineraryData.price === 'number' ? itineraryData.price : 0,
-                    start_date: (() => {
-                        const date = itineraryData.startDate || (itineraryData as any).start_date;
-                        if (!date) return '';
-                        if (typeof date === 'string') {
-                            // Handle ISO format: "2024-01-15T00:00:00.000Z" or "2024-01-15"
-                            if (date.includes('T')) {
-                                return date.split('T')[0];
-                            }
-                            // Handle date string: "2024-01-15 00:00:00"
-                            if (date.includes(' ')) {
-                                return date.split(' ')[0];
-                            }
-                            // Already in YYYY-MM-DD format
-                            return date;
-                        }
-                        return '';
-                    })(),
-                    end_date: (() => {
-                        const date = itineraryData.endDate || (itineraryData as any).end_date;
-                        if (!date) return '';
-                        if (typeof date === 'string') {
-                            // Handle ISO format: "2024-01-15T00:00:00.000Z" or "2024-01-15"
-                            if (date.includes('T')) {
-                                return date.split('T')[0];
-                            }
-                            // Handle date string: "2024-01-15 00:00:00"
-                            if (date.includes(' ')) {
-                                return date.split(' ')[0];
-                            }
-                            // Already in YYYY-MM-DD format
-                            return date;
-                        }
-                        return '';
-                    })(),
-                    max_travelers: typeof itineraryData.maxTravelers === 'number' ? itineraryData.maxTravelers : 0,
-                    available_seats: typeof itineraryData.availableSeats === 'number' ? itineraryData.availableSeats : 0,
-                    iti_inclusion: Array.isArray(itineraryData.inclusions) 
-                        ? itineraryData.inclusions.join('\n') 
-                        : (typeof itineraryData.inclusions === 'string' ? itineraryData.inclusions : ''),
-                    iti_exclusion: Array.isArray(itineraryData.exclusions) 
-                        ? itineraryData.exclusions.join('\n') 
-                        : (typeof itineraryData.exclusions === 'string' ? itineraryData.exclusions : ''),
-                    iti_notes: (itineraryData as any).notes || '',
-                    status: (itineraryData.status === 'active' || itineraryData.status === 'Active') ? 'Active' : 'Inactive',
-                    iti_img: (() => {
-                        // ImageUpload expects an array, so ensure we always return an array
-                        if (Array.isArray((itineraryData as any).images) && (itineraryData as any).images.length > 0) {
-                            return (itineraryData as any).images;
-                        }
-                        const singleImage = (itineraryData as any).brochureBanner 
-                            || (itineraryData as any).brochure_banner 
-                            || itineraryData.imageUrl 
-                            || '';
-                        return singleImage ? [singleImage] : [''];
-                    })(),
-                    iti_altitude: (itineraryData as any).altitude || '',
-                    iti_scenary: (itineraryData as any).scenary || '',
-                    iti_cultural_site: (itineraryData as any).culturalSite || (itineraryData as any).cultural_site || '',
-					iti_brochure_banner: (itineraryData as any).brochureBanner || (itineraryData as any).brochure_banner || '',
-                    iti_is_customize: (itineraryData as any).isCustomize || (itineraryData as any).is_customize || 'not_specified',
-                    trending: itineraryData.trending || 'No',
-                    // Map complex fields - safely handle undefined
-                    day_details: (() => {
-                        const daywiseData = (itineraryData as any).daywiseActivities 
-                            || (itineraryData as any).daywise_activities 
-                            || [];
-                        
-                        if (!Array.isArray(daywiseData)) return [];
-                        
-                        return daywiseData.map((activity: any, index: number) => ({
-                            id: activity.id || activity._id || `day-${index}`,
-                            day: activity.day || index + 1,
-                            title: activity.title || '',
-                            description: activity.description || '',
-                            images: Array.isArray(activity.images) ? activity.images : (activity.images ? [activity.images] : ['']),
-                            meals: Array.isArray(activity.meals) 
-                                ? activity.meals.map((meal: any) => ({
-                                    name: typeof meal === 'string' ? meal : (meal.name || ''),
-                                    images: Array.isArray(meal?.images) ? meal.images : (meal?.images ? [meal.images] : ['']),
-                                }))
-                                : [],
-                            stays: Array.isArray(activity.stays) 
-                                ? activity.stays.map((stay: any) => ({
-                                    name: typeof stay === 'string' ? stay : (stay.name || ''),
-                                    images: Array.isArray(stay?.images) ? stay.images : (stay?.images ? [stay.images] : ['']),
-                                }))
-                                : (activity.accommodation ? [{
-                                    name: activity.accommodation,
-                                    images: [''],
-                                }] : []),
-                            activities: activity.activities || [],
-                        }));
-                    })(),
-                    hotels: (() => {
-                        const hotelData = (itineraryData as any).hotelDetails 
-                            || (itineraryData as any).hotel_details 
-                            || [];
-                        
-                        if (!Array.isArray(hotelData)) return [];
-                        
-                        return hotelData.map((hotel: any, index: number) => ({
-                            id: hotel.id || hotel._id || `hotel-${index}`,
-                            name: hotel.hotelName || hotel.name || '',
-                            stars: hotel.stars ? String(hotel.stars) : '',
-                            reference: hotel.reference || '',
-                            images: Array.isArray(hotel.images) ? hotel.images : (hotel.images ? [hotel.images] : ['']),
-                        }));
-                    })(),
+					const mappedValues: any = {
+						iti_name: itineraryData.name || '',
+						travel_location: findLocationIdByCity(itineraryData.city || '') || '',
+						categories: mappedCategories,
+						iti_desc: itineraryData.description || '',
+						iti_short_desc: (itineraryData as any).shortDescription || (itineraryData as any).short_description || '',
+						iti_duration: itineraryData.duration || '',
+						price: typeof itineraryData.price === 'number' ? itineraryData.price : 0,
+						start_date: (() => {
+							const date = itineraryData.startDate || (itineraryData as any).start_date;
+							if (!date) return '';
+							if (typeof date === 'string') {
+								if (date.includes('T')) {
+									return date.split('T')[0];
+								}
+								if (date.includes(' ')) {
+									return date.split(' ')[0];
+								}
+								return date;
+							}
+							return '';
+						})(),
+						end_date: (() => {
+							const date = itineraryData.endDate || (itineraryData as any).end_date;
+							if (!date) return '';
+							if (typeof date === 'string') {
+								if (date.includes('T')) {
+									return date.split('T')[0];
+								}
+								if (date.includes(' ')) {
+									return date.split(' ')[0];
+								}
+								return date;
+							}
+							return '';
+						})(),
+						max_travelers: typeof itineraryData.maxTravelers === 'number' ? itineraryData.maxTravelers : 0,
+						available_seats: typeof itineraryData.availableSeats === 'number' ? itineraryData.availableSeats : 0,
+						iti_inclusion: Array.isArray(itineraryData.inclusions) 
+							? itineraryData.inclusions.join('\n') 
+							: (typeof itineraryData.inclusions === 'string' ? itineraryData.inclusions : ''),
+						iti_exclusion: Array.isArray(itineraryData.exclusions) 
+							? itineraryData.exclusions.join('\n') 
+							: (typeof itineraryData.exclusions === 'string' ? itineraryData.exclusions : ''),
+						iti_notes: (itineraryData as any).notes || '',
+						status: (itineraryData.status === 'active' || itineraryData.status === 'Active') ? 'Active' : 'Inactive',
+						iti_img: (() => {
+							if (Array.isArray((itineraryData as any).images) && (itineraryData as any).images.length > 0) {
+								return (itineraryData as any).images;
+							}
+							const singleImage = (itineraryData as any).brochureBanner 
+								|| (itineraryData as any).brochure_banner 
+								|| itineraryData.imageUrl 
+								|| '';
+							return singleImage ? [singleImage] : [''];
+						})(),
+						iti_altitude: (itineraryData as any).altitude || '',
+						iti_scenary: (itineraryData as any).scenary || '',
+						iti_cultural_site: (itineraryData as any).culturalSite || (itineraryData as any).cultural_site || '',
+						iti_brochure_banner: (itineraryData as any).brochureBanner || (itineraryData as any).brochure_banner || '',
+						iti_is_customize: (itineraryData as any).isCustomize || (itineraryData as any).is_customize || 'not_specified',
+						trending: itineraryData.trending || 'No',
+						
+						// Map complex fields - safely handle undefined
+						day_details: (() => {
+							const daywiseData = (itineraryData as any).daywiseActivities 
+								|| (itineraryData as any).daywise_activities 
+								|| [];
+							
+							if (!Array.isArray(daywiseData)) return [];
+							
+							// Extract nested images from backend response
+							const dayImages = (itineraryData as any).dayImages || {};
+							const mealImages = (itineraryData as any).mealImages || {};
+							const stayImages = (itineraryData as any).stayImages || {};
+							
+							return daywiseData.map((activity: any, index: number) => {
+								// Day index for image lookup (0-based string key)
+								const dayIndex = String(index);
+								
+								// Get day images from dayImages object
+								const dayImageUrls = Array.isArray(dayImages[dayIndex]) 
+									? dayImages[dayIndex] 
+									: [];
+								
+								// Map meals - extract images from mealImages
+								const meals = Array.isArray(activity.meals) 
+									? activity.meals.map((meal: any) => {
+										const mealName = typeof meal === 'string' ? meal : (meal.name || '');
+										// Get meal images from mealImages[dayIndex][mealName]
+										const mealImageUrls = (mealImages[dayIndex] && mealImages[dayIndex][mealName] && Array.isArray(mealImages[dayIndex][mealName]))
+											? mealImages[dayIndex][mealName]
+											: [];
+										return {
+											name: mealName,
+											images: mealImageUrls.length > 0 ? mealImageUrls : [''],
+										};
+									})
+									: [];
+								
+								// Map stays - extract images from stayImages
+								const stays = activity.accommodation 
+									? [{
+										name: activity.accommodation,
+										// Get stay images from stayImages[dayIndex][stayName]
+										images: (stayImages[dayIndex] && stayImages[dayIndex][activity.accommodation] && Array.isArray(stayImages[dayIndex][activity.accommodation]))
+											? stayImages[dayIndex][activity.accommodation]
+											: [''],
+									}]
+									: [];
+								
+								return {
+									id: activity.id || activity._id || `day-${index}`,
+									day: activity.day || index + 1,
+									title: activity.title || '',
+									description: activity.description || '',
+									images: dayImageUrls.length > 0 ? dayImageUrls : [''],
+									meals: meals,
+									stays: stays,
+									activities: activity.activities || [],
+								};
+							});
+						})(),
+						
+						hotels: (() => {
+							const hotelData = (itineraryData as any).hotelDetails 
+								|| (itineraryData as any).hotel_details 
+								|| [];
+							
+							if (!Array.isArray(hotelData)) return [];
+							
+							// Extract hotel images from hotelImages object
+							const hotelImages = (itineraryData as any).hotelImages || {};
+							
+							return hotelData.map((hotel: any, index: number) => {
+								// Hotel index for image lookup (0-based string key)
+								const hotelIndex = String(index);
+								
+								// Get hotel images from hotelImages[hotelIndex]
+								const hotelImageUrls = Array.isArray(hotelImages[hotelIndex]) 
+									? hotelImages[hotelIndex] 
+									: [];
+								
+								return {
+									id: hotel.id || hotel._id || `hotel-${index}`,
+									name: hotel.hotelName || hotel.name || '',
+									stars: hotel.stars ? String(hotel.stars) : '',
+									reference: hotel.reference || '',
+									images: hotelImageUrls.length > 0 ? hotelImageUrls : [''],
+								};
+							});
+						})(),
                     package_details: (() => {
 						const pkgData = (itineraryData as any).packages 
 							|| (itineraryData as any).package_details 

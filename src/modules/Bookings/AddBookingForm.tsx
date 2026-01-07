@@ -64,6 +64,17 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
 
   // Watch itinerary_id to fetch batches
   const selectedItineraryId = watch('itinerary_id')
+  const currentBatchId = watch('batch_id')
+
+  // Helper function to extract ID from string or object
+  const extractId = (value: any): string => {
+    if (!value) return ''
+    if (typeof value === 'string') return value
+    if (typeof value === 'object') {
+      return value._id || value.id || ''
+    }
+    return String(value || '')
+  }
 
   // Transform itinerary batches to Batch interface format
   const getBatchesFromItinerary = (itinerary: any): Batch[] => {
@@ -84,23 +95,52 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
     }))
   }
 
-  // Filter batches based on selected itinerary
+  // Filter batches - only show non-expired batches (end_date in the future)
   const filteredBatches = selectedItineraryData
-    ? getBatchesFromItinerary(selectedItineraryData)
+    ? getBatchesFromItinerary(selectedItineraryData).filter((batch) => {
+        if (!batch.end_date) return false
+        
+        const endDate = new Date(batch.end_date)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0) // Set to start of day for comparison
+        
+        // Include batch if end_date is today or in the future
+        return endDate >= today
+      })
     : []
 
   // Fetch full itinerary data when itinerary is selected
   useEffect(() => {
     if (selectedItineraryId) {
       setLoadingBatches(true)
-      setSelectedItineraryData(null)
-      setValue('batch_id', '')
+      
+      // Don't clear batch_id if we're in edit mode and batch_id is already set
+      // Only clear if the itinerary actually changed
+      const previousItineraryId = selectedItineraryData?.id || selectedItineraryData?._id
+      const shouldClearBatch = previousItineraryId !== selectedItineraryId
+      
+      if (shouldClearBatch) {
+        setSelectedItineraryData(null)
+        setValue('batch_id', '')
+      }
       
       dispatch(fetchItineraryById(selectedItineraryId))
         .unwrap()
         .then((itinerary: any) => {
           setSelectedItineraryData(itinerary)
           setLoadingBatches(false)
+          
+          // After fetching, verify that the current batch_id is still valid
+          // If not, and we're not in edit mode, clear it
+          if (!shouldClearBatch && currentBatchId) {
+            const allBatches = getBatchesFromItinerary(itinerary)
+            const batchExists = allBatches.some(b => b.id === currentBatchId)
+            
+            // Only clear if batch doesn't exist and we're not in edit mode
+            if (!batchExists && !initialData) {
+              setValue('batch_id', '')
+            }
+          }
         })
         .catch((err) => {
           console.error('Failed to fetch itinerary:', err)
@@ -121,22 +161,47 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
     }
   }, [dispatch, isOpen])
 
+  // Handle initial data setup for edit mode
   useEffect(() => {
     if (initialData) {
-      reset({
-        customer: initialData.customer,
-        people_count: initialData.people_count,
-        travellers: initialData.travellers,
-        itinerary_id: initialData.itinerary_id,
-        batch_id: initialData.batch_id,
-        total_price: initialData.total_price,
-        paid_amount: initialData.paid_amount,
-        invoice_link: initialData.invoice_link,
-        transaction: initialData.transaction,
-        txn_id: initialData.txn_id,
-        transaction_status: initialData.transaction_status,
-        deleted: initialData.deleted,
-      })
+      const setupInitialData = async () => {
+        // Extract IDs safely from initialData (they might be objects)
+        const itineraryId = extractId(initialData.itinerary_id)
+        const batchId = extractId(initialData.batch_id)
+        const customerId = extractId(initialData.customer)
+        const transactionId = extractId(initialData.transaction)
+        
+        // First, reset form with initial data
+        reset({
+          customer: customerId,
+          people_count: initialData.people_count,
+          travellers: initialData.travellers || [],
+          itinerary_id: itineraryId,
+          batch_id: batchId,
+          total_price: initialData.total_price,
+          paid_amount: initialData.paid_amount,
+          invoice_link: initialData.invoice_link,
+          transaction: transactionId,
+          txn_id: initialData.txn_id,
+          transaction_status: initialData.transaction_status,
+          deleted: initialData.deleted,
+        })
+        
+        // If itinerary_id exists, fetch the itinerary data to populate batches
+        if (itineraryId) {
+          try {
+            setLoadingBatches(true)
+            const itinerary = await dispatch(fetchItineraryById(itineraryId)).unwrap()
+            setSelectedItineraryData(itinerary)
+            setLoadingBatches(false)
+          } catch (err) {
+            console.error('Failed to fetch itinerary for edit:', err)
+            setLoadingBatches(false)
+          }
+        }
+      }
+      
+      setupInitialData()
     } else {
       reset({
         people_count: 1,
@@ -150,8 +215,9 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
         transaction_status: 'INITIATED',
         deleted: false,
       })
+      setSelectedItineraryData(null)
     }
-  }, [initialData, reset])
+  }, [initialData, reset, dispatch])
 
   const isValidObjectId = (id: string) => {
     return /^[0-9a-fA-F]{24}$/.test(id)

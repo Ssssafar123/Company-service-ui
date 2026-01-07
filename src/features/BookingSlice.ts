@@ -57,23 +57,37 @@ const initialState: AppState = {
 }
 
 // Helper function to map _id to id
-const mapBooking = (booking: any): Booking => ({
-  id: booking._id || booking.id,
-  customer: booking.customer || '',
-  people_count: booking.people_count || 0,
-  travellers: booking.travellers || [],
-  itinerary_id: booking.itinerary_id,
-  batch_id: booking.batch_id || '',
-  total_price: booking.total_price || 0,
-  paid_amount: booking.paid_amount || 0,
-  invoice_link: booking.invoice_link || '',
-  transaction: booking.transaction || '',
-  txn_id: booking.txn_id || '',
-  transaction_status: booking.transaction_status,
-  deleted: booking.deleted || false,
-  createdAt: booking.createdAt,
-  updatedAt: booking.updatedAt,
-})
+const mapBooking = (booking: any): Booking => {
+  // Helper to extract ID from string or object
+  const extractId = (value: any): string => {
+    if (!value) return ''
+    if (typeof value === 'string') return value
+    if (typeof value === 'object') {
+      return value._id || value.id || ''
+    }
+    return String(value || '')
+  }
+
+  return {
+    id: booking._id || booking.id,
+    customer: extractId(booking.customer),
+    people_count: booking.people_count || 0,
+    travellers: Array.isArray(booking.travellers) 
+      ? booking.travellers.map((t: any) => extractId(t))
+      : [],
+    itinerary_id: extractId(booking.itinerary_id),
+    batch_id: extractId(booking.batch_id),
+    total_price: booking.total_price || 0,
+    paid_amount: booking.paid_amount || 0,
+    invoice_link: booking.invoice_link || '',
+    transaction: extractId(booking.transaction),
+    txn_id: booking.txn_id || '',
+    transaction_status: booking.transaction_status,
+    deleted: booking.deleted || false,
+    createdAt: booking.createdAt,
+    updatedAt: booking.updatedAt,
+  }
+}
 
 export const fetchBookings = createAsyncThunk(
   'app/fetchBookings',
