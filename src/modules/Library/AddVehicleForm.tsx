@@ -29,6 +29,7 @@ type AddVehicleFormProps = {
         priceType?: string
         routes?: string
         vendorName?: string
+        vendorLocation?: string; 
         contact?: string
         rating?: number
     } | null
@@ -59,6 +60,7 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ isOpen, onClose, onSubm
             type: 'text' as const,
             placeholder: 'Enter vehicle type (e.g., SUV, Mini Bus)',
             fullWidth: true,
+            required: true, 
         },
         {
             name: 'vehicleNumber',
@@ -66,18 +68,21 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ isOpen, onClose, onSubm
             type: 'text' as const,
             placeholder: 'Enter vehicle number',
             fullWidth: true,
+            required: true, 
         },
         {
             name: 'capacity',
             label: 'Capacity',
             type: 'number' as const,
             placeholder: 'Enter capacity',
+            required: true, 
         },
         {
             name: 'rating',
             label: 'Rating (1-10)',
             type: 'number' as const,
             placeholder: 'Enter rating (1-10)',
+            required: true, 
         },
         {
             name: 'priceType',
@@ -88,12 +93,14 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ isOpen, onClose, onSubm
                 { value: 'Per Tour', label: 'Per Tour' },
                 { value: 'Per Km', label: 'Per Km' },
             ],
+            required: true, 
         },
         {
             name: 'price',
             label: 'Price',
             type: 'number' as const,
             placeholder: 'Enter price',
+            required: true, 
         },
         {
             name: 'vendorName',
@@ -101,6 +108,7 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ isOpen, onClose, onSubm
             type: 'text' as const,
             placeholder: 'Enter vendor name',
             fullWidth: true,
+            required: true, 
         },
         {
             name: 'vendorLocation',
@@ -108,13 +116,16 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ isOpen, onClose, onSubm
             type: 'text' as const,
             placeholder: 'Enter vendor location',
             fullWidth: true,
+            required: true, 
         },
+
         {
             name: 'contact',
             label: 'Contact',
             type: 'text' as const,
             placeholder: 'Enter contact number',
             fullWidth: true,
+            required: true, 
         },
         {
             name: 'availableRoutes',
@@ -122,6 +133,7 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ isOpen, onClose, onSubm
             type: 'textarea' as const,
             placeholder: 'Enter available routes (comma-separated)',
             fullWidth: true,
+            required: true, 
         },
     ]
 

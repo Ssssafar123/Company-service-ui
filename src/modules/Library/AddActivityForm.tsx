@@ -51,6 +51,7 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 			type: 'text' as const,
 			placeholder: 'Enter activity name',
 			fullWidth: true,
+			required: true,
 		},
 		{
 			name: 'shortDescription',
@@ -58,6 +59,7 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 			type: 'textarea' as const,
 			placeholder: 'Enter short description',
 			fullWidth: true,
+			required: true,
 		},
 		{
 			name: 'fullDescription',
@@ -72,18 +74,21 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 			type: 'text' as const,
 			placeholder: 'Enter location',
 			fullWidth: true,
+			required: true,
 		},
 		{
 			name: 'duration',
 			label: 'Duration (in hours)',
 			type: 'number' as const,
 			placeholder: 'Enter duration in hours',
+			required: true,
 		},
 		{
 			name: 'price',
 			label: 'Price',
 			type: 'number' as const,
 			placeholder: 'Enter price',
+			required: true,
 		},
 	]
 
