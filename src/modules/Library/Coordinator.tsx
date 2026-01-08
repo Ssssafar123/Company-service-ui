@@ -24,9 +24,13 @@ import AddCoordinatorForm from './AddCoordinatorForm'
 type CoordinatorData = {
     id: string
     name: string
+    city?: string
+    description?: string
     email: string
     phone: string
     specialties: string
+    rating?: number
+    availability?: string
     bio?: string
 }
 
@@ -41,7 +45,9 @@ const Coordinator: React.FC = () => {
 
     const [searchQuery, setSearchQuery] = useState('')
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null } | null>(null)
-    const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(['name', 'email', 'phone', 'specialties', 'actions']))
+    const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
+        new Set(['name', 'city', 'email', 'phone', 'rating', 'availability', 'specialties', 'actions'])
+    )
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(10)
     const [editingCoordinator, setEditingCoordinator] = useState<CoordinatorData | null>(null)
@@ -70,8 +76,12 @@ const Coordinator: React.FC = () => {
         return reduxCoordinators.map((coordinator) => ({
             id: coordinator.id,
             name: coordinator.name,
+            city: coordinator.city,
+            description: coordinator.description,
             email: coordinator.email,
             phone: coordinator.phone,
+            rating: coordinator.rating,
+            availability: coordinator.availability,
             specialties: coordinator.specialties?.join(', ') || '',
             bio: coordinator.bio,
         }))
@@ -89,6 +99,8 @@ const Coordinator: React.FC = () => {
                     coordinator.name.toLowerCase().includes(query) ||
                     coordinator.email.toLowerCase().includes(query) ||
                     coordinator.phone.includes(query) ||
+                    coordinator.city?.toLowerCase().includes(query) ||
+                    coordinator.description?.toLowerCase().includes(query) ||
                     coordinator.specialties.toLowerCase().includes(query)
             )
         }
@@ -205,6 +217,8 @@ const Coordinator: React.FC = () => {
             setDialogOpen(true)
             setIsFormOpen(false)
             setEditingCoordinator(null)
+            // Refresh coordinators list
+            dispatch(fetchCoordinators())
         } catch (error) {
             setDialogConfig({
                 title: 'Error',
@@ -290,25 +304,53 @@ const Coordinator: React.FC = () => {
         {
             key: 'name',
             label: 'Name',
-            width: '200px',
+            width: '150px',
+            sortable: true,
+        },
+        {
+            key: 'city',
+            label: 'Current City',
+            width: '150px',
             sortable: true,
         },
         {
             key: 'email',
             label: 'Email',
-            width: '250px',
+            width: '200px',
             sortable: true,
         },
         {
             key: 'phone',
             label: 'Phone',
-            width: '150px',
+            width: '130px',
             sortable: true,
+        },
+        {
+            key: 'rating',
+            label: 'Rating',
+            width: '100px',
+            sortable: true,
+            render: (row: CoordinatorData) => (
+                <Text size="2">
+                    {row.rating !== undefined && row.rating !== null ? row.rating : 'N/A'}
+                </Text>
+            ),
+        },
+        {
+            key: 'availability',
+            label: 'Availability',
+            width: '130px',
+            sortable: true,
+            render: (row: CoordinatorData) => (
+                <Text size="2" style={{ textTransform: 'capitalize' }}>
+                    {row.availability?.replace('-', ' ') || 'N/A'}
+                </Text>
+            ),
         },
         {
             key: 'specialties',
             label: 'Specialties',
-            width: '300px',
+            width: '250px',
             sortable: true,
         },
         {
@@ -340,8 +382,12 @@ const Coordinator: React.FC = () => {
                 initialData={editingCoordinator ? {
                     id: editingCoordinator.id,
                     name: editingCoordinator.name,
+                    city: editingCoordinator.city,
+                    description: editingCoordinator.description,
                     email: editingCoordinator.email,
                     phone: editingCoordinator.phone,
+                    rating: editingCoordinator.rating,
+                    availability: editingCoordinator.availability,
                     specialties: editingCoordinator.specialties,
                     bio: editingCoordinator.bio,
                 } : null}
@@ -415,8 +461,11 @@ const Coordinator: React.FC = () => {
                                 <DropdownMenu.Content>
                                     {[
                                         { key: 'name', label: 'Name' },
+                                        { key: 'city', label: 'Current City' },
                                         { key: 'email', label: 'Email' },
                                         { key: 'phone', label: 'Phone' },
+                                        { key: 'rating', label: 'Rating' },
+                                        { key: 'availability', label: 'Availability' },
                                         { key: 'specialties', label: 'Specialties' },
                                     ].map((col) => (
                                         <DropdownMenu.Item
