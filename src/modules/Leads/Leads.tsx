@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea } from '@radix-ui/themes'
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } from '@radix-ui/react-icons'
 import type { RootState } from '../../store'
-import { fetchLeadsByPage, createLead, updateLeadById, deleteLeadById } from '../../features/LeadSlice'
+import { fetchLeadsByPage, fetchLeads, createLead, updateLeadById, deleteLeadById } from '../../features/LeadSlice'
+import { fetchUsers } from '../../features/UserSlice'
+import { useThemeToggle } from '../../ThemeProvider'
 import type { Lead } from '../../features/LeadSlice'
 
 const Leads: React.FC = () => {
   const dispatch = useDispatch()
   const { leads, pagination, ui } = useSelector((state: RootState) => state.lead)
-
+  const { isDark } = useThemeToggle()
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -21,6 +23,9 @@ const Leads: React.FC = () => {
   // Active filter state
   const [activeFilter, setActiveFilter] = useState<string>("All")
 
+  // Contacted/Stage filter state
+  const [selectedContactedFilter, setSelectedContactedFilter] = useState<string>("All")
+  const filterBarScrollRef = useRef<HTMLDivElement>(null)
   // Remark modal state
   const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false)
   const [selectedLeadForRemark, setSelectedLeadForRemark] = useState<string | null>(null)
@@ -30,6 +35,12 @@ const Leads: React.FC = () => {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("")
+
+  const users = useSelector((state: RootState) => state.user.users)
+  const usersLoading = useSelector((state: RootState) => state.user.ui.loading)
+
+  // State to store all leads for filtering/searching
+  const [allLeads, setAllLeads] = useState<Lead[]>([])
 
   // Add state for Lead Stages modal
   const [isStagesModalOpen, setIsStagesModalOpen] = useState(false)
@@ -49,43 +60,105 @@ const Leads: React.FC = () => {
     assignedTo: '',
   })
 
-  // Fetch leads on component mount and when page/limit changes
-  useEffect(() => {
-    dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
-  }, [dispatch, currentPage, itemsPerPage])
+  // Check if we need to fetch all leads (when filter or search is active)
+  const needsAllLeads = activeFilter !== "All" || searchQuery.trim() !== "" || selectedContactedFilter !== "All"
 
-  // Calculate statistics from leads
-  const totalLeads = pagination.totalRecords || 0
-  const todayLeads = leads.filter(lead => {
+  // Fetch leads based on whether we need all leads or paginated
+  useEffect(() => {
+    if (needsAllLeads) {
+      // Fetch all leads when filter or search is active
+      dispatch(fetchLeads() as any)
+    } else {
+      // Use paginated fetch when no filter/search
+      dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    }
+  }, [dispatch, currentPage, itemsPerPage, needsAllLeads])
+
+    // Update allLeads when leads change (from fetchLeads)
+    useEffect(() => {
+      if (needsAllLeads) {
+        if (leads.length > 0) {
+          setAllLeads(leads)
+        }
+      } else {
+        setAllLeads([])
+      }
+    }, [leads, needsAllLeads])
+
+  useEffect(() => {
+    dispatch(fetchUsers() as any)
+  }, [dispatch])
+
+  // Get the leads to work with (all leads when filtering/searching, otherwise current page leads)
+  const leadsToFilter = needsAllLeads ? allLeads : leads
+
+  // Calculate statistics from all leads (for accurate counts)
+  const totalLeadsForStats = needsAllLeads ? allLeads.length : (pagination.totalRecords || 0)
+  const todayLeads = leadsToFilter.filter(lead => {
     const leadDate = new Date(lead.time)
     const today = new Date()
     return leadDate.toDateString() === today.toDateString()
   }).length
-  const convertedLeads = leads.filter(lead => lead.contacted === 'Booked').length
+  const convertedLeads = leadsToFilter.filter(lead => lead.contacted === 'Booked').length
 
-  // Filter leads based on search query (only for display, pagination is handled by backend)
-  const filteredLeads = leads.filter((lead) => {
-    if (!searchQuery) return true
+   // Filter leads based on search query AND active filter
+   const filteredLeads = leadsToFilter.filter((lead) => {
+    // First apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      const matchesSearch = (
+        lead.name.toLowerCase().includes(query) ||
+        lead.leadId.toLowerCase().includes(query) ||
+        lead.phone.toLowerCase().includes(query) ||
+        (lead.destination && lead.destination.toLowerCase().includes(query)) ||
+        (lead.packageCode && lead.packageCode.toLowerCase().includes(query)) ||
+        (lead.remarks && lead.remarks.toLowerCase().includes(query)) ||
+        lead.status.toLowerCase().includes(query) ||
+        (lead.assignedTo && lead.assignedTo.toLowerCase().includes(query))
+      )
+      if (!matchesSearch) return false
+    }
+
+    // Apply contacted/stage filter
+    if (selectedContactedFilter !== "All") {
+      if (lead.contacted !== selectedContactedFilter) {
+        return false
+      }
+    }
+
+    // Then apply active filter
+    if (activeFilter === "All") {
+      return true
+    } else if (activeFilter === "Hot") {
+      return lead.status === "Hot"
+    } else if (activeFilter === "Warm") {
+      return lead.status === "Warm"
+    } else if (activeFilter === "Cold") {
+      return lead.status === "Cold"
+    } else if (activeFilter === "Remainder") {
+      return Boolean(lead.reminder)
+    } else if (activeFilter === "InstaLink") {
+      return lead.badgeType === "instalink"
+    } else if (activeFilter === "UnAssigned") {
+      return !lead.assignedTo || lead.assignedTo.trim() === "" || lead.assignedTo === "UnAssigned"
+    } else if (activeFilter === "Archive") {
+      return true
+    }
     
-    const query = searchQuery.toLowerCase()
-    return (
-      lead.name.toLowerCase().includes(query) ||
-      lead.leadId.toLowerCase().includes(query) ||
-      lead.phone.toLowerCase().includes(query) ||
-      (lead.destination && lead.destination.toLowerCase().includes(query)) ||
-      (lead.packageCode && lead.packageCode.toLowerCase().includes(query)) ||
-      (lead.remarks && lead.remarks.toLowerCase().includes(query)) ||
-      lead.status.toLowerCase().includes(query) ||
-      lead.assignedTo.toLowerCase().includes(query)
-    )
+    return true
   })
 
-  // Use pagination from backend (already paginated)
-  const totalItems = pagination.totalRecords || 0
-  const totalPages = pagination.totalPages || 1
-  const currentLeads = filteredLeads // Backend already returns paginated data, just filter for search
+  // Client-side pagination for filtered leads
+  const totalItems = filteredLeads.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = Math.min(startIndex + currentLeads.length, totalItems)
+  const endIndex = startIndex + itemsPerPage
+  const currentLeads = filteredLeads.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filter, search, contacted filter, or items per page changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeFilter, searchQuery, selectedContactedFilter, itemsPerPage])
 
   // Reset to page 1 when items per page changes
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
@@ -95,7 +168,11 @@ const Leads: React.FC = () => {
 
   // Handle refresh button
   const handleRefresh = () => {
-    dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    if (needsAllLeads) {
+      dispatch(fetchLeads() as any)
+    } else {
+      dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    }
   }
 
   // Handle select all checkbox
@@ -130,50 +207,91 @@ const Leads: React.FC = () => {
   const handleFilterChange = (filter: string) => {
     setActiveFilter(filter)
     setCurrentPage(1)
+    // Clear allLeads when switching filters to ensure fresh data
+    if (filter === "All" && searchQuery.trim() === "" && selectedContactedFilter === "All") {
+      setAllLeads([])
+    }
+  }
+
+  // Handle contacted/stage filter change
+  const handleContactedFilterChange = (contacted: string) => {
+    setSelectedContactedFilter(contacted)
+    setCurrentPage(1)
+  }
+
+  // Handle scroll left
+  const handleScrollLeft = () => {
+    if (filterBarScrollRef.current) {
+      filterBarScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' })
+    }
+  }
+
+  // Handle scroll right
+  const handleScrollRight = () => {
+    if (filterBarScrollRef.current) {
+      filterBarScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' })
+    }
   }
 
   // Handle search input change
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
-    // Reset to page 1 and refetch when search changes
-    if (currentPage !== 1) {
-      setCurrentPage(1)
-    } else {
-      // If already on page 1, still refetch to ensure fresh data
-      dispatch(fetchLeadsByPage({ page: 1, limit: itemsPerPage }) as any)
-    }
+    setCurrentPage(1)
   }
 
   // Handle open remark modal
   const handleOpenRemarkModal = (leadId: string) => {
     setSelectedLeadForRemark(leadId)
     setRemarkText("")
-    const lead = leads.find(l => l.id === leadId)
+    const lead = leadsToFilter.find(l => l.id === leadId)
     setIsReminderEnabled(Boolean(lead?.reminder))
     setReminderDateTime(lead?.reminder ?? "")
     setIsRemarkModalOpen(true)
   }
 
   const handleAssignedToChange = async (leadId: string, newAssignee: string) => {
-    const lead = leads.find(l => l.id === leadId)
+    const lead = leadsToFilter.find(l => l.id === leadId)
     if (lead) {
-      await dispatch(updateLeadById({ id: leadId, data: { assignedTo: newAssignee } }) as any)
-      dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+      // If empty string is selected, set to empty string (UnAssigned)
+      await dispatch(updateLeadById({ id: leadId, data: { assignedTo: newAssignee || "" } }) as any)
+      // Refresh data
+      if (needsAllLeads) {
+        dispatch(fetchLeads() as any)
+      } else {
+        dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+      }
     }
   }
 
-  // Remove reminder
-  const handleRemoveReminder = async (leadId: string) => {
-    await dispatch(updateLeadById({ id: leadId, data: { reminder: undefined } }) as any)
-    dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
-  }
+    // Remove reminder
+    const handleRemoveReminder = async (leadId: string) => {
+      try {
+        
+        const result = await dispatch(updateLeadById({ id: leadId, data: { reminder: null as any } }) as any)
+        await result
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+        if (needsAllLeads) {
+          dispatch(fetchLeads() as any)
+        } else {
+          dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+        }
+      } catch (error) {
+        console.error('Error removing reminder:', error)
+        if (needsAllLeads) {
+          dispatch(fetchLeads() as any)
+        } else {
+          dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+        }
+      }
+    }
 
   // Handle save remark
   const handleSaveRemark = async () => {
     if (!selectedLeadForRemark) return
     if (!remarkText.trim() && !(isReminderEnabled && reminderDateTime)) return
 
-    const lead = leads.find(l => l.id === selectedLeadForRemark)
+    const lead = leadsToFilter.find(l => l.id === selectedLeadForRemark)
     if (!lead) return
 
     const timestamp = new Date().toLocaleString()
@@ -190,7 +308,12 @@ const Leads: React.FC = () => {
       } 
     }) as any)
 
-    dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    // Refresh data
+    if (needsAllLeads) {
+      dispatch(fetchLeads() as any)
+    } else {
+      dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    }
 
     // Close modal and reset
     setIsRemarkModalOpen(false)
@@ -223,7 +346,12 @@ const Leads: React.FC = () => {
     }
 
     await dispatch(createLead(newLead) as any)
-    dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    // Refresh data
+    if (needsAllLeads) {
+      dispatch(fetchLeads() as any)
+    } else {
+      dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    }
 
     setIsAddEnquiryModalOpen(false)
     setNewEnquiry({
@@ -246,7 +374,12 @@ const Leads: React.FC = () => {
       id: leadId, 
       data: { contacted: newContacted as Lead['contacted'] } 
     }) as any)
-    dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    // Refresh data
+    if (needsAllLeads) {
+      dispatch(fetchLeads() as any)
+    } else {
+      dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    }
   }
 
   // Handle status change
@@ -255,7 +388,49 @@ const Leads: React.FC = () => {
       id: leadId, 
       data: { status: newStatus as Lead['status'] } 
     }) as any)
-    dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    if (needsAllLeads) {
+      dispatch(fetchLeads() as any)
+    } else {
+      dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+    }
+  }
+
+    // Format time display
+  const formatTime = (timeString: string) => {
+    try {
+      const date = new Date(timeString)
+      const now = new Date()
+      const diffMs = now.getTime() - date.getTime()
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMs / 3600000)
+      const diffDays = Math.floor(diffMs / 86400000)
+
+      if (diffMins < 60) {
+        return `${diffMins} minutes ago`
+      } else if (diffHours < 24) {
+        return `${diffHours} hours ago`
+      } else if (diffDays === 0) {
+        return 'Today at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      } else if (diffDays === 1) {
+        return 'Yesterday at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      } else {
+        return date.toLocaleString()
+      }
+    } catch {
+      return timeString
+    }
+  }
+
+  // Extract remark text (remove timestamp prefix)
+  const extractRemarkText = (remark: string): string => {
+    // Format: "timestamp: remark text"
+    // Extract only the text part after the colon
+    const colonIndex = remark.indexOf(': ')
+    if (colonIndex !== -1) {
+      return remark.substring(colonIndex + 2).trim()
+    }
+    // If no colon found, return as is (for backward compatibility)
+    return remark
   }
 
   // Lead stages data
@@ -287,6 +462,24 @@ const Leads: React.FC = () => {
     'Lost & Closed',
     'Future Prospect',
   ]
+
+  // Color mapping for lead stages (matching the image)
+  const getStageColor = (stage: string): { bg: string; text: string; border: string } => {
+    const colors: Record<string, { bg: string; text: string; border: string }> = {
+      'New Enquiry': { bg: '#3b82f6', text: '#fff', border: '#3b82f6' }, // Blue
+      'Call Not Picked': { bg: '#9ca3af', text: '#fff', border: '#9ca3af' }, // Gray
+      'Contacted': { bg: '#a855f7', text: '#fff', border: '#a855f7' }, // Purple
+      'Qualified': { bg: '#ec4899', text: '#fff', border: '#ec4899' }, // Pink
+      'Plan & Quote Sent': { bg: '#f97316', text: '#fff', border: '#f97316' }, // Orange
+      'In Pipeline': { bg: '#06b6d4', text: '#fff', border: '#06b6d4' }, // Light Blue
+      'Negotiating': { bg: '#f97316', text: '#fff', border: '#f97316' }, // Orange
+      'Awaiting Payment': { bg: '#eab308', text: '#000', border: '#eab308' }, // Yellow
+      'Booked': { bg: '#22c55e', text: '#fff', border: '#22c55e' }, // Green
+      'Lost & Closed': { bg: '#ef4444', text: '#fff', border: '#ef4444' }, // Red
+      'Future Prospect': { bg: '#6366f1', text: '#fff', border: '#6366f1' }, // Indigo
+    }
+    return colors[stage] || { bg: '#e5e7eb', text: '#000', border: '#e5e7eb' }
+  }
 
   // Icon components (keep existing icon components)
   const WhatsAppIcon = () => (
@@ -322,32 +515,6 @@ const Leads: React.FC = () => {
     </svg>
   )
 
-  // Format time display
-  const formatTime = (timeString: string) => {
-    try {
-      const date = new Date(timeString)
-      const now = new Date()
-      const diffMs = now.getTime() - date.getTime()
-      const diffMins = Math.floor(diffMs / 60000)
-      const diffHours = Math.floor(diffMs / 3600000)
-      const diffDays = Math.floor(diffMs / 86400000)
-
-      if (diffMins < 60) {
-        return `${diffMins} minutes ago`
-      } else if (diffHours < 24) {
-        return `${diffHours} hours ago`
-      } else if (diffDays === 0) {
-        return 'Today at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      } else if (diffDays === 1) {
-        return 'Yesterday at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      } else {
-        return date.toLocaleString()
-      }
-    } catch {
-      return timeString
-    }
-  }
-
   return (
     <Box style={{ width: '100%', maxWidth: '100%', padding: '24px', boxSizing: 'border-box', overflowX: 'hidden', overflowY: 'visible' }}>
       {/* Title */}
@@ -369,12 +536,12 @@ const Leads: React.FC = () => {
         </Box>
       )}
 
-      {/* Statistics Cards */}
-      <Flex gap="4" mb="4" wrap="wrap" style={{ marginTop: '20px', width: '100%', boxSizing: 'border-box' }}>
+     {/* Statistics Cards */}
+     <Flex gap="4" mb="4" wrap="wrap" style={{ marginTop: '20px', width: '100%', boxSizing: 'border-box' }}>
         <Box style={{ border: '1px solid #e5e7eb', flex: '1 1 300px', minWidth: '250px', maxWidth: '100%', height: '90px', borderRadius: '10px', display: 'flex', textAlign: 'center', padding: '16px', boxSizing: 'border-box' }}>
           <Flex direction="column" justify="center" style={{ width: '100%' }}>
             <Text size="2" style={{ marginBottom: '8px', color: 'gray' }}>Overall Leads Captured</Text>
-            <Text size="6" style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalLeads.toLocaleString()}</Text>
+            <Text size="6" style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalLeadsForStats.toLocaleString()}</Text>
           </Flex>
         </Box>
         <Box style={{ border: '1px solid #e5e7eb', flex: '1 1 300px', minWidth: '250px', maxWidth: '100%', height: '90px', borderRadius: '10px', display: 'flex', textAlign: 'center', padding: '16px', boxSizing: 'border-box' }}>
@@ -407,9 +574,105 @@ const Leads: React.FC = () => {
         </Flex>
       </Flex>
 
-      {/* Filter Buttons */}
-      <Flex wrap="wrap" gap="2" style={{ marginTop: '15px', marginBottom: '15px', width: '100%', boxSizing: 'border-box' }}>
-        {['All', 'Hot', 'Warm', 'Cold', 'Remainder', 'InstaLink', 'Archive'].map((filter) => (
+              {/* Lead Stage Filter Bar */}
+      <Box style={{ marginTop: '15px', marginBottom: '15px', width: '100%', overflowX: 'auto', boxSizing: 'border-box' }}>
+        <Flex gap="0" align="center" style={{ width: '100%', position: 'relative' }}>
+                    {/* Left scroll indicator */}
+                    <Box 
+            onClick={handleScrollLeft}
+            style={{ 
+              position: 'sticky', 
+              left: 0, 
+              zIndex: 10, 
+              backgroundColor: isDark ? 'var(--color-panel)' : '#fff', 
+              paddingRight: '8px', 
+              cursor: 'pointer' 
+            }}
+          >
+            <ChevronLeftIcon width="20" height="20" style={{ color: '#9ca3af' }} />
+          </Box>
+          
+          {/* Stage filter buttons */}
+          <Flex 
+            ref={filterBarScrollRef}
+            gap="0" 
+            style={{ 
+              flex: 1, 
+              overflowX: 'auto', 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
+            {contactedOptions.map((stage, index) => {
+              const colors = getStageColor(stage)
+              const isSelected = selectedContactedFilter === stage
+              const isFirst = index === 0
+              const isLast = index === contactedOptions.length - 1
+              
+              return (
+                <Box
+                  key={stage}
+                  onClick={() => handleContactedFilterChange(stage)}
+                  style={{
+                    padding: '7px 20px 7px 16px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    backgroundColor: colors.bg,
+                    color: colors.text,
+                    border: 'none',
+                    borderTopLeftRadius: isFirst ? '5px' : '0',
+                    borderBottomLeftRadius: isFirst ? '5px' : '0',
+                    borderTopRightRadius: isLast ? '5px' : '0',
+                    borderBottomRightRadius: isLast ? '5px' : '0',
+                    fontWeight: isSelected ? 'bold' : 'normal',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    position: 'relative',
+                    height: '32px',
+                    marginRight: isLast ? '0' : '-14px',
+                    paddingRight: isLast ? '16px' : '28px',
+                    clipPath: isLast 
+                      ? 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)'
+                      : 'polygon(0% 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 0% 100%)',
+                    zIndex: contactedOptions.length - index
+                  }}
+                >
+                  {isSelected && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                      <circle cx="12" cy="12" r="10" fill="currentColor" />
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#fff" />
+                    </svg>
+                  )}
+                  <Text size="2" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>{stage}</Text>
+                </Box>
+              )
+            })}
+          </Flex>
+          
+                    {/* Right scroll indicator */}
+                    <Box 
+            onClick={handleScrollRight}
+            style={{ 
+              position: 'sticky', 
+              right: 0, 
+              zIndex: 10, 
+              backgroundColor: isDark ? 'var(--color-panel)' : '#fff', 
+              paddingLeft: '8px', 
+              cursor: 'pointer' 
+            }}
+          >
+            <ChevronRightIcon width="20" height="20" style={{ color: '#9ca3af' }} />
+          </Box>
+        </Flex>
+      </Box>
+
+        {/* Filter Buttons */}
+        <Flex wrap="wrap" gap="2" style={{ marginTop: '15px', marginBottom: '15px', width: '100%', boxSizing: 'border-box' }}>
+        {['All', 'Hot', 'Warm', 'Cold', 'Remainder', 'InstaLink', 'UnAssigned', 'Archive'].map((filter) => (
           <Box key={filter} onClick={() => handleFilterChange(filter)} style={{ border: '1px solid #e5e7eb', borderRadius: '5px', padding: '8px 16px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', whiteSpace: 'nowrap', minWidth: '60px', backgroundColor: activeFilter === filter ? '#000' : '#fff', color: activeFilter === filter ? '#fff' : '#000' }}>
             <Text size="2">{filter}</Text>
           </Box>
@@ -502,7 +765,7 @@ const Leads: React.FC = () => {
                   {lead.savedRemarks && lead.savedRemarks.length > 0 && (
                     <Box style={{ marginTop: '4px', width: '100%' }}>
                       {lead.savedRemarks.map((remark, idx) => (
-                        <Text key={idx} style={{ fontSize: '11px', color: '#666', marginBottom: '2px', display: 'block', borderLeft: '2px solid #5588ff', paddingLeft: '4px' }}>{remark}</Text>
+                        <Text key={idx} style={{ fontSize: '11px', color: '#666', marginBottom: '2px', display: 'block', borderLeft: '2px solid #5588ff', paddingLeft: '4px' }}>{extractRemarkText(remark)}</Text>
                       ))}
                     </Box>
                   )}
@@ -533,12 +796,20 @@ const Leads: React.FC = () => {
                   <Text onClick={() => setIsStagesModalOpen(true)} style={{ fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}>More</Text>
                 </Box>
 
-                {/* Assigned To Column */}
-                <Box style={{ width: '12%', minWidth: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '4px', fontSize: '13px', paddingTop: '8px', paddingLeft: '8px', paddingRight: '8px' }}>
-                  <select id={`assign-${lead.id}`} value={lead.assignedTo} onChange={(e) => handleAssignedToChange(lead.id, e.target.value)} style={{ width: '100%', maxWidth: '110px', height: '32px', border: '1px solid #e5e7eb', borderRadius: '5px', fontSize: '12px', padding: '4px 8px' }}>
-                    <option value="Rohit">Rohit</option>
-                    <option value="Shivam">Shivam</option>
-                    <option value="Sonia">Sonia</option>
+                  {/* Assigned To Column */}
+                  <Box style={{ width: '12%', minWidth: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '4px', fontSize: '13px', paddingTop: '8px', paddingLeft: '8px', paddingRight: '8px' }}>
+                  <select 
+                    id={`assign-${lead.id}`} 
+                    value={lead.assignedTo || ""} 
+                    onChange={(e) => handleAssignedToChange(lead.id, e.target.value)} 
+                    style={{ width: '100%', maxWidth: '110px', height: '32px', border: '1px solid #e5e7eb', borderRadius: '5px', fontSize: '12px', padding: '4px 8px' }}
+                  >
+                    <option value="">UnAssigned</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.username}>
+                        {user.username}
+                      </option>
+                    ))}
                   </select>
                 </Box>
 
@@ -708,7 +979,18 @@ const Leads: React.FC = () => {
             </Box>
             <Box style={{ marginRight: '15px' }}>
               <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>Assigned To</Text>
-              <input type="text" value={newEnquiry.assignedTo} onChange={(e) => setNewEnquiry({ ...newEnquiry, assignedTo: e.target.value })} placeholder="Enter assignee name" style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} />
+              <select 
+                value={newEnquiry.assignedTo} 
+                onChange={(e) => setNewEnquiry({ ...newEnquiry, assignedTo: e.target.value })} 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }}
+              >
+                <option value="">UnAssigned</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.username}>
+                    {user.username}
+                  </option>
+                ))}
+              </select>
             </Box>
           </Box>
           <Box mt="3">
