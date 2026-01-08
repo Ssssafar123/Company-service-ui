@@ -299,6 +299,7 @@ useEffect(() => {
             label: 'Location Name',
             placeholder: 'Enter location name',
             fullWidth: true,
+            required: true, 
         },
         {
             type: 'richtext' as const,
@@ -317,6 +318,7 @@ useEffect(() => {
             name: 'image',
             label: 'Image',
             singleImage: true, // Only allow single image upload
+            required: true, 
         },
         {
             type: 'custom' as const,
