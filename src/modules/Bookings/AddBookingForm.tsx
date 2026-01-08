@@ -172,20 +172,20 @@ const AddBookingForm: React.FC<AddBookingFormProps> = ({
         const transactionId = extractId(initialData.transaction)
         
         // First, reset form with initial data
-        reset({
+      reset({
           customer: customerId,
-          people_count: initialData.people_count,
+        people_count: initialData.people_count,
           travellers: initialData.travellers || [],
           itinerary_id: itineraryId,
           batch_id: batchId,
-          total_price: initialData.total_price,
-          paid_amount: initialData.paid_amount,
-          invoice_link: initialData.invoice_link,
+        total_price: initialData.total_price,
+        paid_amount: initialData.paid_amount,
+        invoice_link: initialData.invoice_link,
           transaction: transactionId,
-          txn_id: initialData.txn_id,
-          transaction_status: initialData.transaction_status,
-          deleted: initialData.deleted,
-        })
+        txn_id: initialData.txn_id,
+        transaction_status: initialData.transaction_status,
+        deleted: initialData.deleted,
+      })
         
         // If itinerary_id exists, fetch the itinerary data to populate batches
         if (itineraryId) {

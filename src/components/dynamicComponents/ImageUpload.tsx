@@ -7,9 +7,21 @@ type ImageUploadProps = {
 	label?: string
 	error?: string
 	singleImage?: boolean
+	accept?: string // Added for file type (image/* or video/*)
+	addButtonText?: string // Added for custom "Add" button text
+	changeButtonText?: string // Added for custom "Change" button text
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, error, singleImage = false }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ 
+	images, 
+	onChange, 
+	label, 
+	error, 
+	singleImage = false,
+	accept = 'image/*', // Default to image
+	addButtonText = '+ Add Image', // Default text
+	changeButtonText = 'Change Image', // Default text
+}) => {
 	const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({})
 	const [previewUrls, setPreviewUrls] = useState<{ [key: number]: string }>({})
 	const prevBlobUrlsRef = useRef<string[]>([])
@@ -48,41 +60,42 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 			})
 			prevBlobUrlsRef.current = []
 		}
-	}, [images, singleImage]) // React to changes in the images array
+	}, [images, singleImage])
 
 	const handleFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) {
-		  // Check file size (10MB = 10 * 1024 * 1024 bytes)
-		  const maxSize = 10 * 1024 * 1024; // 10MB
-		  if (file.size > maxSize) {
-			alert(`File size exceeds 10MB limit. Please select a smaller image.`);
-			e.target.value = ''; // Reset input
-			return;
-		  }
-		  
-		  if (singleImage) {
-			// For single image, just set the one image
-			onChange([file])
-		  } else {
-			const newImages = [...images]
-			newImages[index] = file
-			onChange(newImages)
-		  }
+			// Check file size (50MB for videos, 10MB for images)
+			const maxSize = accept.includes('video') ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+			if (file.size > maxSize) {
+				const fileType = accept.includes('video') ? 'video' : 'image'
+				alert(`File size exceeds ${accept.includes('video') ? '50MB' : '10MB'} limit. Please select a smaller ${fileType}.`)
+				e.target.value = ''
+				return
+			}
+			
+			if (singleImage) {
+				// For single file, just set the one file
+				onChange([file])
+			} else {
+				const newImages = [...images]
+				newImages[index] = file
+				onChange(newImages)
+			}
 		}
 		if (e.target) {
-		  e.target.value = ''
+			e.target.value = ''
 		}
-	  }
+	}
 
-	  const removeImage = (index: number) => {
+	const removeImage = (index: number) => {
 		// Clean up preview URL if it's a blob URL
 		if (previewUrls[index] && previewUrls[index].startsWith('blob:')) {
 			URL.revokeObjectURL(previewUrls[index])
 		}
 		
 		if (singleImage) {
-			// For single image, clear it
+			// For single file, clear it
 			onChange([''])
 		} else {
 			const newImages = images.filter((_, i) => i !== index)
@@ -123,6 +136,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 		return false
 	}
 
+	// Determine if this is a video field
+	const isVideo = accept.includes('video')
+
 	return (
 		<Box>
 			{label && (
@@ -153,20 +169,35 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 										backgroundColor: 'var(--accent-2)',
 									}}
 								>
-									<img
-										src={imageSrc}
-										alt={`Preview ${index + 1}`}
-										style={{
-											width: '100%',
-											height: '100%',
-											objectFit: 'cover',
-										}}
-										onError={(e) => {
-											const target = e.target as HTMLImageElement
-											// Hide image on error
-											target.style.display = 'none'
-										}}
-									/>
+									{isVideo ? (
+										<video
+											src={imageSrc}
+											controls
+											style={{
+												width: '100%',
+												height: '100%',
+												objectFit: 'cover',
+											}}
+											onError={(e) => {
+												const target = e.target as HTMLVideoElement
+												target.style.display = 'none'
+											}}
+										/>
+									) : (
+										<img
+											src={imageSrc}
+											alt={`Preview ${index + 1}`}
+											style={{
+												width: '100%',
+												height: '100%',
+												objectFit: 'cover',
+											}}
+											onError={(e) => {
+												const target = e.target as HTMLImageElement
+												target.style.display = 'none'
+											}}
+										/>
+									)}
 								</Box>
 							)}
 							<Flex align="center" gap="2">
@@ -181,57 +212,55 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 								>
 									<input
 										type="file"
-										id={`image-upload-${index}`}
+										id={`file-upload-${index}`}
 										ref={(el) => {
 											fileInputRefs.current[index] = el
 										}}
-										accept="image/*"
+										accept={accept}
 										style={{ display: 'none' }}
 										onChange={(e) => handleFileChange(index, e)}
 									/>
 									<Flex align="center" gap="2">
-    <Button
-        type="button"
-        variant="soft"
-        size="2"
-        onClick={() => {
-            const input = fileInputRefs.current[index] || document.getElementById(`image-upload-${index}`) as HTMLInputElement
-            if (input) {
-                input.click()
-            }
-        }}
-    >
-        {hasImagePreview ? 'Change Image' : 'Browse...'}
-    </Button>
-    <Text size="2" style={{ color: 'var(--accent-11)' }}>
-        {getFileDisplayName(image)}
-    </Text>
-    {/* Show Remove button if image exists, or Cancel button if it's an empty slot */}
-    {hasImagePreview ? (
-        <Button
-            type="button"
-            variant="soft"
-            color="red"
-            size="1"
-            onClick={() => removeImage(index)}
-        >
-            {singleImage ? 'Clear' : 'Remove'}
-        </Button>
-    ) : (
-        // Show Cancel button for empty slots, but only if there's more than one slot
-        !singleImage && displayImages.length > 1 && (
-            <Button
-                type="button"
-                variant="soft"
-                color="gray"
-                size="1"
-                onClick={() => removeImage(index)}
-            >
-                Cancel
-            </Button>
-        )
-    )}
-</Flex>
+										<Button
+											type="button"
+											variant="soft"
+											size="2"
+											onClick={() => {
+												const input = fileInputRefs.current[index] || document.getElementById(`file-upload-${index}`) as HTMLInputElement
+												if (input) {
+													input.click()
+												}
+											}}
+										>
+											{hasImagePreview ? changeButtonText : 'Browse...'}
+										</Button>
+										<Text size="2" style={{ color: 'var(--accent-11)' }}>
+											{getFileDisplayName(image)}
+										</Text>
+										{hasImagePreview ? (
+											<Button
+												type="button"
+												variant="soft"
+												color="red"
+												size="1"
+												onClick={() => removeImage(index)}
+											>
+												{singleImage ? 'Clear' : 'Remove'}
+											</Button>
+										) : (
+											!singleImage && displayImages.length > 1 && (
+												<Button
+													type="button"
+													variant="soft"
+													color="gray"
+													size="1"
+													onClick={() => removeImage(index)}
+												>
+													Cancel
+												</Button>
+											)
+										)}
+									</Flex>
 								</Box>
 							</Flex>
 						</Flex>
@@ -239,7 +268,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange, label, erro
 				})}
 				{!singleImage && (
 					<Button type="button" variant="outline" size="2" onClick={addImageSlot}>
-						+ Add Image
+						{addButtonText}
 					</Button>
 				)}
 			</Flex>
