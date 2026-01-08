@@ -186,7 +186,6 @@ const AddCategory: React.FC = () => {
             name: 'short_description',
             label: 'Short Description',
             placeholder: 'Enter short description...',
-            required: true,
         },
         {
             type: 'richtext' as const,
