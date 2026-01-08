@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea } from '@radix-ui/themes'
-import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } from '@radix-ui/react-icons'
+import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea, DropdownMenu } from '@radix-ui/themes'
+import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon, Cross2Icon } from '@radix-ui/react-icons'
 import type { RootState } from '../../store'
 import { fetchLeadsByPage, fetchLeads, createLead, updateLeadById, deleteLeadById } from '../../features/LeadSlice'
+import { createCustomer } from '../../features/CustomerSlice'
 import { fetchUsers } from '../../features/UserSlice'
 import { useThemeToggle } from '../../ThemeProvider'
 import type { Lead } from '../../features/LeadSlice'
@@ -59,6 +60,21 @@ const Leads: React.FC = () => {
     contacted: 'New Enquiry' as Lead['contacted'],
     assignedTo: '',
   })
+
+  // Add state for Convert to Customer modal
+  const [isConvertToCustomerModalOpen, setIsConvertToCustomerModalOpen] = useState(false)
+  const [selectedLeadForConversion, setSelectedLeadForConversion] = useState<Lead | null>(null)
+  const [customerForm, setCustomerForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    city: '',
+    age: '',
+    gender: 'MALE' as 'MALE' | 'FEMALE' | 'OTHER',
+    dateOfBirth: '',
+  })
+  const [customerCreated, setCustomerCreated] = useState(false)
+  const [createdCustomerId, setCreatedCustomerId] = useState<string | null>(null)
 
   // Check if we need to fetch all leads (when filter or search is active)
   const needsAllLeads = activeFilter !== "All" || searchQuery.trim() !== "" || selectedContactedFilter !== "All"
@@ -368,6 +384,7 @@ const Leads: React.FC = () => {
     })
   }
 
+  
   // Handle contacted change
   const handleContactedChange = async (leadId: string, newContacted: string) => {
     await dispatch(updateLeadById({ 
@@ -394,7 +411,109 @@ const Leads: React.FC = () => {
       dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
     }
   }
+  // Handle Actions menu items
+  const handleConvertToCustomer = (leadId: string) => {
+    const lead = leadsToFilter.find(l => l.id === leadId)
+    if (lead) {
+      setSelectedLeadForConversion(lead)
+      // Pre-fill form with lead data
+      setCustomerForm({
+        name: lead.name || '',
+        phone: lead.phone || '',
+        email: lead.email || '',
+        city: lead.destination || '',
+        age: '',
+        gender: 'MALE',
+        dateOfBirth: '',
+      })
+      setCustomerCreated(false)
+      setCreatedCustomerId(null)
+      setIsConvertToCustomerModalOpen(true)
+    }
+  }
 
+  // Handle Create Customer
+  const handleCreateCustomer = async () => {
+    if (!selectedLeadForConversion) return
+
+    // Validate required fields
+    if (!customerForm.name || !customerForm.phone || !customerForm.email || !customerForm.city || !customerForm.age || !customerForm.gender) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      // Prepare customer data
+      const customerData: any = {
+        name: customerForm.name,
+        phone: Number(customerForm.phone),
+        email: customerForm.email,
+        base_city: customerForm.city,
+        age: Number(customerForm.age),
+        gender: customerForm.gender,
+        starting_point: selectedLeadForConversion.destination || '',
+        drop_point: selectedLeadForConversion.destination || '',
+      }
+      
+      // Add package_id if available (backend accepts it but TypeScript interface doesn't include it)
+      if (selectedLeadForConversion.itineraryId) {
+        customerData.package_id = selectedLeadForConversion.itineraryId
+      }
+
+      const result = await dispatch(createCustomer(customerData) as any)
+      
+      if (createCustomer.fulfilled.match(result)) {
+        // Get customer ID - handle both id and _id formats
+        const payload = result.payload as any
+        const customerId = payload?.id || payload?._id || payload?.data?.id || payload?.data?._id
+        if (customerId) {
+          setCreatedCustomerId(customerId)
+          setCustomerCreated(true)
+          alert('Customer created successfully!')
+        } else {
+          console.error('Customer created but ID not found:', result.payload)
+          setCustomerCreated(true)
+          alert('Customer created successfully!')
+        }
+      } else {
+        alert('Failed to create customer: ' + (result.payload as string || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error creating customer:', error)
+      alert('Error creating customer. Please try again.')
+    }
+  }
+
+  // Handle Create Invoice (placeholder)
+  const handleCreateInvoice = (customerId: string) => {
+    // TODO: Implement create invoice functionality
+    console.log('Create Invoice for customer:', customerId)
+    alert('Create Invoice functionality will be implemented')
+  }
+
+  const handleEditEnquiry = (leadId: string) => {
+    // TODO: Implement edit enquiry functionality
+    console.log('Edit Enquiry:', leadId)
+    alert('Edit Enquiry functionality will be implemented')
+  }
+
+  const handleViewTimeline = (leadId: string) => {
+    // TODO: Implement view timeline functionality
+    console.log('View Timeline:', leadId)
+    alert('View Timeline functionality will be implemented')
+  }
+
+  const handleViewDetails = (leadId: string) => {
+    // TODO: Implement view details functionality
+    console.log('View Details:', leadId)
+    alert('View Details functionality will be implemented')
+  }
+
+  const handledeleteLeadById = (leadId: string) => {
+    // TODO: Implement view details functionality
+    console.log('View Details:', leadId)
+    alert('View Details functionality will be implemented')
+  }
     // Format time display
   const formatTime = (timeString: string) => {
     try {
@@ -813,11 +932,32 @@ const Leads: React.FC = () => {
                   </select>
                 </Box>
 
-                {/* Actions Column */}
-                <Box style={{ width: '10%', minWidth: '80px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '4px', fontSize: '13px', paddingTop: '8px', paddingLeft: '8px', paddingRight: '8px' }}>
-                  <Box style={{ backgroundColor: 'black', width: '100%', maxWidth: '90px', height: '32px', border: '1px solid #e5e7eb', borderRadius: '5px', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}>
-                    <Text style={{ color: 'white', textAlign: 'center', fontSize: '12px' }}>Actions</Text>
-                  </Box>
+                                {/* Actions Column */}
+                                <Box style={{ width: '10%', minWidth: '80px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '4px', fontSize: '13px', paddingTop: '8px', paddingLeft: '8px', paddingRight: '8px' }}>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                      <Box style={{ backgroundColor: 'black', width: '100%', maxWidth: '90px', height: '32px', border: '1px solid #e5e7eb', borderRadius: '5px', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}>
+                        <Text style={{ color: 'white', textAlign: 'center', fontSize: '12px' }}>Actions</Text>
+                      </Box>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content style={{ minWidth: '180px' }}>
+                      <DropdownMenu.Item onClick={() => handleConvertToCustomer(lead.id)}>
+                        Convert to Customer
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item onClick={() => handleEditEnquiry(lead.id)}>
+                        Edit Enquiry
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item onClick={() => handleViewTimeline(lead.id)}>
+                        View Timeline
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item onClick={() => handleViewDetails(lead.id)}>
+                        View Details
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item onClick={() => handledeleteLeadById(lead.id)}>
+                        Delete
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
                 </Box>
               </Box>
             </Flex>
@@ -1000,6 +1140,194 @@ const Leads: React.FC = () => {
           <Flex gap="3" mt="4" justify="end">
             <Button variant="soft" color="gray" onClick={() => setIsAddEnquiryModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveEnquiry}>Add Enquiry</Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+
+      {/* Convert to Customer Modal */}
+      <Dialog.Root open={isConvertToCustomerModalOpen} onOpenChange={setIsConvertToCustomerModalOpen}>
+        <Dialog.Content style={{ maxWidth: 750 }}>
+          <Flex justify="between" align="center" style={{ marginBottom: '8px' }}>
+            <Dialog.Title>Convert to Customer</Dialog.Title>
+            <Dialog.Close>
+              <Box
+                style={{
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '4px',
+                  color: isDark ? 'var(--gray-11)' : 'var(--gray-11)',
+                }}
+                onClick={() => {
+                  setIsConvertToCustomerModalOpen(false)
+                  setCustomerCreated(false)
+                  setCreatedCustomerId(null)
+                }}
+              >
+                <Cross2Icon width="20" height="20" />
+              </Box>
+            </Dialog.Close>
+          </Flex>
+          <Dialog.Description size="2" mb="4">
+            Fill in the details to convert this lead to a customer
+            {selectedLeadForConversion && (
+              <Text size="1" style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+                Lead: {selectedLeadForConversion.name} | {selectedLeadForConversion.phone}
+                {selectedLeadForConversion.destination && ` | ${selectedLeadForConversion.destination}`}
+              </Text>
+            )}
+          </Dialog.Description>
+          <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Name <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <input 
+                type="text" 
+                value={customerForm.name} 
+                onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} 
+                placeholder="Enter name" 
+                required
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Mobile Number <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <input 
+                type="tel" 
+                value={customerForm.phone} 
+                onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })} 
+                placeholder="Enter mobile number" 
+                required
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Email <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <input 
+                type="email" 
+                value={customerForm.email} 
+                onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })} 
+                placeholder="Enter email" 
+                required
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                City <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <input 
+                type="text" 
+                value={customerForm.city} 
+                onChange={(e) => setCustomerForm({ ...customerForm, city: e.target.value })} 
+                placeholder="Enter city" 
+                required
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Age <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <input 
+                type="number" 
+                value={customerForm.age} 
+                onChange={(e) => setCustomerForm({ ...customerForm, age: e.target.value })} 
+                placeholder="Enter age" 
+                required
+                min="1"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Gender <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <select 
+                value={customerForm.gender} 
+                onChange={(e) => setCustomerForm({ ...customerForm, gender: e.target.value as 'MALE' | 'FEMALE' | 'OTHER' })} 
+                required
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }}
+              >
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </Box>
+            <Box>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Date of Birth (Optional)
+              </Text>
+              <input 
+                type="date" 
+                value={customerForm.dateOfBirth} 
+                onChange={(e) => setCustomerForm({ ...customerForm, dateOfBirth: e.target.value })} 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+          </Box>
+          
+          {/* Itinerary Details Display (Read-only) */}
+          {selectedLeadForConversion && (selectedLeadForConversion.destination || selectedLeadForConversion.itineraryId) && (
+            <Box mt="3" style={{ 
+              padding: '12px', 
+              backgroundColor: isDark ? 'var(--color-panel)' : '#f9fafb', 
+              borderRadius: '5px', 
+              border: isDark ? '1px solid var(--gray-6)' : '1px solid #e5e7eb' 
+            }}>
+              <Text as="label" size="2" weight="bold" style={{ 
+                display: 'block', 
+                marginBottom: '8px',
+                color: isDark ? 'var(--gray-12)' : 'inherit'
+              }}>Itinerary Details (from Lead)</Text>
+              <Flex direction="column" gap="2">
+                {selectedLeadForConversion.destination && (
+                  <Text size="2" style={{ color: isDark ? 'var(--gray-12)' : 'inherit' }}>
+                    Destination: {selectedLeadForConversion.destination}
+                  </Text>
+                )}
+                {selectedLeadForConversion.packageCode && (
+                  <Text size="2" style={{ color: isDark ? 'var(--gray-12)' : 'inherit' }}>
+                    Package Code: {selectedLeadForConversion.packageCode}
+                  </Text>
+                )}
+                {selectedLeadForConversion.itineraryId && (
+                  <Text size="2" style={{ color: isDark ? 'var(--gray-12)' : 'inherit' }}>
+                    Itinerary ID: {selectedLeadForConversion.itineraryId}
+                  </Text>
+                )}
+              </Flex>
+            </Box>
+          )}
+
+          <Flex gap="3" mt="4" justify="end">
+            <Button variant="soft" color="gray" onClick={() => {
+              setIsConvertToCustomerModalOpen(false)
+              setCustomerCreated(false)
+              setCreatedCustomerId(null)
+            }}>
+              {customerCreated ? 'Close' : 'Cancel'}
+            </Button>
+            {!customerCreated ? (
+              <Button onClick={handleCreateCustomer}>Create Customer</Button>
+            ) : (
+              <>
+                <Button onClick={handleCreateCustomer} variant="soft" disabled>Create Customer</Button>
+                <Button 
+                  onClick={() => handleCreateInvoice(createdCustomerId || '')}
+                  disabled={!createdCustomerId}
+                >
+                  Create Invoice
+                </Button>
+              </>
+            )}
           </Flex>
         </Dialog.Content>
       </Dialog.Root>
