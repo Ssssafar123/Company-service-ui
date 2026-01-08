@@ -55,6 +55,7 @@ const AddLocalSupportForm: React.FC<AddLocalSupportFormProps> = ({ isOpen, onClo
             type: 'text' as const,
             placeholder: 'Enter name',
             fullWidth: true,
+            required: true, 
         },
         {
             name: 'contact',
@@ -62,6 +63,7 @@ const AddLocalSupportForm: React.FC<AddLocalSupportFormProps> = ({ isOpen, onClo
             type: 'text' as const,
             placeholder: 'Enter contact number',
             fullWidth: true,
+            required: true, 
         },
         {
             name: 'supportType',
@@ -74,12 +76,14 @@ const AddLocalSupportForm: React.FC<AddLocalSupportFormProps> = ({ isOpen, onClo
                 { value: 'Translator', label: 'Translator' },
                 { value: 'Other', label: 'Other' },
             ],
+            required: true, 
         },
         {
             name: 'rating',
             label: 'Rating (Optional)',
             type: 'number' as const,
             placeholder: 'Enter rating (1-10)',
+            required: true, 
         },
         {
             name: 'location',
@@ -87,6 +91,7 @@ const AddLocalSupportForm: React.FC<AddLocalSupportFormProps> = ({ isOpen, onClo
             type: 'text' as const,
             placeholder: 'Enter location',
             fullWidth: true,
+            required: true, 
         },
     ]
 
