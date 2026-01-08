@@ -26,10 +26,13 @@ type ActivityData = {
 	id: string
 	name: string
 	location: string
-	duration: number // in hours
-	price: number // in rupees
-	shortDescription?: string // Optional
-	fullDescription?: string // Optional
+	locationLink?: string
+	duration: number
+	price: number
+	shortDescription?: string
+	fullDescription?: string
+	images?: string[]
+	videos?: string[]
 }
 
 const Activities: React.FC = () => {
@@ -41,7 +44,9 @@ const Activities: React.FC = () => {
 
 	const [searchQuery, setSearchQuery] = useState('')
 	const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null } | null>(null)
-	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(['name', 'location', 'duration', 'price', 'actions']))
+	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
+		new Set(['name', 'location', 'locationLink', 'images', 'videos', 'duration', 'price', 'actions'])
+	)
 	const [currentPage, setCurrentPage] = useState(1)
 	const [itemsPerPage] = useState(10)
 	const [editingActivity, setEditingActivity] = useState<ActivityData | null>(null)
@@ -65,17 +70,34 @@ const Activities: React.FC = () => {
 		dispatch(fetchActivities())
 	}, [dispatch])
 
+	// Map Redux data to component format
+	const activities: ActivityData[] = useMemo(() => {
+		return activitiesFromStore.map((activity) => ({
+			id: activity.id,
+			name: activity.name,
+			location: activity.location,
+			locationLink: activity.locationLink,
+			duration: activity.duration,
+			price: activity.price,
+			shortDescription: activity.shortDescription,
+			fullDescription: activity.fullDescription,
+			images: activity.images,
+			videos: activity.videos,
+		}))
+	}, [activitiesFromStore])
+
 	// Filter and sort activities
 	const filteredAndSortedActivities = useMemo(() => {
-		let filtered = activitiesFromStore
+		let filtered = activities
 
 		// Apply search filter
 		if (searchQuery.trim()) {
 			const query = searchQuery.toLowerCase()
-			filtered = activitiesFromStore.filter(
+			filtered = activities.filter(
 				(activity) =>
 					activity.name.toLowerCase().includes(query) ||
 					activity.location.toLowerCase().includes(query) ||
+					activity.locationLink?.toLowerCase().includes(query) ||
 					activity.duration.toString().includes(query) ||
 					activity.price.toString().includes(query)
 			)
@@ -89,7 +111,7 @@ const Activities: React.FC = () => {
 
 				// Handle undefined values
 				if (aValue === undefined && bValue === undefined) return 0
-				if (aValue === undefined) return 1 // undefined values go to the end
+				if (aValue === undefined) return 1
 				if (bValue === undefined) return -1
 
 				// Compare values
@@ -100,7 +122,7 @@ const Activities: React.FC = () => {
 		}
 
 		return filtered
-	}, [activitiesFromStore, searchQuery, sortConfig])
+	}, [activities, searchQuery, sortConfig])
 
 	// Pagination
 	const totalPages = Math.ceil(filteredAndSortedActivities.length / itemsPerPage)
@@ -110,7 +132,7 @@ const Activities: React.FC = () => {
 
 	const handleSort = (columnKey: string, direction: 'asc' | 'desc' | null) => {
 		setSortConfig(direction ? { key: columnKey, direction } : null)
-		setCurrentPage(1) // Reset to first page on sort
+		setCurrentPage(1)
 	}
 
 	const handleHideColumn = (columnKey: string) => {
@@ -162,6 +184,7 @@ const Activities: React.FC = () => {
 				data: {
 					name: values.name || '',
 					location: values.location || '',
+					locationLink: values.locationLink || '',
 					duration: Number(values.duration) || 1,
 					price: Number(values.price) || 0,
 					shortDescription: values.shortDescription || '',
@@ -178,13 +201,16 @@ const Activities: React.FC = () => {
 		} else {
 			// Create new activity
 			await dispatch(createActivity({
-				name: values.name || '',
-				location: values.location || '',
-				duration: Number(values.duration) || 1,
-				price: Number(values.price) || 0,
-				shortDescription: values.shortDescription || '',
-				fullDescription: values.fullDescription || '',
-				status: 'active',
+				activity: {
+					name: values.name || '',
+					location: values.location || '',
+					locationLink: values.locationLink || '',
+					duration: Number(values.duration) || 1,
+					price: Number(values.price) || 0,
+					shortDescription: values.shortDescription || '',
+					fullDescription: values.fullDescription || '',
+					status: 'active',
+				}
 			}))
 			setDialogConfig({
 				title: 'Success',
@@ -198,6 +224,7 @@ const Activities: React.FC = () => {
 		setDialogOpen(true)
 		setIsFormOpen(false)
 		setEditingActivity(null)
+		dispatch(fetchActivities())
 	}
 
 	// Format price as currency
@@ -224,6 +251,37 @@ const Activities: React.FC = () => {
 			<Text size="2" weight="medium">
 				{duration} hrs
 			</Text>
+		)
+	}
+
+	// Render location link
+	const renderLocationLink = (locationLink?: string) => {
+		if (!locationLink) return <Text size="2">-</Text>
+		return (
+			<a 
+				href={locationLink} 
+				target="_blank" 
+				rel="noopener noreferrer"
+				style={{ color: 'var(--accent-9)', textDecoration: 'underline' }}
+			>
+				<Text size="2">View Location</Text>
+			</a>
+		)
+	}
+
+	// Render images count
+	const renderImages = (images?: string[]) => {
+		if (!images || images.length === 0) return <Text size="2">-</Text>
+		return (
+			<Text size="2">{images.length} image(s)</Text>
+		)
+	}
+
+	// Render videos count
+	const renderVideos = (videos?: string[]) => {
+		if (!videos || videos.length === 0) return <Text size="2">-</Text>
+		return (
+			<Text size="2">{videos.length} video(s)</Text>
 		)
 	}
 
@@ -300,26 +358,47 @@ const Activities: React.FC = () => {
 		{
 			key: 'name',
 			label: 'Name',
-			width: '250px',
+			width: '200px',
 			sortable: true,
 		},
 		{
 			key: 'location',
 			label: 'Location',
-			width: '200px',
+			width: '150px',
 			sortable: true,
+		},
+		{
+			key: 'locationLink',
+			label: 'Location Link',
+			width: '150px',
+			sortable: false,
+			render: (row: ActivityData) => renderLocationLink(row.locationLink),
+		},
+		{
+			key: 'images',
+			label: 'Images',
+			width: '100px',
+			sortable: false,
+			render: (row: ActivityData) => renderImages(row.images),
+		},
+		{
+			key: 'videos',
+			label: 'Videos',
+			width: '100px',
+			sortable: false,
+			render: (row: ActivityData) => renderVideos(row.videos),
 		},
 		{
 			key: 'duration',
 			label: 'Duration (hrs)',
-			width: '150px',
+			width: '120px',
 			sortable: true,
 			render: (row: ActivityData) => renderDuration(row.duration),
 		},
 		{
 			key: 'price',
 			label: 'Price',
-			width: '150px',
+			width: '120px',
 			sortable: true,
 			render: (row: ActivityData) => renderPrice(row.price),
 		},
@@ -346,10 +425,13 @@ const Activities: React.FC = () => {
 					id: editingActivity.id,
 					name: editingActivity.name,
 					location: editingActivity.location,
+					locationLink: editingActivity.locationLink,
 					duration: editingActivity.duration,
 					price: editingActivity.price,
 					shortDescription: editingActivity.shortDescription,
 					fullDescription: editingActivity.fullDescription,
+					images: editingActivity.images,
+					videos: editingActivity.videos,
 				} : null}
 			/>
 
@@ -387,7 +469,7 @@ const Activities: React.FC = () => {
 							value={searchQuery}
 							onChange={(e) => {
 								setSearchQuery(e.target.value)
-								setCurrentPage(1) // Reset to first page on search
+								setCurrentPage(1)
 							}}
 							style={{ flex: 1, maxWidth: '400px' }}
 						>
@@ -419,39 +501,41 @@ const Activities: React.FC = () => {
 									</Button>
 								</DropdownMenu.Trigger>
 								<DropdownMenu.Content>
-									{
-										[
-											{ key: 'name', label: 'Name' },
-											{ key: 'location', label: 'Location' },
-											{ key: 'duration', label: 'Duration (hrs)' },
-											{ key: 'price', label: 'Price' },
-										].map((col) => (
-											<DropdownMenu.Item
-												key={col.key}
-												onSelect={(e) => {
-													e.preventDefault()
-													setVisibleColumns((prev) => {
-														const newSet = new Set(prev)
-														if (newSet.has(col.key)) {
-															newSet.delete(col.key)
-														} else {
-															newSet.add(col.key)
-														}
-														return newSet
-													})
-												}}
-											>
-												<Flex align="center" gap="2">
-													<input
-														type="checkbox"
-														checked={visibleColumns.has(col.key)}
-														onChange={() => {}}
-														style={{ cursor: 'pointer' }}
-													/>
-													<Text size="2">{col.label}</Text>
-												</Flex>
-											</DropdownMenu.Item>
-										))}
+									{[
+										{ key: 'name', label: 'Name' },
+										{ key: 'location', label: 'Location' },
+										{ key: 'locationLink', label: 'Location Link' },
+										{ key: 'images', label: 'Images' },
+										{ key: 'videos', label: 'Videos' },
+										{ key: 'duration', label: 'Duration (hrs)' },
+										{ key: 'price', label: 'Price' },
+									].map((col) => (
+										<DropdownMenu.Item
+											key={col.key}
+											onSelect={(e) => {
+												e.preventDefault()
+												setVisibleColumns((prev) => {
+													const newSet = new Set(prev)
+													if (newSet.has(col.key)) {
+														newSet.delete(col.key)
+													} else {
+														newSet.add(col.key)
+													}
+													return newSet
+												})
+											}}
+										>
+											<Flex align="center" gap="2">
+												<input
+													type="checkbox"
+													checked={visibleColumns.has(col.key)}
+													onChange={() => {}}
+													style={{ cursor: 'pointer' }}
+												/>
+												<Text size="2">{col.label}</Text>
+											</Flex>
+										</DropdownMenu.Item>
+									))}
 								</DropdownMenu.Content>
 							</DropdownMenu.Root>
 

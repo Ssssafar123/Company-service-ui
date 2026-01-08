@@ -10,12 +10,14 @@ export interface Activity {
   id: string
   name: string
   location: string
+  locationLink?: string // Added
   duration: number
   price: number
   shortDescription?: string
   fullDescription?: string
   category?: 'adventure' | 'sightseeing' | 'water_sports' | 'cultural' | 'wildlife' | 'other'
-  images?: string[]
+  images?: string[] // Updated
+  videos?: string[] // Added
   inclusions?: string[]
   exclusions?: string[]
   ageRestriction?: AgeRestriction
@@ -43,12 +45,14 @@ const mapActivity = (activity: any): Activity => ({
   id: activity._id || activity.id,
   name: activity.name || '',
   location: activity.location || '',
+  locationLink: activity.locationLink, // Added
   duration: activity.duration || 0,
   price: activity.price || 0,
   shortDescription: activity.shortDescription,
   fullDescription: activity.fullDescription,
   category: activity.category,
   images: activity.images || [],
+  videos: activity.videos || [], // Added
   inclusions: activity.inclusions || [],
   exclusions: activity.exclusions || [],
   ageRestriction: activity.ageRestriction,
@@ -72,17 +76,59 @@ export const fetchActivities = createAsyncThunk(
 
 export const createActivity = createAsyncThunk(
   'activity/createActivity',
-  async (activity: Omit<Activity, 'id'>, { rejectWithValue }) => {
+  async (data: { 
+    activity: Omit<Activity, 'id'>;
+    imageFiles?: File[];
+    videoFiles?: File[];
+  }, { rejectWithValue }) => {
     try {
+      const formData = new FormData();
+      
+      const { imageFiles, videoFiles, activity } = data;
+      
+      // Append all activity fields except images and videos
+      Object.keys(activity).forEach(key => {
+        const value = (activity as any)[key];
+        if (key === 'images' || key === 'videos') {
+          return; // Skip these - handle separately
+        }
+        
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      });
+      
+      // Append image files
+      if (imageFiles && imageFiles.length > 0) {
+        imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
+      }
+      
+      // Append video files
+      if (videoFiles && videoFiles.length > 0) {
+        videoFiles.forEach((file) => {
+          formData.append('videos', file);
+        });
+      }
+      
       const res = await fetch(getApiUrl('activity'), {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(activity),
+        body: formData,
       })
-      if (!res.ok) throw new Error('Failed to create activity')
-      const data = await res.json()
-      return mapActivity(data)
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to create activity' }))
+        throw new Error(errorData.message || 'Failed to create activity')
+      }
+      
+      const data_res = await res.json()
+      return mapActivity(data_res)
     } catch (err) {
       return rejectWithValue((err as Error).message)
     }
@@ -107,15 +153,61 @@ export const fetchActivityById = createAsyncThunk(
 
 export const updateActivityById = createAsyncThunk(
   'activity/updateActivityById',
-  async ({ id, data }: { id: string; data: Partial<Activity> }, { rejectWithValue }) => {
+  async ({ 
+    id, 
+    data,
+    imageFiles,
+    videoFiles,
+  }: { 
+    id: string
+    data: Partial<Activity>
+    imageFiles?: File[]
+    videoFiles?: File[]
+  }, { rejectWithValue }) => {
     try {
+      const formData = new FormData();
+      
+      // Append activity fields except images and videos
+      Object.keys(data).forEach(key => {
+        const value = (data as any)[key];
+        if (key === 'images' || key === 'videos') {
+          return; // Skip these - handle separately
+        }
+        
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      });
+      
+      // Append new image files
+      if (imageFiles && imageFiles.length > 0) {
+        imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
+      }
+      
+      // Append new video files
+      if (videoFiles && videoFiles.length > 0) {
+        videoFiles.forEach((file) => {
+          formData.append('videos', file);
+        });
+      }
+      
       const res = await fetch(getApiUrl(`activity/${id}`), {
         method: 'PUT',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: formData,
       })
-      if (!res.ok) throw new Error('Failed to update activity')
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to update activity' }))
+        throw new Error(errorData.message || 'Failed to update activity')
+      }
+      
       const responseData = await res.json()
       return mapActivity(responseData)
     } catch (err) {

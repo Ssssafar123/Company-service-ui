@@ -30,6 +30,8 @@ type Field = {
   fullWidth?: boolean;
   singleImage?: boolean;
   required?: boolean;
+  accept?: string; // Added for file input accept attribute
+  multiple?: boolean; // Added for multiple file selection
   customRender?: (value: any, onChange: (value: any) => void) => React.ReactNode;
 };
 
@@ -297,21 +299,29 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           </Box>
         );
 
-      case "file":
-        return (
-          <Box>
-            <ImageUpload
-              images={Array.isArray(formValues[field.name]) 
-                ? formValues[field.name] 
-                : (formValues[field.name] ? [formValues[field.name]] : [""])}
-              onChange={(images) => handleChange(field.name, images)}
-              label={field.label}
-              singleImage={field.singleImage}
-              error={fieldError && isTouched ? fieldError : undefined}
-            />
-          </Box>
-        );
-
+        case "file":
+          // Determine button text based on accept type
+          const isVideoField = field.accept?.includes('video')
+          const addButtonText = isVideoField ? '+ Add Video' : '+ Add Image'
+          const changeButtonText = isVideoField ? 'Change Video' : 'Change Image'
+          
+          return (
+            <Box>
+              <ImageUpload
+                images={Array.isArray(formValues[field.name]) 
+                  ? formValues[field.name] 
+                  : (formValues[field.name] ? [formValues[field.name]] : [""])}
+                onChange={(images) => handleChange(field.name, images)}
+                label={field.label}
+                singleImage={field.singleImage}
+                error={fieldError && isTouched ? fieldError : undefined}
+                accept={field.accept || 'image/*'}
+                addButtonText={addButtonText}
+                changeButtonText={changeButtonText}
+              />
+            </Box>
+          );
+          
       case "checkbox":
         return (
           <Flex align="center" gap="2">
