@@ -6,13 +6,15 @@ export interface Coordinator {
   name: string
   email: string
   phone: string
+  city?: string // Current City
+  description?: string // Description field
   specialties?: string[]
   bio?: string
   languages?: string[]
   experience?: number
   rating?: number
   location?: string
-  availability: 'available' | 'busy' | 'unavailable'
+  availability: 'full-time' | 'part-time' | 'available' | 'busy' | 'unavailable' // Updated
   imageUrl?: string
   certifications?: string[]
   status: 'active' | 'inactive'
@@ -39,13 +41,15 @@ const mapCoordinator = (coordinator: any): Coordinator => ({
   name: coordinator.name || '',
   email: coordinator.email || '',
   phone: coordinator.phone || '',
+  city: coordinator.city, // Added
+  description: coordinator.description, // Added
   specialties: coordinator.specialties || [],
   bio: coordinator.bio,
   languages: coordinator.languages || [],
   experience: coordinator.experience,
   rating: coordinator.rating,
   location: coordinator.location,
-  availability: coordinator.availability || 'available',
+  availability: coordinator.availability || 'full-time', // Updated default
   imageUrl: coordinator.imageUrl,
   certifications: coordinator.certifications || [],
   status: coordinator.status || 'active',

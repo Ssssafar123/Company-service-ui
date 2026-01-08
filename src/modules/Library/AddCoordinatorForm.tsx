@@ -14,6 +14,7 @@ import {
     IconButton,
 } from '@radix-ui/themes'
 import DynamicForm from '../../components/dynamicComponents/Form'
+import { Select } from '@radix-ui/themes'
 
 type AddCoordinatorFormProps = {
     isOpen: boolean
@@ -22,9 +23,13 @@ type AddCoordinatorFormProps = {
     initialData?: {
         id?: string
         name?: string
+        city?: string
+        description?: string
         email?: string
         phone?: string
         specialties?: string
+        rating?: number
+        availability?: string
         bio?: string
     } | null
 }
@@ -54,13 +59,30 @@ const AddCoordinatorForm: React.FC<AddCoordinatorFormProps> = ({ isOpen, onClose
             type: 'text' as const,
             placeholder: 'Enter name',
             fullWidth: true,
+            required: true,
         },
+        {
+            name: 'city',
+            label: 'City',
+            type: 'text' as const,
+            placeholder: 'Enter Current city',
+            fullWidth: true,
+            required: true,
+        },
+        {
+			name: 'description',
+			label: 'Description',
+			type: 'textarea' as const,
+			placeholder: 'Enter hotel description',
+			fullWidth: true,
+		},
         {
             name: 'email',
             label: 'Email',
             type: 'email' as const,
             placeholder: 'Enter email',
             fullWidth: true,
+            required: true,
         },
         {
             name: 'phone',
@@ -68,6 +90,7 @@ const AddCoordinatorForm: React.FC<AddCoordinatorFormProps> = ({ isOpen, onClose
             type: 'text' as const,
             placeholder: 'Enter phone number',
             fullWidth: true,
+            required: true,
         },
         {
             name: 'specialties',
@@ -75,6 +98,26 @@ const AddCoordinatorForm: React.FC<AddCoordinatorFormProps> = ({ isOpen, onClose
             type: 'text' as const,
             placeholder: 'Enter specialties separated by commas',
             fullWidth: true,
+            required: true,
+        },
+        {
+			name: 'rating',
+			label: 'Rating (1-10)',
+			type: 'number' as const,
+			placeholder: '6',
+			required: true,
+		},
+        {
+            name: 'availability',
+            label: 'Availability',
+            type: 'select' as const,
+            placeholder: 'Select availability',
+            fullWidth: true,
+            required: true,
+            options: [
+                { value: 'full-time', label: 'Full Time' },
+                { value: 'part-time', label: 'Part Time' },
+            ],
         },
         {
             name: 'bio',
@@ -96,9 +139,13 @@ const AddCoordinatorForm: React.FC<AddCoordinatorFormProps> = ({ isOpen, onClose
                 // Update existing coordinator
                 const updateData: Partial<Coordinator> = {
                     name: values.name || '',
+                    city: values.city || '',
+                    description: values.description || '',
                     email: values.email || '',
                     phone: values.phone || '',
                     specialties: specialtiesArray,
+                    rating: values.rating ? Number(values.rating) : undefined,
+                    availability: values.availability || 'full-time',
                     bio: values.bio || '',
                 }
 
@@ -110,11 +157,14 @@ const AddCoordinatorForm: React.FC<AddCoordinatorFormProps> = ({ isOpen, onClose
                 // Create new coordinator
                 const newCoordinator: Omit<Coordinator, 'id'> = {
                     name: values.name || '',
+                    city: values.city || '',
+                    description: values.description || '',
                     email: values.email || '',
                     phone: values.phone || '',
                     specialties: specialtiesArray,
+                    rating: values.rating ? Number(values.rating) : 6,
+                    availability: values.availability || 'full-time',
                     bio: values.bio || '',
-                    availability: 'available',
                     status: 'active',
                 }
 
@@ -232,18 +282,22 @@ const AddCoordinatorForm: React.FC<AddCoordinatorFormProps> = ({ isOpen, onClose
                 {/* Form Content */}
                 <Box style={{ padding: '24px', flex: 1 }}>
                     <Box style={{ maxWidth: '100%' }}>
-                        <DynamicForm
-                            fields={formFields}
-                            buttonText={initialData ? 'Update Coordinator' : 'Add Coordinator'}
-                            onSubmit={handleFormSubmit}
-                            initialValues={{
-                                name: initialData?.name || '',
-                                email: initialData?.email || '',
-                                phone: initialData?.phone || '',
-                                specialties: initialData?.specialties || '',
-                                bio: initialData?.bio || '',
-                            }}
-                        />
+                    <DynamicForm
+                        fields={formFields}
+                        buttonText={initialData ? 'Update Coordinator' : 'Add Coordinator'}
+                        onSubmit={handleFormSubmit}
+                        initialValues={{
+                            name: initialData?.name || '',
+                            city: initialData?.city || '',
+                            description: initialData?.description || '',
+                            email: initialData?.email || '',
+                            phone: initialData?.phone || '',
+                            rating: initialData?.rating || 6,
+                            availability: initialData?.availability || 'full-time',
+                            specialties: initialData?.specialties || '',
+                            bio: initialData?.bio || '',
+                        }}
+                    />
                     </Box>
                 </Box>
             </Box>
