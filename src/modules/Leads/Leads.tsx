@@ -113,6 +113,11 @@ const Leads: React.FC = () => {
     color?: 'red' | 'blue' | 'green' | 'gray'
   } | null>(null)
 
+  // Add state for View Details side panel
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false)
+  const [selectedLeadForDetails, setSelectedLeadForDetails] = useState<Lead | null>(null)
+  const [activeDetailsTab, setActiveDetailsTab] = useState<'Details' | 'Timeline' | 'Remarks'>('Details')
+
   // Check if we need to fetch all leads (when filter or search is active)
   const needsAllLeads = activeFilter !== "All" || searchQuery.trim() !== "" || selectedContactedFilter !== "All"
 
@@ -363,8 +368,9 @@ const Leads: React.FC = () => {
   const handleAssignedToChange = async (leadId: string, newAssignee: string) => {
     const lead = leadsToFilter.find(l => l.id === leadId)
     if (lead) {
-      // If empty string is selected, set to empty string (UnAssigned)
-      await dispatch(updateLeadById({ id: leadId, data: { assignedTo: newAssignee || "" } }) as any)
+      // Convert "__UNASSIGNED__" back to empty string for unassigned leads
+      const assigneeValue = newAssignee === "__UNASSIGNED__" ? "" : newAssignee
+      await dispatch(updateLeadById({ id: leadId, data: { assignedTo: assigneeValue } }) as any)
       // Refresh data
       if (needsAllLeads) {
         dispatch(fetchLeads() as any)
@@ -754,9 +760,12 @@ const Leads: React.FC = () => {
   }
 
   const handleViewDetails = (leadId: string) => {
-    // TODO: Implement view details functionality
-    console.log('View Details:', leadId)
-    alert('View Details functionality will be implemented')
+    const lead = leadsToFilter.find(l => l.id === leadId)
+    if (lead) {
+      setSelectedLeadForDetails(lead)
+      setActiveDetailsTab('Details')
+      setIsViewDetailsOpen(true)
+    }
   }
 
   const handledeleteLeadById = (leadId: string) => {
@@ -800,6 +809,56 @@ const Leads: React.FC = () => {
     }
     // If no colon found, return as is (for backward compatibility)
     return remark
+  }
+
+  // Format date for display
+  const formatDateForDisplay = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const day = days[date.getDay()]
+      const dayNum = date.getDate()
+      const month = months[date.getMonth()]
+      const hours = date.getHours()
+      const minutes = date.getMinutes()
+      const ampm = hours >= 12 ? 'PM' : 'AM'
+      const displayHours = hours % 12 || 12
+      const displayMinutes = minutes.toString().padStart(2, '0')
+      return `${day}, ${dayNum}${getOrdinalSuffix(dayNum)} ${month} ${displayHours}:${displayMinutes} ${ampm}`
+    } catch {
+      return dateString
+    }
+  }
+
+  const getOrdinalSuffix = (num: number) => {
+    const j = num % 10
+    const k = num % 100
+    if (j === 1 && k !== 11) return 'st'
+    if (j === 2 && k !== 12) return 'nd'
+    if (j === 3 && k !== 13) return 'rd'
+    return 'th'
+  }
+
+  // Get assigned user name
+  const getAssignedUserName = (assignedTo: string) => {
+    if (!assignedTo || assignedTo.trim() === '') return null
+    const user = users.find(u => u.username === assignedTo)
+    return user ? user.username : assignedTo
+  }
+
+  // Get tag color based on status
+  const getTagColor = (status: string) => {
+    switch (status) {
+      case 'Hot':
+        return { bg: '#ef4444', text: '#fff' } // Red
+      case 'Warm':
+        return { bg: '#f97316', text: '#fff' } // Orange
+      case 'Cold':
+        return { bg: '#3b82f6', text: '#fff' } // Blue
+      default:
+        return { bg: '#9ca3af', text: '#fff' } // Gray
+    }
   }
 
   // Lead stages data
@@ -1152,34 +1211,56 @@ const Leads: React.FC = () => {
 
                 {/* Quick Actions Column */}
                 <Box style={{ width: '14%', minWidth: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '4px', fontSize: '13px', paddingTop: '8px', paddingLeft: '8px', paddingRight: '8px' }}>
-                  <select id={`status-${lead.id}`} value={lead.status} onChange={(e) => handleStatusChange(lead.id, e.target.value)} style={{ width: '100%', maxWidth: '110px', height: '32px', border: '2px solid #e5e7eb', borderRadius: '5px', fontSize: '12px', padding: '4px 8px' }}>
-                    <option value="Hot">Hot</option>
-                    <option value="Warm">Warm</option>
-                    <option value="Cold">Cold</option>
-                  </select>
-                  <select id={`contact-${lead.id}`} value={lead.contacted} onChange={(e) => handleContactedChange(lead.id, e.target.value)} style={{ width: '100%', maxWidth: '110px', height: '32px', border: '2px solid #e5e7eb', borderRadius: '5px', fontSize: '12px', padding: '4px 8px' }}>
-                    {contactedOptions.map((option) => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
+                  <Select.Root
+                    value={lead.status}
+                    onValueChange={(value) => handleStatusChange(lead.id, value)}
+                  >
+                    <Select.Trigger 
+                      placeholder="Select Status"
+                      style={{ width: '100%', maxWidth: '110px', height: '32px', fontSize: '12px' }}
+                    />
+                    <Select.Content>
+                      <Select.Item value="Hot">Hot</Select.Item>
+                      <Select.Item value="Warm">Warm</Select.Item>
+                      <Select.Item value="Cold">Cold</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                  <Select.Root
+                    value={lead.contacted}
+                    onValueChange={(value) => handleContactedChange(lead.id, value)}
+                  >
+                    <Select.Trigger 
+                      placeholder="Select Stage"
+                      style={{ width: '100%', maxWidth: '110px', height: '32px', fontSize: '12px' }}
+                    />
+                    <Select.Content>
+                      {contactedOptions.map((option) => (
+                        <Select.Item key={option} value={option}>{option}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
                   <Text onClick={() => setIsStagesModalOpen(true)} style={{ fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}>More</Text>
                 </Box>
 
                   {/* Assigned To Column */}
                   <Box style={{ width: '12%', minWidth: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '4px', fontSize: '13px', paddingTop: '8px', paddingLeft: '8px', paddingRight: '8px' }}>
-                  <select 
-                    id={`assign-${lead.id}`} 
-                    value={lead.assignedTo || ""} 
-                    onChange={(e) => handleAssignedToChange(lead.id, e.target.value)} 
-                    style={{ width: '100%', maxWidth: '110px', height: '32px', border: '1px solid #e5e7eb', borderRadius: '5px', fontSize: '12px', padding: '4px 8px' }}
+                  <Select.Root
+                    value={lead.assignedTo || "__UNASSIGNED__"}
+                    onValueChange={(value) => handleAssignedToChange(lead.id, value)}
                   >
-                    <option value="">UnAssigned</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.username}>
-                        {user.username}
-                      </option>
-                    ))}
-                  </select>
+                    <Select.Trigger 
+                      placeholder="UnAssigned"
+                      style={{ width: '100%', maxWidth: '110px', height: '32px', fontSize: '12px' }}
+                    />
+                    <Select.Content>
+                      <Select.Item value="__UNASSIGNED__">UnAssigned</Select.Item>
+                      {users.map((user) => (
+                        <Select.Item key={user.id} value={user.username}>
+                          {user.username}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
                 </Box>
 
                                 {/* Actions Column */}
@@ -1886,6 +1967,378 @@ const Leads: React.FC = () => {
             </Flex>
           </AlertDialog.Content>
         </AlertDialog.Root>
+      )}
+
+      {/* View Details Side Panel */}
+      {isViewDetailsOpen && selectedLeadForDetails && (
+        <>
+          {/* Overlay */}
+          <Box
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1000,
+              transition: 'opacity 0.3s ease',
+            }}
+            onClick={() => {
+              setIsViewDetailsOpen(false)
+              setSelectedLeadForDetails(null)
+            }}
+          />
+
+          {/* Slide-in Details Panel */}
+          <Box
+            style={{
+              position: 'fixed',
+              top: '70px',
+              right: 0,
+              width: '600px',
+              height: 'calc(100vh - 70px)',
+              backgroundColor: 'var(--color-panel)',
+              boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.3)',
+              zIndex: 1001,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'slideIn 0.3s ease',
+            }}
+          >
+            {/* Header with Tabs */}
+            <Box
+              style={{
+                padding: '24px',
+                borderBottom: '1px solid var(--accent-6)',
+                position: 'sticky',
+                top: 0,
+                backgroundColor: 'var(--color-panel)',
+                zIndex: 10,
+              }}
+            >
+              <Flex justify="between" align="center" style={{ marginBottom: '16px' }}>
+                <Text size="6" weight="bold" style={{ color: 'var(--accent-12)' }}>
+                  Lead Details
+                </Text>
+                <Box
+                  onClick={() => {
+                    setIsViewDetailsOpen(false)
+                    setSelectedLeadForDetails(null)
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '4px',
+                    color: 'var(--gray-11)',
+                  }}
+                >
+                  <Cross2Icon width="20" height="20" />
+                </Box>
+              </Flex>
+
+              {/* Tabs */}
+              <Flex gap="2" style={{ borderBottom: '1px solid var(--accent-6)' }}>
+                {['Details', 'Timeline', 'Remarks'].map((tab) => (
+                  <Box
+                    key={tab}
+                    onClick={() => setActiveDetailsTab(tab as 'Details' | 'Timeline' | 'Remarks')}
+                    style={{
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      borderBottom: activeDetailsTab === tab ? '2px solid #000' : '2px solid transparent',
+                      backgroundColor: activeDetailsTab === tab ? (isDark ? 'var(--gray-3)' : '#f9fafb') : 'transparent',
+                      color: activeDetailsTab === tab ? 'var(--accent-12)' : 'var(--accent-11)',
+                      fontWeight: activeDetailsTab === tab ? 'bold' : 'normal',
+                      marginBottom: '-1px',
+                    }}
+                  >
+                    <Text size="2">{tab}</Text>
+                  </Box>
+                ))}
+              </Flex>
+            </Box>
+
+            {/* Content */}
+            <Box style={{ padding: '24px', flex: 1 }}>
+              {activeDetailsTab === 'Details' && (
+                <Flex direction="column" gap="4">
+                  {/* Customer Profile Section */}
+                  <Flex gap="3" align="center" style={{ marginBottom: '16px' }}>
+                    {/* Avatar */}
+                    <Box
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        backgroundColor: isDark ? 'var(--gray-6)' : '#e5e7eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px',
+                        fontWeight: 'bold',
+                        color: 'var(--accent-12)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {selectedLeadForDetails.name.charAt(0).toUpperCase()}
+                    </Box>
+                    <Flex direction="column" style={{ flex: 1 }}>
+                      <Text size="5" weight="bold" style={{ color: 'var(--accent-12)' }}>
+                        {selectedLeadForDetails.name}
+                      </Text>
+                      <Flex gap="2" align="center" style={{ marginTop: '4px' }}>
+                        <Text size="2" style={{ color: 'var(--accent-11)' }}>
+                          {selectedLeadForDetails.phone}
+                        </Text>
+                        <Box
+                          onClick={() => window.open(`https://wa.me/${selectedLeadForDetails.phone}`, '_blank')}
+                          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        >
+                          <WhatsAppIcon />
+                        </Box>
+                        <Box
+                          onClick={() => window.location.href = `tel:${selectedLeadForDetails.phone}`}
+                          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        >
+                          <PhoneIcon />
+                        </Box>
+                      </Flex>
+                    </Flex>
+                    <Box
+                      style={{
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="1" />
+                        <circle cx="12" cy="5" r="1" />
+                        <circle cx="12" cy="19" r="1" />
+                      </svg>
+                    </Box>
+                  </Flex>
+
+                  {/* Activity Timestamps */}
+                  <Flex direction="column" gap="2" style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--accent-6)' }}>
+                    <Flex gap="2" align="center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--accent-11)' }}>
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <Text size="2" style={{ color: 'var(--accent-11)' }}>
+                        {formatDateForDisplay(selectedLeadForDetails.time)}
+                      </Text>
+                    </Flex>
+                    {selectedLeadForDetails.reminder && (
+                      <Flex gap="2" align="center">
+                        <Box
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: '#22c55e',
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Text size="2" style={{ color: 'var(--accent-11)' }}>
+                          Last Activity: {formatDateForDisplay(selectedLeadForDetails.reminder)}
+                        </Text>
+                      </Flex>
+                    )}
+                  </Flex>
+
+                  {/* Details Grid */}
+                  <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    {/* Pax */}
+                    <Flex direction="column" gap="1">
+                      <Text size="2" weight="bold" style={{ color: 'var(--accent-11)' }}>
+                        Pax
+                      </Text>
+                      <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                        {selectedLeadForDetails.numberOfTravelers ? selectedLeadForDetails.numberOfTravelers : '--'}
+                      </Text>
+                    </Flex>
+
+                    {/* Category */}
+                    <Flex direction="column" gap="1">
+                      <Text size="2" weight="bold" style={{ color: 'var(--accent-11)' }}>
+                        Category
+                      </Text>
+                      <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                        {selectedLeadForDetails.badgeType ? selectedLeadForDetails.badgeType.charAt(0).toUpperCase() + selectedLeadForDetails.badgeType.slice(1) : '--'}
+                      </Text>
+                    </Flex>
+
+                    {/* Customer Message */}
+                    <Flex direction="column" gap="1" style={{ gridColumn: 'span 1' }}>
+                      <Text size="2" weight="bold" style={{ color: 'var(--accent-11)' }}>
+                        Customer Message
+                      </Text>
+                      <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                        {selectedLeadForDetails.notes || selectedLeadForDetails.remarks || '--'}
+                      </Text>
+                    </Flex>
+
+                    {/* Tags */}
+                    <Flex direction="column" gap="1" style={{ gridColumn: 'span 1' }}>
+                      <Text size="2" weight="bold" style={{ color: 'var(--accent-11)' }}>
+                        Tags
+                      </Text>
+                      {selectedLeadForDetails.status && (
+                        <Box
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: '4px',
+                            backgroundColor: getTagColor(selectedLeadForDetails.status).bg,
+                            color: getTagColor(selectedLeadForDetails.status).text,
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            width: 'fit-content',
+                          }}
+                        >
+                          {selectedLeadForDetails.status}
+                        </Box>
+                      )}
+                    </Flex>
+
+                    {/* Stage */}
+                    <Flex direction="column" gap="1">
+                      <Text size="2" weight="bold" style={{ color: 'var(--accent-11)' }}>
+                        Stage
+                      </Text>
+                      <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                        {selectedLeadForDetails.contacted || '--'}
+                      </Text>
+                    </Flex>
+
+                    {/* Assigned to */}
+                    <Flex direction="column" gap="1">
+                      <Text size="2" weight="bold" style={{ color: 'var(--accent-11)' }}>
+                        Assigned to
+                      </Text>
+                      {getAssignedUserName(selectedLeadForDetails.assignedTo) ? (
+                        <Flex gap="2" align="center">
+                          <Box
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              backgroundColor: isDark ? 'var(--gray-6)' : '#e5e7eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              color: 'var(--accent-12)',
+                            }}
+                          >
+                            {getAssignedUserName(selectedLeadForDetails.assignedTo)?.charAt(0).toUpperCase()}
+                          </Box>
+                          <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                            {getAssignedUserName(selectedLeadForDetails.assignedTo)}
+                          </Text>
+                        </Flex>
+                      ) : (
+                        <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                          --
+                        </Text>
+                      )}
+                    </Flex>
+
+                    {/* Username */}
+                    <Flex direction="column" gap="1" style={{ gridColumn: 'span 2' }}>
+                      <Text size="2" weight="bold" style={{ color: 'var(--accent-11)' }}>
+                        Username
+                      </Text>
+                      <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                        {selectedLeadForDetails.email || '--'}
+                      </Text>
+                    </Flex>
+                  </Box>
+                </Flex>
+              )}
+
+              {activeDetailsTab === 'Timeline' && (
+                <Box>
+                  <Text size="3" weight="bold" style={{ marginBottom: '16px', color: 'var(--accent-12)' }}>
+                    Timeline
+                  </Text>
+                  <Text size="2" style={{ color: 'var(--accent-11)' }}>
+                    Timeline functionality will be implemented here.
+                  </Text>
+                </Box>
+              )}
+
+              {activeDetailsTab === 'Remarks' && (
+                <Flex direction="column" gap="3">
+                  <Text size="3" weight="bold" style={{ color: 'var(--accent-12)' }}>
+                    Remarks
+                  </Text>
+                  {selectedLeadForDetails.remarks && (
+                    <Box
+                      style={{
+                        padding: '12px',
+                        backgroundColor: isDark ? 'var(--gray-3)' : '#f9fafb',
+                        borderRadius: '6px',
+                        border: '1px solid var(--accent-6)',
+                      }}
+                    >
+                      <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                        {selectedLeadForDetails.remarks}
+                      </Text>
+                    </Box>
+                  )}
+                  {selectedLeadForDetails.savedRemarks && selectedLeadForDetails.savedRemarks.length > 0 && (
+                    <Flex direction="column" gap="2">
+                      {selectedLeadForDetails.savedRemarks.map((remark, idx) => (
+                        <Box
+                          key={idx}
+                          style={{
+                            padding: '12px',
+                            backgroundColor: isDark ? 'var(--gray-3)' : '#f9fafb',
+                            borderRadius: '6px',
+                            border: '1px solid var(--accent-6)',
+                            borderLeft: '3px solid #5588ff',
+                          }}
+                        >
+                          <Text size="2" style={{ color: 'var(--accent-12)' }}>
+                            {extractRemarkText(remark)}
+                          </Text>
+                        </Box>
+                      ))}
+                    </Flex>
+                  )}
+                  {(!selectedLeadForDetails.remarks && (!selectedLeadForDetails.savedRemarks || selectedLeadForDetails.savedRemarks.length === 0)) && (
+                    <Text size="2" style={{ color: 'var(--accent-11)' }}>
+                      No remarks available.
+                    </Text>
+                  )}
+                </Flex>
+              )}
+            </Box>
+          </Box>
+
+          {/* CSS Animation */}
+          <style>{`
+            @keyframes slideIn {
+              from {
+                transform: translateX(100%);
+              }
+              to {
+                transform: translateX(0);
+              }
+            }
+          `}</style>
+        </>
       )}
     </Box>
   )

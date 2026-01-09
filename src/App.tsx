@@ -31,6 +31,7 @@ import UserPage from './pages/Dashboard/User'
 import RolePage from './pages/Dashboard/Role'
 import AddUser from './modules/User/AddUser'
 import AddRole from './modules/Role/AddRole'
+import CustomerPage from './pages/Dashboard/Customer'
 const App = () => {
   return (
     <div>
@@ -76,6 +77,7 @@ const App = () => {
         <Route path='edit-location' element={<AddLocation />} />
         <Route path='bookings' element={<BookingsPage />} />
         <Route path='content' element={<ContentPage />} />
+        <Route path='customer' element={<CustomerPage />} />
         <Route path='invoice' element={<Invoice />} />
         <Route path='payment' element={<PaymentPage />} />
         <Route path='addInvoice' element={<AddInvoice/>}/>

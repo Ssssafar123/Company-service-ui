@@ -195,6 +195,15 @@ const RoleIcon = () => {
     )
 }
 
+const CustomerIcon = () => {
+    return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+        </svg>
+    )
+}
+
 // Module to menu item mapping
 const MODULE_MENU_MAP: Record<string, string[]> = {
     'Dashboard': ['dashboard'],
@@ -218,7 +227,7 @@ const MODULE_MENU_MAP: Record<string, string[]> = {
     'Local Support': ['local-support'],
     // Parent sections - if user has any child, they can see the parent
     'Website': ['itinerary', 'category', 'location', 'reviews', 'bookings', 'content', 'user', 'role'],
-    'Sales': ['invoice', 'payment', 'ledger'],
+    'Sales': ['customer', 'invoice', 'payment', 'ledger'],
     'Library': ['hotel', 'activities', 'transport', 'coordinator', 'local-support'],
 }
 
@@ -282,6 +291,7 @@ const Layout = () => {
             label: "Sales", 
             icon: <SalesIcon />,
             children: [
+                { id: 'customer', label: "Customers", path: '/dashboard/customer', icon: <CustomerIcon /> },
                 { id: 'invoice', label: "Invoice", path: '/dashboard/invoice', icon: <InvoiceIcon /> },
                 { id: 'payment', label: "Payment", path: '/dashboard/payment', icon: <PaymentIcon /> },
                 { id: 'ledger', label: "Ledger", path: '/dashboard/ledger', icon: <LedgerIcon /> },
