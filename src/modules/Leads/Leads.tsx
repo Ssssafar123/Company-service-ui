@@ -264,12 +264,18 @@ const Leads: React.FC = () => {
     return true
   })
 
-  // Client-side pagination for filtered leads
-  const totalItems = filteredLeads.length
-  const totalPages = Math.ceil(totalItems / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentLeads = filteredLeads.slice(startIndex, endIndex)
+  // Pagination logic: 
+  // - When needsAllLeads is true: use client-side pagination on filtered leads
+  // - When needsAllLeads is false: use server-side pagination (leads already paginated by backend)
+  const totalItems = needsAllLeads ? filteredLeads.length : (pagination.totalRecords || 0)
+  const totalPages = needsAllLeads 
+    ? Math.ceil(filteredLeads.length / itemsPerPage) 
+    : (pagination.totalPages || 1)
+  const startIndex = needsAllLeads ? (currentPage - 1) * itemsPerPage : 0
+  const endIndex = needsAllLeads ? startIndex + itemsPerPage : filteredLeads.length
+  const currentLeads = needsAllLeads 
+    ? filteredLeads.slice(startIndex, endIndex)
+    : filteredLeads // When using server-side pagination, filteredLeads is already the current page
 
   // Reset to page 1 when filter, search, contacted filter, or items per page changes
   useEffect(() => {
@@ -861,6 +867,20 @@ const Leads: React.FC = () => {
     }
   }
 
+  // Get status line color for vertical line on left edge
+  const getStatusLineColor = (status: string): string => {
+    switch (status) {
+      case 'Hot':
+        return '#ef4444' // Red
+      case 'Warm':
+        return '#eab308' // Yellow
+      case 'Cold':
+        return '#3b82f6' // Blue
+      default:
+        return 'transparent' // No line for other statuses
+    }
+  }
+
   // Lead stages data
   const leadStages = [
     { label: 'New Enquiry', description: 'A new enquiry has been logged into the Instalink' },
@@ -1115,7 +1135,7 @@ const Leads: React.FC = () => {
       </Flex>
 
       {/* Table Container */}
-      <Box style={{ display: 'flex', flexDirection: 'column', marginTop: '20px', width: '100%', maxWidth: '100%', border: '1px solid #e5e7eb', paddingTop: '10px', borderRadius: '5px', overflowX: 'hidden', overflowY: 'visible', boxSizing: 'border-box' }}>
+      <Box style={{ display: 'flex', flexDirection: 'column', marginTop: '20px', width: '100%', maxWidth: '100%', border: '1px solid #e5e7eb', paddingTop: '10px', borderRadius: '5px', overflowX: 'hidden', overflowY: 'hidden', boxSizing: 'border-box' }}>
         {/* Table Header */}
         <Flex style={{ display: 'flex', paddingBottom: '10px', borderBottom: '1px solid #e5e7eb', paddingLeft: '10px', paddingRight: '10px', width: '100%', boxSizing: 'border-box' }}>
           <Box style={{ width: '6%', minWidth: '50px', display: 'flex', alignItems: 'center', paddingRight: '8px' }}>
@@ -1148,13 +1168,41 @@ const Leads: React.FC = () => {
             <Text>No leads found</Text>
           </Box>
         ) : (
-          currentLeads.map((lead, index) => (
-            <Flex key={lead.id} style={{ marginTop: '10px', borderBottom: index < currentLeads.length - 1 ? '1px solid #e5e7eb' : 'none', paddingBottom: '10px', paddingLeft: '10px', paddingRight: '10px', width: '100%', boxSizing: 'border-box' }}>
+          currentLeads.map((lead, index) => {
+            const statusLineColor = getStatusLineColor(lead.status)
+            return (
+            <Flex 
+              key={lead.id} 
+              style={{ 
+                marginTop: '10px', 
+                borderBottom: index < currentLeads.length - 1 ? '1px solid #e5e7eb' : 'none', 
+                paddingBottom: '10px', 
+                paddingLeft: '10px', 
+                paddingRight: '10px', 
+                width: '100%', 
+                boxSizing: 'border-box',
+                position: 'relative'
+              }}
+            >
+              {/* Colored vertical line - full height including margin */}
+              {statusLineColor !== 'transparent' && (
+                <Box
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: '-10px', // Extend into the margin area
+                    bottom: '-10px', // Extend into the padding area
+                    width: '4px',
+                    backgroundColor: statusLineColor,
+                    zIndex: 1
+                  }}
+                />
+              )}
               <Box style={{ width: '100%', display: 'flex', flexDirection: 'row', minHeight: '100px' }}>
                 {/* S.No Column */}
                 <Box style={{ width: '6%', minWidth: '50px', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '4px', fontSize: '13px', paddingTop: '8px', paddingRight: '8px' }}>
                   <Checkbox style={{ marginTop: '2px', cursor: 'pointer' }} size="2" checked={selectedLeads.includes(lead.id)} onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)} />
-                  <Text style={{ paddingLeft: '2px', fontSize: '13px' }}>{startIndex + index + 1}</Text>
+                  <Text style={{ paddingLeft: '2px', fontSize: '13px' }}>{needsAllLeads ? (startIndex + index + 1) : ((currentPage - 1) * itemsPerPage + index + 1)}</Text>
                 </Box>
 
                 {/* Lead Details Column */}
@@ -1292,7 +1340,8 @@ const Leads: React.FC = () => {
                 </Box>
               </Box>
             </Flex>
-          ))
+            )
+          })
         )}
       </Box>
 
