@@ -46,50 +46,69 @@ const initialState: CustomerState = {
 }
 
 // Helper function to map _id to id
-const mapCustomer = (customer: any): Customer => ({
-  id: customer._id || customer.id,
-  name: customer.name || '',
-  base_city: customer.base_city || '',
-  age: customer.age || 0,
-  phone: customer.phone || 0,
-  email: customer.email || '',
-  gender: customer.gender || 'OTHER',
-  instagram: customer.instagram,
-  refer: customer.refer,
-  starting_point: customer.starting_point || '',
-  drop_point: customer.drop_point || '',
-  createdAt: customer.createdAt,
-  updatedAt: customer.updatedAt,
-})
+const mapCustomer = (customer: any): Customer => {
+  if (!customer || typeof customer !== 'object') {
+    throw new Error('Invalid customer data')
+  }
+  return {
+    id: customer._id || customer.id || '',
+    name: customer.name || '',
+    base_city: customer.base_city || '',
+    age: customer.age || 0,
+    phone: customer.phone || 0,
+    email: customer.email || '',
+    gender: customer.gender || 'OTHER',
+    instagram: customer.instagram,
+    refer: customer.refer,
+    starting_point: customer.starting_point || '',
+    drop_point: customer.drop_point || '',
+    createdAt: customer.createdAt,
+    updatedAt: customer.updatedAt,
+  }
+}
 
 // Fetch all customers
 export const fetchCustomers = createAsyncThunk(
   'customer/fetchCustomers',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching customers...') // Debug
       const res = await fetch(getApiUrl('customer'), {
         credentials: 'include',
       })
-      console.log('Response status:', res.status) // Debug
       if (!res.ok) {
         const errorText = await res.text()
-        console.error('Error response:', errorText) // Debug
-        throw new Error('Failed to fetch customers')
+        throw new Error(errorText || 'Failed to fetch customers')
       }
-      const data = await res.json()
-      console.log('Raw customer data:', data) // Debug
-      console.log('Is array?', Array.isArray(data)) // Debug
-      console.log('Data type:', typeof data) // Debug
+      const responseData = await res.json()
       
-      // Handle both array and object responses
-      const customers = Array.isArray(data) ? data : (data.data || data.customers || [])
-      console.log('Customers to map:', customers) // Debug
-      console.log('Customers count:', customers.length) // Debug
+      // Handle different response formats
+      // Backend returns: { success: true, data: [...] } or array directly
+      let customers = []
+      if (Array.isArray(responseData)) {
+        customers = responseData
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        customers = responseData.data
+      } else if (responseData.customers && Array.isArray(responseData.customers)) {
+        customers = responseData.customers
+      }
       
-      return customers.map(mapCustomer)
+      // Safely map customers - filter out null/undefined and invalid entries
+      const mappedCustomers = Array.isArray(customers)
+        ? customers
+            .filter(c => c != null && typeof c === 'object' && (c._id || c.id))
+            .map(c => {
+              try {
+                return mapCustomer(c)
+              } catch (err) {
+                console.error('Error mapping customer:', c, err)
+                return null
+              }
+            })
+            .filter(c => c != null) as Customer[]
+        : []
+      
+      return mappedCustomers
     } catch (err) {
-      console.error('Fetch customers error:', err) // Debug
       return rejectWithValue((err as Error).message)
     }
   }
@@ -103,15 +122,45 @@ export const fetchCustomersByPage = createAsyncThunk(
       const res = await fetch(getApiUrl(`customer/pagination?page=${page}&limit=${limit}`), {
         credentials: 'include',
       })
-      if (!res.ok) throw new Error('Failed to fetch customers')
-      const data = await res.json()
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(errorText || 'Failed to fetch customers')
+      }
+      const responseData = await res.json()
+      
+      // Backend returns: { success: true, data: [...], page, limit, totalPages, totalRecords }
+      // Handle different response formats
+      let customers = []
+      if (Array.isArray(responseData)) {
+        customers = responseData
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        customers = responseData.data
+      } else if (responseData.customers && Array.isArray(responseData.customers)) {
+        customers = responseData.customers
+      }
+      
+      // Safely map customers - filter out null/undefined and invalid entries
+      const mappedCustomers = Array.isArray(customers) 
+        ? customers
+            .filter(c => c != null && typeof c === 'object' && (c._id || c.id))
+            .map(c => {
+              try {
+                return mapCustomer(c)
+              } catch (err) {
+                console.error('Error mapping customer:', c, err)
+                return null
+              }
+            })
+            .filter(c => c != null) as Customer[]
+        : []
+      
       return {
-        customers: data.customers.map(mapCustomer),
+        customers: mappedCustomers,
         pagination: {
-          page: data.page,
-          limit: data.limit,
-          totalPages: data.totalPages,
-          totalRecords: data.totalRecords,
+          page: responseData.page || page,
+          limit: responseData.limit || limit,
+          totalPages: responseData.totalPages || Math.ceil((mappedCustomers.length || 0) / limit) || 1,
+          totalRecords: responseData.totalRecords || mappedCustomers.length || 0,
         },
       }
     } catch (err) {
