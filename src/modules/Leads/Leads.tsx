@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea, DropdownMenu } from '@radix-ui/themes'
+import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea, DropdownMenu, AlertDialog, Select } from '@radix-ui/themes'
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon, Cross2Icon } from '@radix-ui/react-icons'
 import type { RootState } from '../../store'
 import { fetchLeadsByPage, fetchLeads, createLead, updateLeadById, deleteLeadById } from '../../features/LeadSlice'
 import { createCustomer } from '../../features/CustomerSlice'
 import { fetchUsers } from '../../features/UserSlice'
+import { fetchItineraries, fetchItineraryById } from '../../features/ItinerarySlice'
+import type { Batch } from '../../features/BatchSlice'
 import { useThemeToggle } from '../../ThemeProvider'
 import type { Lead } from '../../features/LeadSlice'
 
@@ -39,6 +41,11 @@ const Leads: React.FC = () => {
 
   const users = useSelector((state: RootState) => state.user.users)
   const usersLoading = useSelector((state: RootState) => state.user.ui.loading)
+  const itineraries = useSelector((state: RootState) => state.itinerary.itineraries)
+  
+  // State for selected itinerary data (with batches)
+  const [selectedItineraryData, setSelectedItineraryData] = useState<any>(null)
+  const [loadingBatches, setLoadingBatches] = useState(false)
 
   // State to store all leads for filtering/searching
   const [allLeads, setAllLeads] = useState<Lead[]>([])
@@ -76,6 +83,36 @@ const Leads: React.FC = () => {
   const [customerCreated, setCustomerCreated] = useState(false)
   const [createdCustomerId, setCreatedCustomerId] = useState<string | null>(null)
 
+  // Add state for Edit Enquiry modal
+  const [isEditEnquiryModalOpen, setIsEditEnquiryModalOpen] = useState(false)
+  const [selectedLeadForEdit, setSelectedLeadForEdit] = useState<Lead | null>(null)
+  const [editEnquiryForm, setEditEnquiryForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    destination: '',
+    preferredTravelDate: '',
+    numberOfTravelers: '',
+    duration: '',
+    itineraryId: '',
+    batchId: '',
+    contacted: 'New Enquiry' as Lead['contacted'],
+    source: '',
+    assignedTo: '',
+    notes: '',
+  })
+
+  // Dialog state for messages
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogConfig, setDialogConfig] = useState<{
+    title: string
+    description: string
+    actionText: string
+    cancelText?: string
+    onConfirm: () => void
+    color?: 'red' | 'blue' | 'green' | 'gray'
+  } | null>(null)
+
   // Check if we need to fetch all leads (when filter or search is active)
   const needsAllLeads = activeFilter !== "All" || searchQuery.trim() !== "" || selectedContactedFilter !== "All"
 
@@ -103,7 +140,65 @@ const Leads: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchUsers() as any)
+    dispatch(fetchItineraries() as any)
   }, [dispatch])
+
+  // Helper function to transform itinerary batches to Batch interface format
+  const getBatchesFromItinerary = (itinerary: any): Batch[] => {
+    if (!itinerary || !itinerary.batches || !Array.isArray(itinerary.batches)) {
+      return []
+    }
+
+    return itinerary.batches.map((batch: any) => ({
+      id: batch._id || batch.id || '',
+      start_date: batch.startDate || batch.start_date || '',
+      end_date: batch.endDate || batch.end_date || '',
+      is_sold: batch.sold_out || batch.is_sold || false,
+      extra_amount: batch.price || batch.extra_amount || 0,
+      extra_reason: batch.extra_amount_reason || batch.extra_reason || '',
+      itineraryId: itinerary.id || itinerary._id || '',
+      createdAt: batch.createdAt || '',
+      updatedAt: batch.updatedAt || '',
+    }))
+  }
+
+  // Filter batches from selected itinerary
+  const filteredBatches = selectedItineraryData
+    ? getBatchesFromItinerary(selectedItineraryData).filter((batch) => {
+        if (!batch.end_date) return false
+        
+        const endDate = new Date(batch.end_date)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        // Include batch if end_date is today or in the future
+        return endDate >= today
+      })
+    : []
+
+  // Fetch full itinerary data when itinerary is selected
+  useEffect(() => {
+    if (editEnquiryForm.itineraryId) {
+      setLoadingBatches(true)
+      setSelectedItineraryData(null)
+      
+      dispatch(fetchItineraryById(editEnquiryForm.itineraryId) as any)
+        .then((result: any) => {
+          if (fetchItineraryById.fulfilled.match(result)) {
+            setSelectedItineraryData(result.payload)
+          }
+          setLoadingBatches(false)
+        })
+        .catch((err: any) => {
+          console.error('Failed to fetch itinerary:', err)
+          setSelectedItineraryData(null)
+          setLoadingBatches(false)
+        })
+    } else {
+      setSelectedItineraryData(null)
+      setLoadingBatches(false)
+    }
+  }, [editEnquiryForm.itineraryId, dispatch])
 
   // Get the leads to work with (all leads when filtering/searching, otherwise current page leads)
   const leadsToFilter = needsAllLeads ? allLeads : leads
@@ -438,7 +533,14 @@ const Leads: React.FC = () => {
 
     // Validate required fields
     if (!customerForm.name || !customerForm.phone || !customerForm.email || !customerForm.city || !customerForm.age || !customerForm.gender) {
-      alert('Please fill in all required fields')
+      setDialogConfig({
+        title: 'Validation Error',
+        description: 'Please fill in all required fields',
+        actionText: 'OK',
+        color: 'red',
+        onConfirm: () => setDialogOpen(false),
+      })
+      setDialogOpen(true)
       return
     }
 
@@ -469,18 +571,46 @@ const Leads: React.FC = () => {
         if (customerId) {
           setCreatedCustomerId(customerId)
           setCustomerCreated(true)
-          alert('Customer created successfully!')
+          setDialogConfig({
+            title: 'Success',
+            description: 'Customer created successfully!',
+            actionText: 'OK',
+            color: 'green',
+            onConfirm: () => setDialogOpen(false),
+          })
+          setDialogOpen(true)
         } else {
           console.error('Customer created but ID not found:', result.payload)
           setCustomerCreated(true)
-          alert('Customer created successfully!')
+          setDialogConfig({
+            title: 'Success',
+            description: 'Customer created successfully!',
+            actionText: 'OK',
+            color: 'green',
+            onConfirm: () => setDialogOpen(false),
+          })
+          setDialogOpen(true)
         }
       } else {
-        alert('Failed to create customer: ' + (result.payload as string || 'Unknown error'))
+        setDialogConfig({
+          title: 'Error',
+          description: 'Failed to create customer: ' + (result.payload as string || 'Unknown error'),
+          actionText: 'OK',
+          color: 'red',
+          onConfirm: () => setDialogOpen(false),
+        })
+        setDialogOpen(true)
       }
     } catch (error) {
       console.error('Error creating customer:', error)
-      alert('Error creating customer. Please try again.')
+      setDialogConfig({
+        title: 'Error',
+        description: 'Error creating customer. Please try again.',
+        actionText: 'OK',
+        color: 'red',
+        onConfirm: () => setDialogOpen(false),
+      })
+      setDialogOpen(true)
     }
   }
 
@@ -491,10 +621,130 @@ const Leads: React.FC = () => {
     alert('Create Invoice functionality will be implemented')
   }
 
-  const handleEditEnquiry = (leadId: string) => {
-    // TODO: Implement edit enquiry functionality
-    console.log('Edit Enquiry:', leadId)
-    alert('Edit Enquiry functionality will be implemented')
+  const handleEditEnquiry = async (leadId: string) => {
+    const lead = leadsToFilter.find(l => l.id === leadId)
+    if (lead) {
+      setSelectedLeadForEdit(lead)
+      // Pre-fill form with lead data
+      setEditEnquiryForm({
+        name: lead.name || '',
+        phone: lead.phone || '',
+        email: lead.email || '',
+        destination: lead.destination || '',
+        preferredTravelDate: lead.preferredTravelDate ? new Date(lead.preferredTravelDate).toISOString().split('T')[0] : '',
+        numberOfTravelers: lead.numberOfTravelers?.toString() || '',
+        duration: '',
+        itineraryId: lead.itineraryId || '',
+        batchId: '',
+        contacted: lead.contacted || 'New Enquiry',
+        source: lead.source || '',
+        assignedTo: lead.assignedTo || '',
+        notes: lead.notes || lead.remarks || '',
+      })
+      
+      // If itineraryId exists, fetch the itinerary data to populate batches
+      if (lead.itineraryId) {
+        try {
+          setLoadingBatches(true)
+          const result = await dispatch(fetchItineraryById(lead.itineraryId) as any)
+          if (fetchItineraryById.fulfilled.match(result)) {
+            setSelectedItineraryData(result.payload)
+          }
+          setLoadingBatches(false)
+        } catch (err) {
+          console.error('Failed to fetch itinerary for edit:', err)
+          setLoadingBatches(false)
+        }
+      }
+      
+      setIsEditEnquiryModalOpen(true)
+    }
+  }
+
+  // Handle Update Enquiry
+  const handleUpdateEnquiry = async () => {
+    if (!selectedLeadForEdit) return
+
+    // Validate required fields
+    if (!editEnquiryForm.name || !editEnquiryForm.phone) {
+      setDialogConfig({
+        title: 'Validation Error',
+        description: 'Please fill in all required fields (Name and Phone)',
+        actionText: 'OK',
+        color: 'red',
+        onConfirm: () => setDialogOpen(false),
+      })
+      setDialogOpen(true)
+      return
+    }
+
+    try {
+      // Prepare update data
+      const updateData: any = {
+        name: editEnquiryForm.name,
+        phone: editEnquiryForm.phone,
+        email: editEnquiryForm.email || undefined,
+        destination: editEnquiryForm.destination || undefined,
+        preferredTravelDate: editEnquiryForm.preferredTravelDate || undefined,
+        numberOfTravelers: editEnquiryForm.numberOfTravelers ? Number(editEnquiryForm.numberOfTravelers) : undefined,
+        contacted: editEnquiryForm.contacted,
+        source: editEnquiryForm.source || undefined,
+        assignedTo: editEnquiryForm.assignedTo || '',
+        notes: editEnquiryForm.notes || undefined,
+      }
+      
+      // Add itineraryId if selected
+      if (editEnquiryForm.itineraryId) {
+        updateData.itineraryId = editEnquiryForm.itineraryId
+      }
+      
+      // Add batchId if selected (backend might need this field)
+      if (editEnquiryForm.batchId) {
+        updateData.batchId = editEnquiryForm.batchId
+      }
+
+      const result = await dispatch(updateLeadById({ id: selectedLeadForEdit.id, data: updateData }) as any)
+      
+      if (updateLeadById.fulfilled.match(result)) {
+        setDialogConfig({
+          title: 'Success',
+          description: 'Enquiry updated successfully!',
+          actionText: 'OK',
+          color: 'green',
+          onConfirm: () => {
+            setDialogOpen(false)
+            setIsEditEnquiryModalOpen(false)
+            setSelectedLeadForEdit(null)
+            // Refresh data
+            if (needsAllLeads) {
+              dispatch(fetchLeads() as any)
+            } else {
+              dispatch(fetchLeadsByPage({ page: currentPage, limit: itemsPerPage }) as any)
+            }
+          },
+        })
+        setDialogOpen(true)
+      } else {
+        setDialogConfig({
+          title: 'Error',
+          description: 'Failed to update enquiry: ' + (result.payload as string || 'Unknown error'),
+          actionText: 'OK',
+          color: 'red',
+          onConfirm: () => setDialogOpen(false),
+        })
+        setDialogOpen(true)
+      }
+    } catch (error) {
+      console.error('Error updating enquiry:', error)
+      setDialogConfig({
+        title: 'Error',
+        description: 'Error updating enquiry. Please try again.',
+        actionText: 'OK',
+        color: 'red',
+        onConfirm: () => setDialogOpen(false),
+      })
+      setDialogOpen(true)
+    }
   }
 
   const handleViewTimeline = (leadId: string) => {
@@ -1331,6 +1581,312 @@ const Leads: React.FC = () => {
           </Flex>
         </Dialog.Content>
       </Dialog.Root>
+
+      {/* Edit Enquiry Modal */}
+      <Dialog.Root open={isEditEnquiryModalOpen} onOpenChange={setIsEditEnquiryModalOpen}>
+        <Dialog.Content style={{ maxWidth: 750 }}>
+          <Flex justify="between" align="center" style={{ marginBottom: '8px' }}>
+            <Dialog.Title>Edit Enquiry</Dialog.Title>
+            <Dialog.Close>
+              <Box
+                style={{
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '4px',
+                  color: isDark ? 'var(--gray-11)' : 'var(--gray-11)',
+                }}
+                onClick={() => {
+                  setIsEditEnquiryModalOpen(false)
+                  setSelectedLeadForEdit(null)
+                }}
+              >
+                <Cross2Icon width="20" height="20" />
+              </Box>
+            </Dialog.Close>
+          </Flex>
+          <Dialog.Description size="2" mb="4">
+            Update the enquiry details
+          </Dialog.Description>
+          
+          <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            {/* Enquiry Name */}
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Enquiry Name
+              </Text>
+              <input 
+                type="text" 
+                value={editEnquiryForm.name} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, name: e.target.value })} 
+                placeholder="Enter enquiry name" 
+                required
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            
+            {/* Enquiry Number */}
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Enquiry Number
+              </Text>
+              <input 
+                type="tel" 
+                value={editEnquiryForm.phone} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, phone: e.target.value })} 
+                placeholder="Enter phone number" 
+                required
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            
+            {/* Enquiry Email */}
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Enquiry Email
+              </Text>
+              <input 
+                type="email" 
+                value={editEnquiryForm.email} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, email: e.target.value })} 
+                placeholder="Enter Lead Email" 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            
+            {/* Event */}
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Event
+              </Text>
+              <Select.Root
+                value={editEnquiryForm.itineraryId || undefined}
+                onValueChange={(value) => {
+                  setEditEnquiryForm({ 
+                    ...editEnquiryForm, 
+                    itineraryId: value,
+                    batchId: '' // Clear batch when itinerary changes
+                  })
+                }}
+              >
+                <Select.Trigger 
+                  placeholder="Select Event"
+                  style={{ width: '100%' }}
+                />
+                <Select.Content>
+                  {itineraries.map((itinerary) => (
+                    <Select.Item key={itinerary.id} value={itinerary.id}>
+                      {itinerary.name}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
+            </Box>
+            
+            {/* Batch */}
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Batch
+              </Text>
+              <Select.Root
+                value={editEnquiryForm.batchId || undefined}
+                onValueChange={(value) => setEditEnquiryForm({ ...editEnquiryForm, batchId: value })}
+                disabled={!editEnquiryForm.itineraryId}
+              >
+                <Select.Trigger
+                  placeholder={
+                    !editEnquiryForm.itineraryId
+                      ? 'Please select itinerary first'
+                      : loadingBatches
+                      ? 'Loading batches...'
+                      : filteredBatches.length === 0
+                      ? 'No batches available'
+                      : 'Select Batch'
+                  }
+                  style={{ width: '100%' }}
+                />
+                <Select.Content>
+                  {filteredBatches.map((batch) => {
+                    const startDate = new Date(batch.start_date).toLocaleDateString()
+                    const endDate = new Date(batch.end_date).toLocaleDateString()
+                    return (
+                      <Select.Item key={batch.id} value={batch.id}>
+                        {startDate} - {endDate} {batch.is_sold ? '(Sold)' : ''}
+                        {batch.extra_amount > 0 && ` (₹${batch.extra_amount})`}
+                      </Select.Item>
+                    )
+                  })}
+                </Select.Content>
+              </Select.Root>
+            </Box>
+            
+            {/* Preferred Date */}
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Preferred Date
+              </Text>
+              <input 
+                type="date" 
+                value={editEnquiryForm.preferredTravelDate} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, preferredTravelDate: e.target.value })} 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            
+            {/* Duration */}
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Duration
+              </Text>
+              <input 
+                type="text" 
+                value={editEnquiryForm.duration} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, duration: e.target.value })} 
+                placeholder="Duration" 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            
+            {/* No of Guests */}
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                No of Guests
+              </Text>
+              <input 
+                type="number" 
+                value={editEnquiryForm.numberOfTravelers} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, numberOfTravelers: e.target.value })} 
+                placeholder="Number of guests" 
+                min="1"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            
+            {/* Location */}
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Location
+              </Text>
+              <input 
+                type="text" 
+                value={editEnquiryForm.destination} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, destination: e.target.value })} 
+                placeholder="Enter location" 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }} 
+              />
+            </Box>
+            
+            {/* Stage */}
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Stage
+              </Text>
+              <select 
+                value={editEnquiryForm.contacted} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, contacted: e.target.value as Lead['contacted'] })} 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }}
+              >
+                {contactedOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </Box>
+            
+            {/* Source */}
+            <Box style={{ marginRight: '25px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Source
+              </Text>
+              <select 
+                value={editEnquiryForm.source} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, source: e.target.value })} 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }}
+              >
+                <option value="">Select Source</option>
+                <option value="instalink">Instalink</option>
+                <option value="website">Website</option>
+                <option value="phone">Phone</option>
+                <option value="walkin">Walk-in</option>
+                <option value="referral">Referral</option>
+              </select>
+            </Box>
+            
+            {/* Assigned to */}
+            <Box style={{ marginRight: '15px' }}>
+              <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+                Assigned to
+              </Text>
+              <select 
+                value={editEnquiryForm.assignedTo} 
+                onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, assignedTo: e.target.value })} 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '14px' }}
+              >
+                <option value="">UnAssigned</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.username}>
+                    {user.username}
+                  </option>
+                ))}
+              </select>
+            </Box>
+          </Box>
+          
+          {/* Customer Message */}
+          <Box mt="3">
+            <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
+              Customer Message
+            </Text>
+            <TextArea 
+              value={editEnquiryForm.notes} 
+              onChange={(e) => setEditEnquiryForm({ ...editEnquiryForm, notes: e.target.value })} 
+              placeholder="Enter customer message" 
+              style={{ minHeight: '80px' }} 
+            />
+          </Box>
+
+          <Flex gap="3" mt="4" justify="end">
+            <Button variant="soft" color="gray" onClick={() => {
+              setIsEditEnquiryModalOpen(false)
+              setSelectedLeadForEdit(null)
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateEnquiry}>Update</Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+
+      {/* Alert Dialog for Messages */}
+      {dialogConfig && (
+        <AlertDialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
+          <AlertDialog.Content maxWidth="450px">
+            <AlertDialog.Title>{dialogConfig.title}</AlertDialog.Title>
+            <AlertDialog.Description size="2">
+              {dialogConfig.description}
+            </AlertDialog.Description>
+            <Flex gap="3" mt="4" justify="end">
+              {dialogConfig.cancelText && (
+                <AlertDialog.Cancel>
+                  <Button variant="soft" color="gray">
+                    {dialogConfig.cancelText}
+                  </Button>
+                </AlertDialog.Cancel>
+              )}
+              <AlertDialog.Action>
+                <Button
+                  variant="solid"
+                  color={dialogConfig.color || 'red'}
+                  onClick={dialogConfig.onConfirm}
+                >
+                  {dialogConfig.actionText}
+                </Button>
+              </AlertDialog.Action>
+            </Flex>
+          </AlertDialog.Content>
+        </AlertDialog.Root>
+      )}
     </Box>
   )
 }
