@@ -86,7 +86,7 @@ const Review: React.FC = () => {
         color?: 'red' | 'blue' | 'green' | 'gray'
     } | null>(null)
 
-    useEffect(() => {
+    // useEffect(() => {
         const googleReviews = async () => {
             try {
                 const response = await fetch(
@@ -148,10 +148,20 @@ const Review: React.FC = () => {
             }
         }
     
-        googleReviews()
-        dispatch(fetchReviews())
-        dispatch(fetchItineraries())
+        // googleReviews()
+        // dispatch(fetchReviews())
+        // dispatch(fetchItineraries())
+    // }, [dispatch])
+
+    useEffect(()=>{
+        dispatch(fetchReviews());
+        dispatch(fetchItineraries());
+
     }, [dispatch])
+
+
+
+
 
     // Filter and sort reviews
     const filteredAndSortedReviews = useMemo(() => {
@@ -867,6 +877,9 @@ const Review: React.FC = () => {
                         <Tabs.Trigger value="google">
                             Google Reviews ({filteredGoogleReviews.length})
                         </Tabs.Trigger>
+                        <Button>
+                            <Text onClick={()=>{googleReviews()}}>Fetch Google Reviews</Text>
+                        </Button>
                     </Tabs.List>
 
                     <Box style={{ marginTop: '16px' }}>

@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Box, Flex, Text, TextField, Checkbox, Button, Dialog, TextArea } from '@radix-ui/themes'
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } from '@radix-ui/react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchCustomizeLeads, updateCustomizeLeadById, type CustomizeLead } from '../../features/CustomizeLeadSlice'
+import { fetchUsers } from '../../features/UserSlice'
+import { useThemeToggle } from '../../ThemeProvider'
 import type { AppDispatch, RootState } from '../../store'
 
 // Define Lead type
@@ -26,9 +28,57 @@ interface Lead {
 
 const Leads: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>()
+    const { isDark } = useThemeToggle()
     
     // Get customize leads from Redux store
     const { customizeLeads, ui } = useSelector((state: RootState) => state.customizeLead)
+    const users = useSelector((state: RootState) => state.user.users)
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+    
+    // Checkbox state
+    const [selectedLeads, setSelectedLeads] = useState<string[]>([])
+    const [selectAll, setSelectAll] = useState(false)
+
+    // Active filter state
+    const [activeFilter, setActiveFilter] = useState<string>("All")
+
+    // Contacted/Stage filter state
+    const [selectedContactedFilter, setSelectedContactedFilter] = useState<string>("All")
+    const filterBarScrollRef = useRef<HTMLDivElement>(null)
+
+    // Remark modal state
+    const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false)
+    const [selectedLeadForRemark, setSelectedLeadForRemark] = useState<string | null>(null)
+    const [remarkText, setRemarkText] = useState("")
+    const [isReminderEnabled, setIsReminderEnabled] = useState(false)
+    const [reminderDateTime, setReminderDateTime] = useState("")
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState("")
+
+    // State to store all leads for filtering/searching
+    const [allLeads, setAllLeads] = useState<Lead[]>([])
+
+    // Add state for Lead Stages modal
+    const [isStagesModalOpen, setIsStagesModalOpen] = useState(false)
+
+    // Add state for Add Enquiry modal
+    const [isAddEnquiryModalOpen, setIsAddEnquiryModalOpen] = useState(false)
+    const [newEnquiry, setNewEnquiry] = useState({
+        name: '',
+        badgeType: 'instalink',
+        leadId: '',
+        phone: '',
+        destination: '',
+        packageCode: '',
+        remarks: '',
+        status: 'Hot',
+        contacted: 'New Enquiry',
+        assignedTo: '',
+    })
     
     // Map CustomizeLead data to Lead format
     const leadsData: Lead[] = useMemo(() => {
@@ -42,7 +92,7 @@ const Leads: React.FC = () => {
                     name: 'Unknown',
                     badgeType: 'website',
                     leadId: typeof cl.leadId === 'string' ? cl.leadId : '',
-                    time: new Date().toISOString(),
+                    time: new Date().toISOString(), // Store ISO time
                     phone: '',
                     destination: '',
                     packageCode: '',
@@ -54,18 +104,10 @@ const Leads: React.FC = () => {
                 }
             }
             
-            // Format time
-            const createdAt = lead.createdAt 
-                ? new Date(lead.createdAt) 
-                : new Date()
-            
-            const time = createdAt.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            })
+            // Store ISO time for formatting
+            const time = lead.createdAt 
+                ? new Date(lead.createdAt).toISOString()
+                : new Date().toISOString()
             
             return {
                 id: cl.id, // Use CustomizeLead _id
@@ -90,11 +132,27 @@ const Leads: React.FC = () => {
     // Fetch data on component mount
     useEffect(() => {
         dispatch(fetchCustomizeLeads())
+        dispatch(fetchUsers() as any)
     }, [dispatch])
 
+    // Check if we need to fetch all leads (when filter or search is active)
+    const needsAllLeads = activeFilter !== "All" || searchQuery.trim() !== "" || selectedContactedFilter !== "All"
+
+    // Update allLeads when leadsData changes (for filtering/searching)
+    useEffect(() => {
+        if (needsAllLeads) {
+            setAllLeads(leadsData)
+        } else {
+            setAllLeads([])
+        }
+    }, [leadsData, needsAllLeads])
+
+    // Get the leads to work with (all leads when filtering/searching, otherwise current page leads)
+    const leadsToFilter = needsAllLeads ? allLeads : leadsData
+
     // Update statistics based on actual data
-    const totalLeads = leadsData.length
-    const todayLeads = leadsData.filter(lead => {
+    const totalLeadsForStats = needsAllLeads ? allLeads.length : leadsData.length
+    const todayLeads = leadsToFilter.filter(lead => {
         try {
             const leadDate = new Date(lead.time)
             const today = new Date()
@@ -103,47 +161,7 @@ const Leads: React.FC = () => {
             return false
         }
     }).length
-    const convertedLeads = leadsData.filter(lead => lead.contacted === 'Booked').length
-
-    // Pagination state
-    const [currentPage, setCurrentPage] = useState(1)
-    const [itemsPerPage, setItemsPerPage] = useState(10)
-    
-    // Checkbox state - changed to string[]
-    const [selectedLeads, setSelectedLeads] = useState<string[]>([])
-    const [selectAll, setSelectAll] = useState(false)
-
-    // Active filter state
-    const [activeFilter, setActiveFilter] = useState<string>("All")
-
-    // Remark modal state
-    const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false)
-    const [selectedLeadForRemark, setSelectedLeadForRemark] = useState<string | null>(null) // Changed to string
-    const [remarkText, setRemarkText] = useState("")
-    // NEW: Reminder states for modal
-    const [isReminderEnabled, setIsReminderEnabled] = useState(false)
-    const [reminderDateTime, setReminderDateTime] = useState("")
-
-    // Search state
-    const [searchQuery, setSearchQuery] = useState("")
-
-    // Add state for Lead Stages modal
-    const [isStagesModalOpen, setIsStagesModalOpen] = useState(false)
-
-    // Add state for Add Enquiry modal
-    const [isAddEnquiryModalOpen, setIsAddEnquiryModalOpen] = useState(false)
-    const [newEnquiry, setNewEnquiry] = useState({
-        name: '',
-        badgeType: 'instalink',
-        leadId: '',
-        phone: '',
-        destination: '',
-        packageCode: '',
-        remarks: '',
-        status: 'Hot',
-        contacted: 'New Enquiry',
-        assignedTo: '',
-    })
+    const convertedLeads = leadsToFilter.filter(lead => lead.contacted === 'Booked').length
 
     // Lead stages data
     const leadStages = [
@@ -161,21 +179,51 @@ const Leads: React.FC = () => {
     ]
 
 
-    // Filter leads based on search query
-    const filteredLeads = leadsData.filter((lead) => {
-        if (!searchQuery) return true // If no search query, show all leads
+    // Filter leads based on search query AND active filter
+    const filteredLeads = leadsToFilter.filter((lead) => {
+        // First apply search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase()
+            const matchesSearch = (
+                lead.name.toLowerCase().includes(query) ||
+                lead.leadId.toLowerCase().includes(query) ||
+                lead.phone.toLowerCase().includes(query) ||
+                (lead.destination && lead.destination.toLowerCase().includes(query)) ||
+                (lead.packageCode && lead.packageCode.toLowerCase().includes(query)) ||
+                (lead.remarks && lead.remarks.toLowerCase().includes(query)) ||
+                lead.status.toLowerCase().includes(query) ||
+                (lead.assignedTo && lead.assignedTo.toLowerCase().includes(query))
+            )
+            if (!matchesSearch) return false
+        }
+
+        // Apply contacted/stage filter
+        if (selectedContactedFilter !== "All") {
+            if (lead.contacted !== selectedContactedFilter) {
+                return false
+            }
+        }
+
+        // Then apply active filter
+        if (activeFilter === "All") {
+            return true
+        } else if (activeFilter === "Hot") {
+            return lead.status === "Hot"
+        } else if (activeFilter === "Warm") {
+            return lead.status === "Warm"
+        } else if (activeFilter === "Cold") {
+            return lead.status === "Cold"
+        } else if (activeFilter === "Remainder") {
+            return Boolean(lead.reminder)
+        } else if (activeFilter === "InstaLink") {
+            return lead.badgeType === "instalink"
+        } else if (activeFilter === "UnAssigned") {
+            return !lead.assignedTo || lead.assignedTo.trim() === "" || lead.assignedTo === "UnAssigned"
+        } else if (activeFilter === "Archive") {
+            return true
+        }
         
-        const query = searchQuery.toLowerCase()
-        return (
-            lead.name.toLowerCase().includes(query) ||
-            lead.leadId.toLowerCase().includes(query) ||
-            lead.phone.toLowerCase().includes(query) ||
-            lead.destination.toLowerCase().includes(query) ||
-            lead.packageCode.toLowerCase().includes(query) ||
-            lead.remarks.toLowerCase().includes(query) ||
-            lead.status.toLowerCase().includes(query) ||
-            lead.assignedTo.toLowerCase().includes(query)
-        )
+        return true
     })
 
     // Calculate pagination values
@@ -184,6 +232,11 @@ const Leads: React.FC = () => {
     const startIndex = (currentPage - 1) * itemsPerPage
     const endIndex = startIndex + itemsPerPage
     const currentLeads = filteredLeads.slice(startIndex, endIndex)
+
+    // Reset to page 1 when filter, search, contacted filter, or items per page changes
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [activeFilter, searchQuery, selectedContactedFilter, itemsPerPage])
 
     // Reset to page 1 when items per page changes
     const handleItemsPerPageChange = (newItemsPerPage: number) => {
@@ -227,31 +280,95 @@ const Leads: React.FC = () => {
     // Handle filter change
     const handleFilterChange = (filter: string) => {
         setActiveFilter(filter)
-        setCurrentPage(1) // Reset to first page when filter changes
+        setCurrentPage(1)
+        // Clear allLeads when switching filters to ensure fresh data
+        if (filter === "All" && searchQuery.trim() === "" && selectedContactedFilter === "All") {
+            setAllLeads([])
+        }
+    }
+
+    // Handle contacted/stage filter change
+    const handleContactedFilterChange = (contacted: string) => {
+        setSelectedContactedFilter(contacted)
+        setCurrentPage(1)
+    }
+
+    // Handle scroll left
+    const handleScrollLeft = () => {
+        if (filterBarScrollRef.current) {
+            filterBarScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' })
+        }
+    }
+
+    // Handle scroll right
+    const handleScrollRight = () => {
+        if (filterBarScrollRef.current) {
+            filterBarScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' })
+        }
     }
 
     // Handle search input change
     const handleSearchChange = (value: string) => {
         setSearchQuery(value)
-        setCurrentPage(1) // Reset to first page when search query changes
+        setCurrentPage(1)
+    }
+
+    // Format time display
+    const formatTime = (timeString: string) => {
+        try {
+            const date = new Date(timeString)
+            const now = new Date()
+            const diffMs = now.getTime() - date.getTime()
+            const diffMins = Math.floor(diffMs / 60000)
+            const diffHours = Math.floor(diffMs / 3600000)
+            const diffDays = Math.floor(diffMs / 86400000)
+
+            if (diffMins < 60) {
+                return `${diffMins} minutes ago`
+            } else if (diffHours < 24) {
+                return `${diffHours} hours ago`
+            } else if (diffDays === 0) {
+                return 'Today at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+            } else if (diffDays === 1) {
+                return 'Yesterday at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+            } else {
+                return date.toLocaleString()
+            }
+        } catch {
+            return timeString
+        }
+    }
+
+    // Extract remark text (remove timestamp prefix)
+    const extractRemarkText = (remark: string): string => {
+        // Format: "timestamp: remark text"
+        // Extract only the text part after the colon
+        const colonIndex = remark.indexOf(': ')
+        if (colonIndex !== -1) {
+            return remark.substring(colonIndex + 2).trim()
+        }
+        // If no colon found, return as is (for backward compatibility)
+        return remark
     }
 
     // Handle open remark modal
     const handleOpenRemarkModal = (leadId: string) => {
         setSelectedLeadForRemark(leadId)
-        // initialize remark and reminder modal values if already set on lead
-        const lead = leadsData.find(l => l.id === leadId)
-        setRemarkText(lead?.remarks || "")
+        setRemarkText("")
+        const lead = leadsToFilter.find(l => l.id === leadId)
         setIsReminderEnabled(Boolean(lead?.reminder))
         setReminderDateTime(lead?.reminder ?? "")
         setIsRemarkModalOpen(true)
     }
 
     const handleAssignedToChange = async (leadId: string, newAssignee: string) => {
-        // Note: This would need to update the Lead, not CustomizeLead
-        // For now, just refresh the data
-        console.log('Update assignedTo for lead:', leadId, newAssignee)
-        dispatch(fetchCustomizeLeads())
+        const lead = leadsToFilter.find(l => l.id === leadId)
+        if (lead) {
+            // Note: This would need to update the Lead, not CustomizeLead
+            // For now, just refresh the data
+            console.log('Update assignedTo for lead:', leadId, newAssignee)
+            dispatch(fetchCustomizeLeads())
+        }
     }
 
     // NEW: Remove reminder
@@ -269,17 +386,24 @@ const Leads: React.FC = () => {
         }
     }
 
-    // Handle save remark (allow saving reminder even if remark is empty)
+    // Handle save remark
     const handleSaveRemark = async () => {
         if (!selectedLeadForRemark) return
-        // If both remark and reminder are empty, do nothing
         if (!remarkText.trim() && !(isReminderEnabled && reminderDateTime)) return
 
+        const lead = leadsToFilter.find(l => l.id === selectedLeadForRemark)
+        if (!lead) return
+
         try {
+            // Note: savedRemarks array would be updated here, but it's on the Lead, not CustomizeLead
+            // For now, we'll update customNotes with the remark if provided
+
             const updateData: any = {}
             
             if (remarkText.trim()) {
                 updateData.customNotes = remarkText.trim()
+            } else {
+                updateData.customNotes = lead.remarks || ''
             }
             
             if (isReminderEnabled && reminderDateTime) {
@@ -288,10 +412,15 @@ const Leads: React.FC = () => {
                 updateData.followUpDate = undefined
             }
 
+            // Note: savedRemarks might need to be updated on the Lead, not CustomizeLead
+            // For now, we'll update customNotes and followUpDate
             await dispatch(updateCustomizeLeadById({
                 id: selectedLeadForRemark,
                 data: updateData
             })).unwrap()
+
+            // Refresh data
+            dispatch(fetchCustomizeLeads())
 
             // Close modal and reset
             setIsRemarkModalOpen(false)
@@ -299,11 +428,10 @@ const Leads: React.FC = () => {
             setRemarkText("")
             setIsReminderEnabled(false)
             setReminderDateTime("")
-            
-            // Refresh data
-            dispatch(fetchCustomizeLeads())
         } catch (error) {
             console.error('Failed to save remark:', error)
+            // Refresh data even on error
+            dispatch(fetchCustomizeLeads())
         }
     }
 
@@ -451,13 +579,13 @@ const Leads: React.FC = () => {
         </svg>
     )
 
-    // Contacted dropdown options - UPDATED
-    const contactedOptions = [
+    // Contacted dropdown options - Fixed to match Lead interface
+    const contactedOptions: Lead['contacted'][] = [
         'New Enquiry',
-        'Call Not Pick',
+        'Call Not Picked',
         'Contacted',
         'Qualified',
-        'Plan and Quote Send',
+        'Plan & Quote Sent',
         'In Pipeline',
         'Negotiating',
         'Awaiting Payment',
@@ -465,6 +593,24 @@ const Leads: React.FC = () => {
         'Lost & Closed',
         'Future Prospect',
     ]
+
+    // Color mapping for lead stages (matching the image)
+    const getStageColor = (stage: string): { bg: string; text: string; border: string } => {
+        const colors: Record<string, { bg: string; text: string; border: string }> = {
+            'New Enquiry': { bg: '#3b82f6', text: '#fff', border: '#3b82f6' }, // Blue
+            'Call Not Picked': { bg: '#9ca3af', text: '#fff', border: '#9ca3af' }, // Gray
+            'Contacted': { bg: '#a855f7', text: '#fff', border: '#a855f7' }, // Purple
+            'Qualified': { bg: '#ec4899', text: '#fff', border: '#ec4899' }, // Pink
+            'Plan & Quote Sent': { bg: '#f97316', text: '#fff', border: '#f97316' }, // Orange
+            'In Pipeline': { bg: '#06b6d4', text: '#fff', border: '#06b6d4' }, // Light Blue
+            'Negotiating': { bg: '#f97316', text: '#fff', border: '#f97316' }, // Orange
+            'Awaiting Payment': { bg: '#eab308', text: '#000', border: '#eab308' }, // Yellow
+            'Booked': { bg: '#22c55e', text: '#fff', border: '#22c55e' }, // Green
+            'Lost & Closed': { bg: '#ef4444', text: '#fff', border: '#ef4444' }, // Red
+            'Future Prospect': { bg: '#6366f1', text: '#fff', border: '#6366f1' }, // Indigo
+        }
+        return colors[stage] || { bg: '#e5e7eb', text: '#000', border: '#e5e7eb' }
+    }
 
     // Handle status change
     const handleStatusChange = async (leadId: string, newStatus: string) => {
@@ -483,21 +629,15 @@ const Leads: React.FC = () => {
     }
 
     // Handle contacted change
-    const handleContactedChange = async (leadId: string, newContacted: string) => {
-        const customizeLead = customizeLeads.find((cl: CustomizeLead) => cl.id === leadId)
-        if (!customizeLead) return
-
+    const handleContactedChange = async (_leadId: string, _newContacted: string) => {
         try {
-            await dispatch(updateCustomizeLeadById({
-                id: leadId,
-                data: {
-                    customStatus: newContacted
-                }
-            })).unwrap()
-            // Refresh data
+            // Note: contacted is on the Lead, not CustomizeLead
+            // We might need to update the Lead separately
+            // For now, just refresh the data
             dispatch(fetchCustomizeLeads())
         } catch (error) {
             console.error('Failed to update contacted status:', error)
+            dispatch(fetchCustomizeLeads())
         }
     }
 
@@ -574,7 +714,7 @@ const Leads: React.FC = () => {
                                 fontWeight: 'bold',
                             }}
                         >
-                            {totalLeads.toLocaleString()}
+                            {totalLeadsForStats.toLocaleString()}
                         </Text>
                     </Flex>
                 </Box>
@@ -719,7 +859,105 @@ const Leads: React.FC = () => {
                 </Box>
                   
             </Flex>
-        </Flex>			{/* Filter Buttons - Responsive */}
+        </Flex>
+
+        {/* Lead Stage Filter Bar */}
+        <Box style={{ marginTop: '15px', marginBottom: '15px', width: '100%', overflowX: 'auto', boxSizing: 'border-box' }}>
+            <Flex gap="0" align="center" style={{ width: '100%', position: 'relative' }}>
+                {/* Left scroll indicator */}
+                <Box 
+                    onClick={handleScrollLeft}
+                    style={{ 
+                        position: 'sticky', 
+                        left: 0, 
+                        zIndex: 10, 
+                        backgroundColor: isDark ? 'var(--color-panel)' : '#fff', 
+                        paddingRight: '8px', 
+                        cursor: 'pointer' 
+                    }}
+                >
+                    <ChevronLeftIcon width="20" height="20" style={{ color: '#9ca3af' }} />
+                </Box>
+                
+                {/* Stage filter buttons */}
+                <Flex 
+                    ref={filterBarScrollRef}
+                    gap="0" 
+                    style={{ 
+                        flex: 1, 
+                        overflowX: 'auto', 
+                        scrollbarWidth: 'none', 
+                        msOverflowStyle: 'none',
+                        WebkitOverflowScrolling: 'touch'
+                    }}
+                >
+                    {contactedOptions.map((stage, index) => {
+                        const colors = getStageColor(stage)
+                        const isSelected = selectedContactedFilter === stage
+                        const isFirst = index === 0
+                        const isLast = index === contactedOptions.length - 1
+                        
+                        return (
+                            <Box
+                                key={stage}
+                                onClick={() => handleContactedFilterChange(stage)}
+                                style={{
+                                    padding: '7px 20px 7px 16px',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    backgroundColor: colors.bg,
+                                    color: colors.text,
+                                    border: 'none',
+                                    borderTopLeftRadius: isFirst ? '5px' : '0',
+                                    borderBottomLeftRadius: isFirst ? '5px' : '0',
+                                    borderTopRightRadius: isLast ? '5px' : '0',
+                                    borderBottomRightRadius: isLast ? '5px' : '0',
+                                    fontWeight: isSelected ? 'bold' : 'normal',
+                                    fontSize: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    position: 'relative',
+                                    height: '32px',
+                                    marginRight: isLast ? '0' : '-14px',
+                                    paddingRight: isLast ? '16px' : '28px',
+                                    clipPath: isLast 
+                                        ? 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)'
+                                        : 'polygon(0% 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 0% 100%)',
+                                    zIndex: contactedOptions.length - index
+                                }}
+                            >
+                                {isSelected && (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                                        <circle cx="12" cy="12" r="10" fill="currentColor" />
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#fff" />
+                                    </svg>
+                                )}
+                                <Text size="2" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>{stage}</Text>
+                            </Box>
+                        )
+                    })}
+                </Flex>
+                
+                {/* Right scroll indicator */}
+                <Box 
+                    onClick={handleScrollRight}
+                    style={{ 
+                        position: 'sticky', 
+                        right: 0, 
+                        zIndex: 10, 
+                        backgroundColor: isDark ? 'var(--color-panel)' : '#fff', 
+                        paddingLeft: '8px', 
+                        cursor: 'pointer' 
+                    }}
+                >
+                    <ChevronRightIcon width="20" height="20" style={{ color: '#9ca3af' }} />
+                </Box>
+            </Flex>
+        </Box>
+
+        {/* Filter Buttons - Responsive */}
 			<Flex
 				wrap="wrap"
 				gap="2"
@@ -730,7 +968,7 @@ const Leads: React.FC = () => {
 					boxSizing: 'border-box',
 				}}
 			>
-			{['All', 'Hot', 'Warm', 'Cold', 'Remainder', 'InstaLink', 'Archive'].map((filter) => (
+			{['All', 'Hot', 'Warm', 'Cold', 'Remainder', 'InstaLink', 'UnAssigned', 'Archive'].map((filter) => (
 				<Box
 					key={filter}
 					onClick={() => handleFilterChange(filter)}
@@ -832,7 +1070,12 @@ const Leads: React.FC = () => {
 				</Flex>
 
 				{/* Table Body */}
-				{currentLeads.map((lead, index) => (
+				{currentLeads.length === 0 && !ui.loading ? (
+					<Box style={{ padding: '40px', textAlign: 'center' }}>
+						<Text>No leads found</Text>
+					</Box>
+				) : (
+					currentLeads.map((lead, index) => (
 					<Flex
 						key={lead.id}
 						style={{
@@ -947,7 +1190,7 @@ const Leads: React.FC = () => {
 									</Box>
 								)}
 
-								<Text style={{ fontSize: '12px' }}>{lead.time}</Text>
+								<Text style={{ fontSize: '12px' }}>{formatTime(lead.time)}</Text>
 							</Box>
 
 						{/* Enquiry Details Column */}
@@ -1037,7 +1280,7 @@ const Leads: React.FC = () => {
 												paddingLeft: '4px',
 											}}
 										>
-											{remark}
+											{extractRemarkText(remark)}
 										</Text>
 									))}
 								</Box>
@@ -1166,21 +1409,24 @@ const Leads: React.FC = () => {
 							>
                                 <select
                                     id={`assign-${lead.id}`}
-                                    value={lead.assignedTo}
+                                    value={lead.assignedTo || ""}
                                     onChange={(e) => handleAssignedToChange(lead.id, e.target.value)}
                                     style={{
                                         width: '100%',
-                                        maxWidth: '110px', // Reduced from 120px
-                                        height: '32px', // Reduced from 35px
+                                        maxWidth: '110px',
+                                        height: '32px',
                                         border: '1px solid #e5e7eb',
                                         borderRadius: '5px',
                                         fontSize: '12px',
                                         padding: '4px 8px',
                                     }}
                                 >
-                                    <option value="Rohit">Rohit</option>
-                                    <option value="Shivam">Shivam</option>
-                                    <option value="Sonia">Sonia</option>
+                                    <option value="">UnAssigned</option>
+                                    {users.map((user) => (
+                                        <option key={user.id} value={user.username}>
+                                            {user.username}
+                                        </option>
+                                    ))}
                                 </select>
 							</Box>
 
@@ -1228,7 +1474,8 @@ const Leads: React.FC = () => {
 							</Box>
 						</Box>
 					</Flex>
-				))}
+					))
+				)}
 			</Box>
 
 			{/* Pagination - Responsive */}
@@ -1636,11 +1883,9 @@ const Leads: React.FC = () => {
                 <Text as="label" size="2" weight="bold" style={{ display: 'block', marginBottom: '4px' }}>
                     Assigned To
                 </Text>
-                <input
-                    type="text"
-                    value={newEnquiry.assignedTo}
-                    onChange={(e) => setNewEnquiry({ ...newEnquiry, assignedTo: e.target.value })}
-                    placeholder="Enter assignee name"
+                <select 
+                    value={newEnquiry.assignedTo} 
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, assignedTo: e.target.value })} 
                     style={{
                         width: '100%',
                         padding: '8px 12px',
@@ -1648,7 +1893,14 @@ const Leads: React.FC = () => {
                         border: '1px solid #e5e7eb',
                         fontSize: '14px',
                     }}
-                />
+                >
+                    <option value="">UnAssigned</option>
+                    {users.map((user) => (
+                        <option key={user.id} value={user.username}>
+                            {user.username}
+                        </option>
+                    ))}
+                </select>
             </Box>
         </Box>
 
