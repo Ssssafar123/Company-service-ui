@@ -42,17 +42,31 @@ const initialState: BatchState = {
 }
 
 // Helper function to map _id to id
-const mapBatch = (batch: any): Batch => ({
-  id: batch._id || batch.id,
-  start_date: batch.start_date || '',
-  end_date: batch.end_date || '',
-  is_sold: batch.is_sold || false,
-  extra_amount: batch.extra_amount || 0,
-  extra_reason: batch.extra_reason,
-  itineraryId: batch.itineraryId || '',
-  createdAt: batch.createdAt,
-  updatedAt: batch.updatedAt,
-})
+const mapBatch = (batch: any): Batch => {
+  // Handle itineraryId - it might be a populated object or a string
+  let itineraryId = ''
+  if (batch.itineraryId) {
+    if (typeof batch.itineraryId === 'string') {
+      itineraryId = batch.itineraryId
+    } else if (batch.itineraryId._id) {
+      itineraryId = batch.itineraryId._id
+    } else if (batch.itineraryId.id) {
+      itineraryId = batch.itineraryId.id
+    }
+  }
+  
+  return {
+    id: batch._id || batch.id,
+    start_date: batch.start_date || '',
+    end_date: batch.end_date || '',
+    is_sold: batch.is_sold || false,
+    extra_amount: batch.extra_amount || 0,
+    extra_reason: batch.extra_reason,
+    itineraryId: itineraryId,
+    createdAt: batch.createdAt,
+    updatedAt: batch.updatedAt,
+  }
+}
 
 // Fetch all batches
 export const fetchBatches = createAsyncThunk(
