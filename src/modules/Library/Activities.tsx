@@ -32,7 +32,6 @@ type ActivityData = {
 	shortDescription?: string
 	fullDescription?: string
 	images?: string[]
-	videos?: string[]
 }
 
 const Activities: React.FC = () => {
@@ -45,7 +44,7 @@ const Activities: React.FC = () => {
 	const [searchQuery, setSearchQuery] = useState('')
 	const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null } | null>(null)
 	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-		new Set(['name', 'location', 'locationLink', 'images', 'videos', 'duration', 'price', 'actions'])
+		new Set(['name', 'location', 'locationLink', 'images', 'duration', 'price', 'actions'])
 	)
 	const [currentPage, setCurrentPage] = useState(1)
 	const [itemsPerPage] = useState(10)
@@ -82,7 +81,6 @@ const Activities: React.FC = () => {
 			shortDescription: activity.shortDescription,
 			fullDescription: activity.fullDescription,
 			images: activity.images,
-			videos: activity.videos,
 		}))
 	}, [activitiesFromStore])
 
@@ -277,14 +275,6 @@ const Activities: React.FC = () => {
 		)
 	}
 
-	// Render videos count
-	const renderVideos = (videos?: string[]) => {
-		if (!videos || videos.length === 0) return <Text size="2">-</Text>
-		return (
-			<Text size="2">{videos.length} video(s)</Text>
-		)
-	}
-
 	// Render actions menu
 	const renderActions = (activity: ActivityData) => {
 		return (
@@ -381,13 +371,7 @@ const Activities: React.FC = () => {
 			sortable: false,
 			render: (row: ActivityData) => renderImages(row.images),
 		},
-		{
-			key: 'videos',
-			label: 'Videos',
-			width: '100px',
-			sortable: false,
-			render: (row: ActivityData) => renderVideos(row.videos),
-		},
+		
 		{
 			key: 'duration',
 			label: 'Duration (hrs)',
@@ -431,7 +415,6 @@ const Activities: React.FC = () => {
 					shortDescription: editingActivity.shortDescription,
 					fullDescription: editingActivity.fullDescription,
 					images: editingActivity.images,
-					videos: editingActivity.videos,
 				} : null}
 			/>
 
@@ -506,7 +489,7 @@ const Activities: React.FC = () => {
 										{ key: 'location', label: 'Location' },
 										{ key: 'locationLink', label: 'Location Link' },
 										{ key: 'images', label: 'Images' },
-										{ key: 'videos', label: 'Videos' },
+										
 										{ key: 'duration', label: 'Duration (hrs)' },
 										{ key: 'price', label: 'Price' },
 									].map((col) => (
