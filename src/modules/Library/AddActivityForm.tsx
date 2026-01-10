@@ -25,14 +25,12 @@ type AddActivityFormProps = {
 		shortDescription?: string
 		fullDescription?: string
 		images?: string[] // Added
-		videos?: string[] // Added
 	} | null
 }
 
 const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
     const dispatch = useDispatch<AppDispatch>()
 	const [imageFiles, setImageFiles] = useState<File[]>([])
-	const [videoFiles, setVideoFiles] = useState<File[]>([])
 
 	// Prevent body scroll when form is open
 	useEffect(() => {
@@ -52,7 +50,6 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 	useEffect(() => {
 		if (!isOpen) {
 			setImageFiles([])
-			setVideoFiles([])
 		}
 	}, [isOpen])
 
@@ -107,16 +104,7 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 			multiple: true,
 			accept: 'image/*',
 		},
-		{
-			name: 'videos',
-			label: 'Videos',
-			type: 'file' as const,
-			placeholder: 'Select videos',
-			fullWidth: true,
-			required: false,
-			multiple: true,
-			accept: 'video/*',
-		},
+		
 		{
 			name: 'duration',
 			label: 'Duration (in hours)',
@@ -137,8 +125,7 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 		try {
 			// Extract file arrays from values - handle FileList properly
 			let imageFilesArray: File[] = [];
-			let videoFilesArray: File[] = [];
-
+			
 			// Handle images - could be FileList, File[], or empty
 			if (values.images) {
 				if (values.images instanceof FileList) {
@@ -147,17 +134,6 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 					imageFilesArray = values.images.filter((f: any) => f instanceof File);
 				} else if (values.images instanceof File) {
 					imageFilesArray = [values.images];
-				}
-			}
-
-			// Handle videos - could be FileList, File[], or empty
-			if (values.videos) {
-				if (values.videos instanceof FileList) {
-					videoFilesArray = Array.from(values.videos);
-				} else if (Array.isArray(values.videos)) {
-					videoFilesArray = values.videos.filter((f: any) => f instanceof File);
-				} else if (values.videos instanceof File) {
-					videoFilesArray = [values.videos];
 				}
 			}
 
@@ -178,9 +154,6 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 				if (initialData.images && imageFilesArray.length === 0) {
 					activityData.images = initialData.images;
 				}
-				if (initialData.videos && videoFilesArray.length === 0) {
-					activityData.videos = initialData.videos;
-				}
 			}
 
 			if (initialData?.id) {
@@ -189,14 +162,12 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ isOpen, onClose, onSu
 					id: initialData.id,
 					data: activityData,
 					imageFiles: imageFilesArray.length > 0 ? imageFilesArray : undefined,
-					videoFiles: videoFilesArray.length > 0 ? videoFilesArray : undefined,
 				})).unwrap()
 			} else {
 				// Create new activity
 				await dispatch(createActivity({
 					activity: activityData,
 					imageFiles: imageFilesArray.length > 0 ? imageFilesArray : undefined,
-					videoFiles: videoFilesArray.length > 0 ? videoFilesArray : undefined,
 				})).unwrap()
 			}
 

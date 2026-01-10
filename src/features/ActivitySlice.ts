@@ -17,7 +17,6 @@ export interface Activity {
   fullDescription?: string
   category?: 'adventure' | 'sightseeing' | 'water_sports' | 'cultural' | 'wildlife' | 'other'
   images?: string[] // Updated
-  videos?: string[] // Added
   inclusions?: string[]
   exclusions?: string[]
   ageRestriction?: AgeRestriction
@@ -52,7 +51,6 @@ const mapActivity = (activity: any): Activity => ({
   fullDescription: activity.fullDescription,
   category: activity.category,
   images: activity.images || [],
-  videos: activity.videos || [], // Added
   inclusions: activity.inclusions || [],
   exclusions: activity.exclusions || [],
   ageRestriction: activity.ageRestriction,
@@ -79,17 +77,16 @@ export const createActivity = createAsyncThunk(
   async (data: { 
     activity: Omit<Activity, 'id'>;
     imageFiles?: File[];
-    videoFiles?: File[];
   }, { rejectWithValue }) => {
     try {
       const formData = new FormData();
       
-      const { imageFiles, videoFiles, activity } = data;
+      const { imageFiles, activity } = data;
       
       // Append all activity fields except images and videos
       Object.keys(activity).forEach(key => {
         const value = (activity as any)[key];
-        if (key === 'images' || key === 'videos') {
+        if (key === 'images') {
           return; // Skip these - handle separately
         }
         
@@ -106,13 +103,6 @@ export const createActivity = createAsyncThunk(
       if (imageFiles && imageFiles.length > 0) {
         imageFiles.forEach((file) => {
           formData.append('images', file);
-        });
-      }
-      
-      // Append video files
-      if (videoFiles && videoFiles.length > 0) {
-        videoFiles.forEach((file) => {
-          formData.append('videos', file);
         });
       }
       
@@ -157,12 +147,12 @@ export const updateActivityById = createAsyncThunk(
     id, 
     data,
     imageFiles,
-    videoFiles,
+    // videoFiles,
   }: { 
     id: string
     data: Partial<Activity>
     imageFiles?: File[]
-    videoFiles?: File[]
+    // videoFiles?: File[]
   }, { rejectWithValue }) => {
     try {
       const formData = new FormData();
@@ -170,7 +160,7 @@ export const updateActivityById = createAsyncThunk(
       // Append activity fields except images and videos
       Object.keys(data).forEach(key => {
         const value = (data as any)[key];
-        if (key === 'images' || key === 'videos') {
+        if (key === 'images') {
           return; // Skip these - handle separately
         }
         
@@ -189,14 +179,7 @@ export const updateActivityById = createAsyncThunk(
           formData.append('images', file);
         });
       }
-      
-      // Append new video files
-      if (videoFiles && videoFiles.length > 0) {
-        videoFiles.forEach((file) => {
-          formData.append('videos', file);
-        });
-      }
-      
+       
       const res = await fetch(getApiUrl(`activity/${id}`), {
         method: 'PUT',
         credentials: 'include',
