@@ -39,7 +39,7 @@ export interface Invoice {
   currency?: string
   saleAgent?: string
   isRecurring?: boolean
-  discountType?: 'percentage' | 'fixed'
+  discountType?: 'No' | 'Before-tax' | 'After-tax' | 'percentage' | 'fixed'
   discountValue?: number
   lineItems?: LineItem[]
   quantityAs?: 'Qty' | 'Hours' | 'Qty/Hours'
@@ -232,6 +232,22 @@ export const deleteInvoiceById = createAsyncThunk(
       })
       if (!res.ok) throw new Error('Failed to delete invoice')
       return id
+    } catch (err) {
+      return rejectWithValue((err as Error).message)
+    }
+  }
+)
+
+export const fetchNextInvoiceNumber = createAsyncThunk(
+  'invoice/fetchNextInvoiceNumber',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(getApiUrl('invoice/next-number'), {
+        credentials: 'include',
+      })
+      if (!res.ok) throw new Error('Failed to fetch next invoice number')
+      const data = await res.json()
+      return data.invoiceNumber
     } catch (err) {
       return rejectWithValue((err as Error).message)
     }

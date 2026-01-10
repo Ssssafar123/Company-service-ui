@@ -26,6 +26,7 @@ import EditHeroImage from './modules/Content/EditHeroImage.js'
 import PaymentPage from './pages/Dashboard/Payment.js'
 import Invoice from './pages/Dashboard/Invoice.js'
 import AddInvoice from './pages/Dashboard/AddInvoice.js'
+import ViewInvoice from './modules/Sales/Invoice/ViewInvoice.js'
 import LedgerPage from './pages/Dashboard/Ledger'
 import UserPage from './pages/Dashboard/User'
 import RolePage from './pages/Dashboard/Role'
@@ -79,6 +80,7 @@ const App = () => {
         <Route path='content' element={<ContentPage />} />
         <Route path='customer' element={<CustomerPage />} />
         <Route path='invoice' element={<Invoice />} />
+        <Route path='invoice/:id' element={<ViewInvoice/>}/>
         <Route path='payment' element={<PaymentPage />} />
         <Route path='addInvoice' element={<AddInvoice/>}/>
         <Route path='ledger' element={<LedgerPage />} />
