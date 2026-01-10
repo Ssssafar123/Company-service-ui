@@ -63,8 +63,12 @@ const Itinerary: React.FC = () => {
     // Get data from Redux store
     const itinerariesFromStore = useSelector((state: RootState) => state.itinerary.itineraries)
     const isLoading = useSelector((state: RootState) => state.itinerary.ui.loading)
-
+    const categoriesFromStore = useSelector((state : RootState) => state.category.categories)
+    const locationFromStore = useSelector((state : RootState) => state.location.locations)
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectedItineraries, setSelectedItineraries] = useState<string[]>([])
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null) // Change this line
+    const [selectedLocation, setSelectedLocation] = useState<string | null>(null) 
     const [currentPage, setCurrentPage] = useState(1)
     const [sortConfig, setSortConfig] = useState<{
         key: string
@@ -72,6 +76,8 @@ const Itinerary: React.FC = () => {
     } | null>(null)
      
     const [dialogOpen, setDialogOpen] = useState(false)
+    const[dropdownforcategory , setdropdownforcategory] = useState<boolean>(false);
+    const[dropdownforLocation , setdropdownforLocation] = useState<boolean>(false);
     const [dialogConfig, setDialogConfig] = useState<{
         title: string
         description: string
@@ -89,11 +95,14 @@ const Itinerary: React.FC = () => {
         status: true,
         edit: true,
         actions: true,
+        bulkSelect : true
     })
 
     // Fetch itineraries on mount
     useEffect(() => {
         dispatch(fetchItineraries())
+        dispatch(fetchCategories())
+        dispatch(fetchLocations())
     }, [dispatch])
 
     // Map Redux data to local format
@@ -636,6 +645,33 @@ const Itinerary: React.FC = () => {
             },
         },
         {
+            key: 'bulkSelect',
+            label: 'Bulk Select',
+            dropdownLabel: 'Bulk Select',
+            width: '120px',
+            sortable: false,
+            render: (row: ItineraryData) => {
+                const isChecked = selectedItineraries.includes(row.id)
+                
+                return (
+                    <Flex align="center" justify="center">
+                        <Checkbox
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                                // const isCheckedNow = checked == true
+                                if(checked){
+                                    setSelectedItineraries([...selectedItineraries, row.id])
+                                }
+                                else{
+                                    setSelectedItineraries(selectedItineraries.filter(id => id != row.id ))
+                                }
+                            }}
+                        />
+                    </Flex>
+                )
+            },
+        },
+        {
             key: 'status',
             label: 'Status',
             dropdownLabel: 'Is_active',
@@ -707,7 +743,7 @@ const Itinerary: React.FC = () => {
 
     const visibleColumns = useMemo(() => {
         return allColumns.filter((col) => columnVisibility[col.key as keyof typeof columnVisibility])
-    }, [columnVisibility])
+    }, [columnVisibility, selectedItineraries]) // Add selectedItineraries here
 
     const handleColumnToggle = (columnKey: string) => {
         setColumnVisibility((prev) => ({
@@ -827,6 +863,247 @@ const Itinerary: React.FC = () => {
                     <Button variant="soft" size="2" onClick={() => navigate('/dashboard/add-itinerary')} style={{ color: 'white', backgroundColor: 'var(--accent-9)', width: '200px' }}>
                         Add New Itinerary
                     </Button>
+                    
+                    <Box style={{ position: 'relative' }}>
+                        <Button variant="soft" size="2" onClick={() => setdropdownforcategory(!dropdownforcategory)} style={{ color: 'white', backgroundColor: 'var(--accent-9)', width: '200px' }}>
+                            Bulk Select ({selectedItineraries.length}) Category
+                        </Button>
+                        {dropdownforcategory && (
+                            <Flex 
+                                direction="column" 
+                                gap="2" 
+                                style={{ 
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    marginTop: '8px',
+                                    backgroundColor: 'var(--color-panel)',
+                                    border: '1px solid var(--accent-6)',
+                                    borderRadius: '8px',
+                                    padding: '8px',
+                                    minWidth: '200px',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto',
+                                    zIndex: 1000,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                                }}
+                            >
+                                {categoriesFromStore.length === 0 ? (
+                                    <Text size="2" style={{ padding: '8px', color: 'var(--accent-11)' }}>
+                                        No categories found
+                                    </Text>
+                                ) : (
+                                    <>
+                                        {categoriesFromStore.map((category) => (
+                                            <Button
+                                                key={category.id}
+                                                variant={selectedCategory === category.id ? "solid" : "ghost"}
+                                                size="2"
+                                                style={{ 
+                                                    justifyContent: 'flex-start',
+                                                    cursor: 'pointer',
+                                                    width: '100%',
+                                                    backgroundColor: selectedCategory === category.id ? 'var(--accent-9)' : 'transparent',
+                                                    color: selectedCategory === category.id ? 'white' : 'inherit'
+                                                }}
+                                                onClick={() => {
+                                                    setSelectedCategory(category.id)
+                                                }}
+                                            >
+                                                <Text size="2">{category.name}</Text>
+                                            </Button>
+                                        ))}
+                                        
+                                        <Box style={{ borderTop: '1px solid var(--accent-6)', marginTop: '8px', paddingTop: '8px' }}>
+                                            <Button
+                                                variant="solid"
+                                                size="2"
+                                                disabled={!selectedCategory || selectedItineraries.length === 0}
+                                                style={{ 
+                                                    width: '100%',
+                                                    backgroundColor: 'var(--accent-9)',
+                                                    color: 'white',
+                                                    cursor: (!selectedCategory || selectedItineraries.length === 0) ? 'not-allowed' : 'pointer'
+                                                }}
+                                                onClick={async () => {
+                                                    if (!selectedCategory) return
+                                                    
+                                                    try {
+                                                        // Fetch the category
+                                                        const category = await dispatch(fetchCategoryById(selectedCategory)).unwrap()
+                                                        
+                                                        // Get current itineraries in the category
+                                                        const currentItineraries = category.itineraries || []
+                                                        
+                                                        // Merge with selected itineraries (avoid duplicates)
+                                                        const updatedItineraries = [...new Set([...currentItineraries, ...selectedItineraries])]
+                                                        
+                                                        // Update the category
+                                                        await dispatch(updateCategoryById({
+                                                            id: selectedCategory,
+                                                            data: { itineraries: updatedItineraries }
+                                                        })).unwrap()
+                                                        
+                                                        // Clear selections
+                                                        setSelectedItineraries([])
+                                                        setSelectedCategory(null)
+                                                        setdropdownforcategory(false)
+                                                        
+                                                        // Show success message
+                                                        setDialogConfig({
+                                                            title: 'Success',
+                                                            description: `Added ${selectedItineraries.length} itineraries to category successfully!`,
+                                                            actionText: 'OK',
+                                                            color: 'green',
+                                                            onConfirm: () => setDialogOpen(false),
+                                                        })
+                                                        setDialogOpen(true)
+                                                        
+                                                        // Refresh categories
+                                                        dispatch(fetchCategories())
+                                                    } catch (error: any) {
+                                                        console.error('Error adding itineraries to category:', error)
+                                                        setDialogConfig({
+                                                            title: 'Error',
+                                                            description: error.message || 'Failed to add itineraries to category.',
+                                                            actionText: 'OK',
+                                                            color: 'red',
+                                                            onConfirm: () => setDialogOpen(false),
+                                                        })
+                                                        setDialogOpen(true)
+                                                    }
+                                                }}
+                                            >
+                                                Save ({selectedItineraries.length} items)
+                                            </Button>
+                                        </Box>
+                                    </>
+                                )}
+                            </Flex>
+                        )}
+                    </Box>
+
+
+                   
+                     
+                    <Box style={{ position: 'relative' }}>
+                        <Button variant="soft" size="2" onClick={() => setdropdownforLocation(!dropdownforLocation)} style={{ color: 'white', backgroundColor: 'var(--accent-9)', width: '200px' }}>
+                            Bulk Select ({selectedItineraries.length}) Location
+                        </Button>
+                        {dropdownforLocation && (
+                            <Flex 
+                                direction="column" 
+                                gap="2" 
+                                style={{ 
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    marginTop: '8px',
+                                    backgroundColor: 'var(--color-panel)',
+                                    border: '1px solid var(--accent-6)',
+                                    borderRadius: '8px',
+                                    padding: '8px',
+                                    minWidth: '200px',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto',
+                                    zIndex: 1000,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                                }}
+                            >
+                                {locationFromStore.length === 0 ? (
+                                    <Text size="2" style={{ padding: '8px', color: 'var(--accent-11)' }}>
+                                        No Location found
+                                    </Text>
+                                ) : (
+                                    <>
+                                        {locationFromStore.map((location) => (
+                                            <Button
+                                                key={location.id}
+                                                variant={selectedLocation === location.id ? "solid" : "ghost"}
+                                                size="2"
+                                                style={{ 
+                                                    justifyContent: 'flex-start',
+                                                    cursor: 'pointer',
+                                                    width: '100%',
+                                                    backgroundColor: selectedLocation === location.id ? 'var(--accent-9)' : 'transparent',
+                                                    color: selectedLocation  === location.id ? 'white' : 'inherit'
+                                                }}
+                                                onClick={() => {
+                                                    setSelectedLocation(location.id)
+                                                }}
+                                            >
+                                                <Text size="2">{location.name}</Text>
+                                            </Button>
+                                        ))}
+                                        
+                                        <Box style={{ borderTop: '1px solid var(--accent-6)', marginTop: '8px', paddingTop: '8px' }}>
+                                            <Button
+                                                variant="solid"
+                                                size="2"
+                                                disabled={!selectedLocation || selectedItineraries.length === 0}
+                                                style={{ 
+                                                    width: '100%',
+                                                    backgroundColor: 'var(--accent-9)',
+                                                    color: 'white',
+                                                    cursor: (!selectedLocation || selectedItineraries.length === 0) ? 'not-allowed' : 'pointer'
+                                                }}
+                                                onClick={async () => {
+                                                    if (!selectedLocation) return
+                                                    
+                                                    try {
+                                                        // Fetch the category
+                                                        const location = await dispatch(fetchLocationById(selectedLocation)).unwrap()
+                                                        
+                                                        // Get current itineraries in the category
+                                                        const currentItineraries = location.itineraries || []
+                                                        
+                                                        // Merge with selected itineraries (avoid duplicates)
+                                                        const updatedItineraries = [...new Set([...currentItineraries, ...selectedItineraries])]
+                                                        
+                                                        // Update the category
+                                                        await dispatch(updateLocationById({
+                                                            id: selectedLocation,
+                                                            data: { itineraries: updatedItineraries }
+                                                        })).unwrap()
+                                                        
+                                                        // Clear selections
+                                                        setSelectedItineraries([])
+                                                        setSelectedLocation(null)
+                                                        setdropdownforcategory(false)
+                                                        
+                                                        // Show success message
+                                                        setDialogConfig({
+                                                            title: 'Success',
+                                                            description: `Added ${selectedItineraries.length} itineraries to category successfully!`,
+                                                            actionText: 'OK',
+                                                            color: 'green',
+                                                            onConfirm: () => setDialogOpen(false),
+                                                        })
+                                                        setDialogOpen(true)
+                                                        
+                                                        // Refresh categories
+                                                        dispatch(fetchCategories())
+                                                    } catch (error: any) {
+                                                        console.error('Error adding itineraries to category:', error)
+                                                        setDialogConfig({
+                                                            title: 'Error',
+                                                            description: error.message || 'Failed to add itineraries to category.',
+                                                            actionText: 'OK',
+                                                            color: 'red',
+                                                            onConfirm: () => setDialogOpen(false),
+                                                        })
+                                                        setDialogOpen(true)
+                                                    }
+                                                }}
+                                            >
+                                                Save ({selectedItineraries.length} items)
+                                            </Button>
+                                        </Box>
+                                    </>
+                                )}
+                            </Flex>
+                        )}
+                    </Box>
 
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger>
