@@ -37,13 +37,18 @@ const Login = () => {
       const data = await res.json();
       
       if (res.ok && data.success) {
-        // Store user info and modules in localStorage
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
+        // Store token if provided
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+         }
+        
+         // Store user info and modules in localStorage
+         if (data.user) {
+         localStorage.setItem('user', JSON.stringify(data.user));
           if (data.user.role && data.user.role.modules) {
             localStorage.setItem('userModules', JSON.stringify(data.user.role.modules));
           }
-        }
+         }
         
         setUsername('');
         setPassword('');
