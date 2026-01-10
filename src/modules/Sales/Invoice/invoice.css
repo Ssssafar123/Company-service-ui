@@ -1,7 +1,17 @@
-
 .invoice-table table thead th {
-
   color: #737373;
   font-weight: 400;
   padding: 12px 10px;
+}
+
+.invoice-row-invoice-cell {
+  position: relative;
+}
+
+.invoice-row-actions {
+  transition: opacity 0.2s ease;
+}
+
+.invoice-row-actions Text:hover {
+  text-decoration: underline;
 }
